@@ -106,11 +106,14 @@
       display: flex; justify-content: center; align-items: center; position: relative;
     }
     .nonf-hero-globe {
-      width: 320px; height: 320px; border-radius: 50%;
+      width: 320px; height: 320px; border-radius: 32px;
       background: linear-gradient(135deg, var(--nonf-turq), var(--nonf-blauw));
       display: flex; align-items: center; justify-content: center;
-      font-size: 8rem; box-shadow: 0 30px 80px rgba(0,0,0,.3);
-      position: relative;
+      box-shadow: 0 30px 80px rgba(0,0,0,.3);
+      position: relative; overflow: hidden;
+    }
+    .nonf-hero-globe img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 32px;
     }
     .nonf-float {
       position: absolute; background: #fff; border-radius: 16px;
@@ -382,7 +385,9 @@
     </div>
 
     <div class="nonf-hero-visual" data-animate data-delay="200">
-      <div class="nonf-hero-globe">🌺</div>
+      <div class="nonf-hero-globe">
+        <img src="logo.jpeg" alt="Nos Orguyo, Nos Futuro" />
+      </div>
       <div class="nonf-float nonf-float-1" data-animate data-delay="400">
         <div class="nonf-float-icon" style="background:rgba(244,169,40,.15);color:var(--nonf-goud);">🎵</div>
         <div><strong>Muziek & Dans</strong><span>Elke les</span></div>
