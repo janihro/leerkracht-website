@@ -785,7 +785,7 @@ document.getElementById('admin-login-form').addEventListener('submit', async e =
   errEl.style.display = 'none';
 
   try {
-    const res = await fetch('/api/admin/stats?adminPassword=' + encodeURIComponent(pass));
+    const res = await fetch('/api/admin/stats', { headers: { 'x-admin-password': pass } });
     if (res.ok) {
       adminPass = pass;
       document.getElementById('login-screen').style.display = 'none';
@@ -846,7 +846,7 @@ function closeSidebar() {
 // ══════════════════ STATS ════════════════════════════════
 async function loadStats() {
   try {
-    const res = await fetch('/api/admin/stats?adminPassword=' + encodeURIComponent(adminPass));
+    const res = await fetch('/api/admin/stats', { headers: { 'x-admin-password': adminPass } });
     const d = await res.json();
     document.getElementById('stat-total').textContent = d.totalRegistrations;
     document.getElementById('stat-new').textContent = d.newRegistrations + ' nieuw';
@@ -887,7 +887,7 @@ async function loadStats() {
 // ══════════════════ SETTINGS ═════════════════════════════
 async function loadSettings() {
   try {
-    const res = await fetch('/api/admin/settings?adminPassword=' + encodeURIComponent(adminPass));
+    const res = await fetch('/api/admin/settings', { headers: { 'x-admin-password': adminPass } });
     const d = await res.json();
     const fields = ['siteName','slogan','email','telefoon','whatsapp','adres','openingstijden','instagram','facebook','tiktok'];
     fields.forEach(f => {
@@ -903,14 +903,14 @@ async function saveSettings(e) {
   const errEl  = document.getElementById('settings-error');
   succEl.classList.remove('show'); errEl.classList.remove('show');
 
-  const body = { adminPassword: adminPass };
+  const body = {};
   ['siteName','slogan','email','telefoon','whatsapp','adres','openingstijden','instagram','facebook','tiktok'].forEach(f => {
     const el = document.getElementById('s-' + f);
     if (el) body[f] = el.value.trim();
   });
 
   try {
-    const res = await fetch('/api/admin/settings', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch('/api/admin/settings', { method:'PUT', headers:{'Content-Type':'application/json','x-admin-password':adminPass}, body: JSON.stringify(body) });
     if (res.ok) { succEl.classList.add('show'); setTimeout(()=>succEl.classList.remove('show'),3500); }
     else { document.getElementById('settings-error-msg').textContent = 'Opslaan mislukt.'; errEl.classList.add('show'); }
   } catch { document.getElementById('settings-error-msg').textContent = 'Netwerkfout.'; errEl.classList.add('show'); }
@@ -919,7 +919,7 @@ async function saveSettings(e) {
 // ══════════════════ ACCOUNTS ═════════════════════════════
 async function loadAccounts() {
   try {
-    const res = await fetch('/api/admin/accounts?adminPassword=' + encodeURIComponent(adminPass));
+    const res = await fetch('/api/admin/accounts', { headers: { 'x-admin-password': adminPass } });
     const accounts = await res.json();
     const list = document.getElementById('accounts-list');
     if (!accounts.length) {
@@ -957,7 +957,6 @@ async function createAccount(e) {
   succEl.classList.remove('show'); errEl.classList.remove('show');
 
   const body = {
-    adminPassword: adminPass,
     email: document.getElementById('a-email').value.trim(),
     password: document.getElementById('a-password').value,
     kindNaam: document.getElementById('a-kindNaam').value.trim(),
@@ -969,7 +968,7 @@ async function createAccount(e) {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aanmaken...';
 
   try {
-    const res = await fetch('/api/admin/accounts', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch('/api/admin/accounts', { method:'POST', headers:{'Content-Type':'application/json','x-admin-password':adminPass}, body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) {
       msgEl.textContent = `Account voor ${data.kindNaam} aangemaakt!`;
@@ -989,7 +988,7 @@ async function createAccount(e) {
 async function deleteAccount(id, name) {
   if (!confirm(`Account van "${name}" definitief verwijderen?`)) return;
   try {
-    await fetch('/api/admin/accounts/' + id, { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ adminPassword: adminPass }) });
+    await fetch('/api/admin/accounts/' + id, { method:'DELETE', headers:{'Content-Type':'application/json','x-admin-password':adminPass} });
     loadAccounts();
   } catch(err) { console.error(err); }
 }
@@ -1141,12 +1140,24 @@ async function deleteGalleryItem(id) {
 }
 
 // ══════════════════ EXPORT ═══════════════════════════════
-function exportCSV(type) {
-  if (type === 'registrations') {
-    window.location.href = '/api/admin/export-csv?adminPassword=' + encodeURIComponent(adminPass);
-  } else {
-    window.location.href = '/api/admin/export-reviews-csv?adminPassword=' + encodeURIComponent(adminPass);
-  }
+async function exportCSV(type) {
+  const url      = type === 'registrations' ? '/api/admin/export-csv' : '/api/admin/export-reviews-csv';
+  const filename = type === 'registrations' ? 'inschrijvingen.csv' : 'reviews.csv';
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass }
+    });
+    if (!res.ok) { alert('Export mislukt. Controleer je wachtwoord.'); return; }
+    const blob = await res.blob();
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  } catch { alert('Exporteren mislukt. Probeer opnieuw.'); }
 }
 
 // ══════════════════ PASSWORD ═════════════════════════════
@@ -1168,8 +1179,8 @@ async function changePassword(e) {
 
   try {
     const res = await fetch('/api/admin/change-password', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ adminPassword: current, newPassword: newPass })
+      method: 'POST', headers: {'Content-Type':'application/json','x-admin-password':current},
+      body: JSON.stringify({ newPassword: newPass })
     });
     const data = await res.json();
     if (res.ok) {
@@ -1206,7 +1217,7 @@ let editingProductId = null;
 
 async function loadProductsAdmin() {
   try {
-    const res = await fetch('/api/products?all=1&adminPassword=' + encodeURIComponent(adminPass));
+    const res = await fetch('/api/products?all=1', { headers: { 'x-admin-password': adminPass } });
     const products = await res.json();
     const list = document.getElementById('products-admin-list');
 
@@ -1272,7 +1283,6 @@ async function saveProduct(e) {
   succEl.classList.remove('show'); errEl.classList.remove('show');
 
   const body = {
-    adminPassword: adminPass,
     naam:         document.getElementById('p-naam').value.trim(),
     prijs:        document.getElementById('p-prijs').value,
     beschrijving: document.getElementById('p-beschrijving').value.trim(),
@@ -1292,7 +1302,7 @@ async function saveProduct(e) {
   try {
     const url = editingProductId ? `/api/products/${editingProductId}` : '/api/products';
     const method = editingProductId ? 'PUT' : 'POST';
-    const res = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch(url, { method, headers:{'Content-Type':'application/json','x-admin-password':adminPass}, body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) {
       msgEl.textContent = editingProductId ? `"${data.naam}" bijgewerkt!` : `"${data.naam}" toegevoegd!`;
@@ -1342,8 +1352,8 @@ function cancelEdit() {
 async function toggleProduct(id, actief) {
   try {
     await fetch(`/api/products/${id}`, {
-      method:'PUT', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ adminPassword: adminPass, actief })
+      method:'PUT', headers:{'Content-Type':'application/json','x-admin-password':adminPass},
+      body: JSON.stringify({ actief })
     });
   } catch(err) { console.error(err); }
 }
@@ -1352,8 +1362,7 @@ async function deleteProduct(id, naam) {
   if (!confirm(`Product "${naam}" definitief verwijderen?`)) return;
   try {
     await fetch(`/api/products/${id}`, {
-      method:'DELETE', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ adminPassword: adminPass })
+      method:'DELETE', headers:{'Content-Type':'application/json','x-admin-password':adminPass}
     });
     loadProductsAdmin();
   } catch(err) { console.error(err); }

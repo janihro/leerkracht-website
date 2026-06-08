@@ -268,10 +268,13 @@
     <!-- Section tabs -->
     <div class="section-tabs">
       <button class="section-tab active" id="tab-vragen" onclick="showSection('vragen',this)">
-        <i class="fas fa-comments"></i> Vragen van ouders
+        <i class="fas fa-comments"></i> Vragen
+      </button>
+      <button class="section-tab" id="tab-agenda" onclick="showSection('agenda',this)">
+        <i class="fas fa-calendar-alt"></i> Agenda
       </button>
       <button class="section-tab" id="tab-materiaal" onclick="showSection('materiaal',this)">
-        <i class="fas fa-upload"></i> Lesmateriaal uploaden
+        <i class="fas fa-upload"></i> Materiaal
       </button>
       <button class="section-tab" id="tab-inschrijvingen" onclick="showSection('inschrijvingen',this)">
         <i class="fas fa-user-plus"></i> Inschrijvingen
@@ -313,6 +316,115 @@
         <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>Vragen laden...</div>
       </div>
     </div>
+
+    <!-- ── AGENDA SECTIE ── -->
+    <div class="section-panel" id="section-agenda">
+      <div class="docent-panel-header">
+        <div>
+          <h2><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:10px;"></i>Agenda beheren</h2>
+          <p>Voeg lessen en afspraken toe. Kies of iedereen het ziet of alleen bepaalde leerlingen.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadAgenda()"><i class="fas fa-sync-alt"></i> Vernieuwen</button>
+      </div>
+
+      <!-- Formulier -->
+      <div class="upload-card" id="agenda-form-card">
+        <h3 id="agenda-form-title"><i class="fas fa-plus-circle"></i> Nieuw agenda-item toevoegen</h3>
+        <input type="hidden" id="agenda-edit-id" value="" />
+
+        <div class="upload-form-grid">
+          <!-- Rij 1 -->
+          <div class="full">
+            <label>Titel *</label>
+            <input type="text" id="ag-titel" placeholder="bijv. Papiaments les — Werkwoorden" />
+          </div>
+          <!-- Rij 2 -->
+          <div>
+            <label>Datum *</label>
+            <input type="date" id="ag-datum" />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <label>Begintijd</label>
+              <input type="time" id="ag-tijd" />
+            </div>
+            <div>
+              <label>Eindtijd</label>
+              <input type="time" id="ag-eindtijd" />
+            </div>
+          </div>
+          <!-- Rij 3 -->
+          <div>
+            <label>Type</label>
+            <select id="ag-type">
+              <option value="les">📚 Les</option>
+              <option value="toets">📝 Toets / proefwerk</option>
+              <option value="vrij">🏖️ Vrije dag / geen les</option>
+              <option value="overig">📌 Overig</option>
+            </select>
+          </div>
+          <div>
+            <label>Kleur label</label>
+            <select id="ag-kleur">
+              <option value="primary">🟣 Paars (les)</option>
+              <option value="green">🟢 Groen (goed)</option>
+              <option value="orange">🟠 Oranje (let op)</option>
+              <option value="pink">🩷 Roze</option>
+              <option value="teal">🔵 Blauw</option>
+              <option value="yellow">🟡 Geel</option>
+            </select>
+          </div>
+          <!-- Beschrijving -->
+          <div class="full">
+            <label>Beschrijving / locatie (optioneel)</label>
+            <textarea id="ag-beschrijving" placeholder="bijv. Online via Teams · Link wordt apart gestuurd" rows="2"></textarea>
+          </div>
+          <!-- Zichtbaarheid -->
+          <div class="full">
+            <label>Zichtbaar voor</label>
+            <div style="display:flex;gap:16px;margin-top:4px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-weight:700;font-size:.9rem;cursor:pointer;">
+                <input type="radio" name="ag-zichtbaar" value="iedereen" id="ag-iedereen" checked style="accent-color:var(--primary);width:16px;height:16px;" />
+                <i class="fas fa-globe" style="color:var(--primary);"></i> Iedereen
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-weight:700;font-size:.9rem;cursor:pointer;">
+                <input type="radio" name="ag-zichtbaar" value="specifiek" id="ag-specifiek" style="accent-color:var(--primary);width:16px;height:16px;" onchange="toggleUserPicker()" />
+                <i class="fas fa-user-lock" style="color:var(--accent);"></i> Specifieke leerlingen
+              </label>
+            </div>
+            <div id="ag-iedereen" style="display:none;"></div><!-- spacer voor radio -->
+          </div>
+          <!-- Gebruikers picker (alleen als "specifiek") -->
+          <div class="full" id="user-picker-wrap" style="display:none;">
+            <label>Selecteer leerlingen</label>
+            <div id="user-checkboxes" style="display:flex;flex-direction:column;gap:8px;background:#f8f7ff;border-radius:var(--radius-sm);padding:14px;max-height:200px;overflow-y:auto;border:2px solid var(--border);">
+              <span style="color:var(--text-muted);font-size:.84rem;"><i class="fas fa-spinner fa-spin"></i> Accounts laden...</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="agenda-save-btn" onclick="saveAgendaItem()">
+            <i class="fas fa-plus"></i> Toevoegen
+          </button>
+          <button class="btn btn-outline btn-sm" id="agenda-cancel-btn" onclick="cancelAgendaEdit()" style="display:none;">
+            <i class="fas fa-times"></i> Annuleren
+          </button>
+        </div>
+        <div id="agenda-form-msg" style="display:none;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.84rem;font-weight:700;"></div>
+      </div>
+
+      <!-- Lijst -->
+      <div class="docent-panel-header" style="margin-bottom:16px;margin-top:8px;">
+        <div>
+          <h2><i class="fas fa-list-alt" style="color:var(--primary);margin-right:10px;"></i>Alle agenda-items</h2>
+          <p>Klik op het potlood-icoon om een item te bewerken.</p>
+        </div>
+      </div>
+      <div id="agenda-list">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>
+      </div>
+    </div><!-- end section-agenda -->
 
     <!-- ── LESMATERIAAL SECTIE ── -->
     <div class="section-panel" id="section-materiaal">
@@ -524,6 +636,7 @@
     btn.classList.add('active');
     document.getElementById('section-' + name).classList.add('active');
     if (name === 'inschrijvingen') loadRegistrations();
+    if (name === 'agenda') { loadAgenda(); loadAccountsForPicker(); }
   }
 
   // Filter
@@ -934,6 +1047,238 @@
       if (res.status === 401) { handle401(); return; }
       if (res.ok) loadRegistrations();
     } catch {}
+  }
+
+  // ─── AGENDA ─────────────────────────────────────────────
+
+  let allAgendaItems = [];
+  let allAccounts    = [];
+
+  // Kleur mapping
+  const agendaKleurMap = {
+    primary: { bg: 'rgba(91,79,207,.12)', kleur: 'var(--primary)',   border: 'var(--primary)' },
+    green:   { bg: 'rgba(6,214,160,.12)', kleur: '#059669',          border: '#059669' },
+    orange:  { bg: 'rgba(245,130,31,.12)',kleur: 'var(--accent)',     border: 'var(--accent)' },
+    pink:    { bg: 'rgba(232,0,138,.10)', kleur: 'var(--pink)',       border: 'var(--pink)' },
+    teal:    { bg: 'rgba(14,165,233,.10)',kleur: 'var(--teal)',       border: 'var(--teal)' },
+    yellow:  { bg: 'rgba(255,209,102,.2)',kleur: '#a16207',           border: '#f59e0b' },
+  };
+  const typeLabel = { les:'📚 Les', toets:'📝 Toets', vrij:'🏖️ Vrije dag', overig:'📌 Overig' };
+
+  function agKleurStyle(kleur) {
+    const m = agendaKleurMap[kleur] || agendaKleurMap.primary;
+    return { bg: m.bg, kleur: m.kleur, border: m.border };
+  }
+
+  function formatAgendaDate(datum, tijd, eindtijd) {
+    if (!datum) return '—';
+    const d = new Date(datum + 'T12:00:00');
+    const dag = d.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'long' });
+    let tijdStr = '';
+    if (tijd) tijdStr = ' · ' + tijd;
+    if (eindtijd) tijdStr += '–' + eindtijd;
+    return dag + tijdStr;
+  }
+
+  async function loadAgenda() {
+    const list = document.getElementById('agenda-list');
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
+    try {
+      const res = await fetch('/api/agenda', {
+        headers: { 'x-teacher-password': teacherPass }
+      });
+      if (res.status === 401) { handle401(); return; }
+      allAgendaItems = await res.json();
+      renderAgendaList();
+    } catch {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> Kon agenda niet laden.</div>';
+    }
+  }
+
+  function renderAgendaList() {
+    const list = document.getElementById('agenda-list');
+    if (!allAgendaItems.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-alt"></i> Nog geen agenda-items.</div>';
+      return;
+    }
+    list.innerHTML = allAgendaItems.map(item => {
+      const s = agKleurStyle(item.kleur);
+      const zichtEl = item.zichtbaar === 'specifiek'
+        ? `<span style="background:rgba(245,130,31,.1);color:var(--accent);font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:99px;"><i class="fas fa-user-lock" style="margin-right:4px;"></i>${item.gebruikers?.length||0} leerling(en)</span>`
+        : `<span style="background:rgba(6,214,160,.1);color:#059669;font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:99px;"><i class="fas fa-globe" style="margin-right:4px;"></i>Iedereen</span>`;
+      return `
+        <div class="file-item" id="ag-${item.id}" style="border-left:4px solid ${s.border};margin-bottom:12px;">
+          <div style="width:52px;height:52px;border-radius:12px;background:${s.bg};display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;color:${s.kleur};">
+            <i class="fas ${item.type==='les'?'fa-book-open':item.type==='toets'?'fa-pen-fancy':item.type==='vrij'?'fa-umbrella-beach':'fa-thumbtack'}"></i>
+          </div>
+          <div class="file-body">
+            <h4 style="color:${s.kleur}">${esc(item.titel)}</h4>
+            <p>
+              <strong style="color:var(--text);font-size:.8rem;">${formatAgendaDate(item.datum,item.tijd,item.eindtijd)}</strong>
+              &nbsp;·&nbsp;<span style="font-size:.72rem;">${typeLabel[item.type]||item.type}</span>
+              &nbsp;·&nbsp;${zichtEl}
+            </p>
+            ${item.beschrijving ? `<p style="margin-top:4px;font-size:.8rem;color:var(--text-muted);">${esc(item.beschrijving)}</p>` : ''}
+          </div>
+          <div class="file-actions">
+            <button class="btn btn-outline btn-sm" onclick="editAgendaItem('${item.id}')"><i class="fas fa-pen"></i></button>
+            <button class="btn-delete" onclick="deleteAgendaItem('${item.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function loadAccountsForPicker() {
+    try {
+      const res = await fetch('/api/agenda/accounts', {
+        headers: { 'x-teacher-password': teacherPass }
+      });
+      if (res.ok) allAccounts = await res.json();
+    } catch {}
+    renderUserCheckboxes();
+  }
+
+  function renderUserCheckboxes(selectedEmails = []) {
+    const box = document.getElementById('user-checkboxes');
+    if (!allAccounts.length) {
+      box.innerHTML = '<span style="color:var(--text-muted);font-size:.84rem;">Geen accounts gevonden. Maak eerst accounts aan via het beheerderspaneel.</span>';
+      return;
+    }
+    box.innerHTML = allAccounts.map(a => `
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 8px;border-radius:8px;transition:background .15s;" onmouseover="this.style.background='rgba(91,79,207,.06)'" onmouseout="this.style.background=''">
+        <input type="checkbox" class="ag-user-cb" value="${esc(a.email)}" ${selectedEmails.includes(a.email)?'checked':''}
+          style="accent-color:var(--primary);width:16px;height:16px;flex-shrink:0;" />
+        <div>
+          <span style="font-weight:800;font-size:.88rem;">${esc(a.kindNaam)}</span>
+          <span style="font-size:.75rem;color:var(--text-muted);margin-left:6px;">${esc(a.email)}</span>
+        </div>
+      </label>`).join('');
+  }
+
+  function toggleUserPicker() {
+    const isSpecifiek = document.querySelector('input[name="ag-zichtbaar"]:checked')?.value === 'specifiek';
+    document.getElementById('user-picker-wrap').style.display = isSpecifiek ? 'block' : 'none';
+  }
+
+  // Luister op radio-buttons
+  document.addEventListener('change', e => {
+    if (e.target.name === 'ag-zichtbaar') toggleUserPicker();
+  });
+
+  function getSelectedUsers() {
+    return [...document.querySelectorAll('.ag-user-cb:checked')].map(cb => cb.value);
+  }
+
+  async function saveAgendaItem() {
+    const editId  = document.getElementById('agenda-edit-id').value;
+    const titel   = document.getElementById('ag-titel').value.trim();
+    const datum   = document.getElementById('ag-datum').value;
+    if (!titel || !datum) {
+      showAgendaMsg('Vul minimaal een titel en datum in.', 'error'); return;
+    }
+    const body = {
+      titel,
+      datum,
+      tijd:        document.getElementById('ag-tijd').value,
+      eindtijd:    document.getElementById('ag-eindtijd').value,
+      type:        document.getElementById('ag-type').value,
+      kleur:       document.getElementById('ag-kleur').value,
+      beschrijving:document.getElementById('ag-beschrijving').value.trim(),
+      zichtbaar:   document.querySelector('input[name="ag-zichtbaar"]:checked')?.value || 'iedereen',
+      gebruikers:  getSelectedUsers(),
+    };
+    const btn = document.getElementById('agenda-save-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opslaan...';
+    try {
+      const url    = editId ? `/api/agenda/${editId}` : '/api/agenda';
+      const method = editId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass },
+        body: JSON.stringify(body)
+      });
+      if (res.status === 401) { handle401(); return; }
+      if (res.ok) {
+        showAgendaMsg(editId ? 'Agenda-item bijgewerkt!' : 'Agenda-item toegevoegd!', 'success');
+        cancelAgendaEdit();
+        loadAgenda();
+      } else {
+        const d = await res.json();
+        showAgendaMsg(d.error || 'Opslaan mislukt.', 'error');
+      }
+    } catch {
+      showAgendaMsg('Netwerkfout. Probeer opnieuw.', 'error');
+    }
+    btn.disabled = false;
+    btn.innerHTML = document.getElementById('agenda-edit-id').value ? '<i class="fas fa-save"></i> Opslaan' : '<i class="fas fa-plus"></i> Toevoegen';
+  }
+
+  function editAgendaItem(id) {
+    const item = allAgendaItems.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('agenda-edit-id').value  = id;
+    document.getElementById('ag-titel').value        = item.titel || '';
+    document.getElementById('ag-datum').value        = item.datum || '';
+    document.getElementById('ag-tijd').value         = item.tijd  || '';
+    document.getElementById('ag-eindtijd').value     = item.eindtijd || '';
+    document.getElementById('ag-type').value         = item.type  || 'les';
+    document.getElementById('ag-kleur').value        = item.kleur || 'primary';
+    document.getElementById('ag-beschrijving').value = item.beschrijving || '';
+    const zVal = item.zichtbaar === 'specifiek' ? 'specifiek' : 'iedereen';
+    document.querySelectorAll('input[name="ag-zichtbaar"]').forEach(r => r.checked = (r.value === zVal));
+    toggleUserPicker();
+    if (zVal === 'specifiek') renderUserCheckboxes(item.gebruikers || []);
+    document.getElementById('agenda-form-title').innerHTML = '<i class="fas fa-pen"></i> Agenda-item bewerken';
+    document.getElementById('agenda-save-btn').innerHTML   = '<i class="fas fa-save"></i> Wijzigingen opslaan';
+    document.getElementById('agenda-cancel-btn').style.display = '';
+    document.getElementById('agenda-form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelAgendaEdit() {
+    document.getElementById('agenda-edit-id').value  = '';
+    document.getElementById('ag-titel').value        = '';
+    document.getElementById('ag-datum').value        = '';
+    document.getElementById('ag-tijd').value         = '';
+    document.getElementById('ag-eindtijd').value     = '';
+    document.getElementById('ag-type').value         = 'les';
+    document.getElementById('ag-kleur').value        = 'primary';
+    document.getElementById('ag-beschrijving').value = '';
+    document.getElementById('ag-iedereen').checked   = true;
+    document.querySelectorAll('input[name="ag-zichtbaar"]').forEach(r => r.checked = (r.value === 'iedereen'));
+    document.getElementById('user-picker-wrap').style.display = 'none';
+    document.getElementById('agenda-form-title').innerHTML = '<i class="fas fa-plus-circle"></i> Nieuw agenda-item toevoegen';
+    document.getElementById('agenda-save-btn').innerHTML   = '<i class="fas fa-plus"></i> Toevoegen';
+    document.getElementById('agenda-cancel-btn').style.display = 'none';
+  }
+
+  async function deleteAgendaItem(id) {
+    if (!confirm('Dit agenda-item verwijderen?')) return;
+    try {
+      const res = await fetch(`/api/agenda/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass }
+      });
+      if (res.status === 401) { handle401(); return; }
+      if (res.ok) {
+        document.getElementById('ag-' + id)?.remove();
+        allAgendaItems = allAgendaItems.filter(i => i.id !== id);
+        if (!allAgendaItems.length) renderAgendaList();
+      }
+    } catch {}
+  }
+
+  function showAgendaMsg(msg, type) {
+    const el = document.getElementById('agenda-form-msg');
+    el.textContent = (type === 'success' ? '✓ ' : '⚠ ') + msg;
+    el.style.display = 'block';
+    el.style.background = type === 'success' ? 'rgba(6,214,160,.12)' : 'rgba(192,57,43,.1)';
+    el.style.color = type === 'success' ? '#059669' : '#c0392b';
+    setTimeout(() => el.style.display = 'none', 3500);
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 </script>
 </body>
