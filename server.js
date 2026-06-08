@@ -302,8 +302,22 @@ app.post('/api/verify-parent', (req, res) => {
   if (!email || !password) return res.status(400).json({ ok: false });
   const data = readJSON(ACCOUNTS_FILE);
   const account = (data.accounts || []).find(a => a.email === email && a.password === password);
-  if (account) res.json({ ok: true, kindNaam: account.kindNaam, name: account.name });
+  if (account) res.json({ ok: true, kindNaam: account.kindNaam, name: account.name, mustChangePassword: !!account.mustChangePassword });
   else res.status(401).json({ ok: false });
+});
+
+// POST ouder wachtwoord wijzigen (eerste inlog of zelf)
+app.post('/api/parent/change-password', (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+  if (!email || !currentPassword || !newPassword) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
+  if (newPassword.length < 6) return res.status(400).json({ error: 'Nieuw wachtwoord moet minimaal 6 tekens zijn' });
+  const data = readJSON(ACCOUNTS_FILE);
+  const account = (data.accounts || []).find(a => a.email === email && a.password === currentPassword);
+  if (!account) return res.status(401).json({ error: 'Huidig wachtwoord klopt niet' });
+  account.password = newPassword;
+  account.mustChangePassword = false;
+  writeJSON(ACCOUNTS_FILE, data);
+  res.json({ ok: true });
 });
 
 // ─── ADMIN API ────────────────────────────────────────────
@@ -369,7 +383,7 @@ app.post('/api/admin/accounts', (req, res) => {
   const data = readJSON(ACCOUNTS_FILE);
   if (!data.accounts) data.accounts = [];
   if (data.accounts.find(a => a.email === email)) return res.status(409).json({ error: 'E-mailadres al in gebruik' });
-  const account = { id: generateId(), email, password, kindNaam, name: name || '', createdAt: new Date().toISOString() };
+  const account = { id: generateId(), email, password, kindNaam, name: name || '', mustChangePassword: true, createdAt: new Date().toISOString() };
   data.accounts.push(account);
   writeJSON(ACCOUNTS_FILE, data);
   const { password: _, ...safe } = account;

@@ -85,13 +85,12 @@
         <div class="dash-av"><i class="fas fa-user"></i></div>
         <div>
           <h4 class="dash-user-name">Ouder</h4>
-          <p>Kind: <strong>Emma</strong></p>
+          <p>Kind: <strong class="dash-kind-naam">—</strong></p>
         </div>
       </div>
       <nav class="dash-nav">
         <a href="#materiaal" class="active"><i class="fas fa-book-open"></i> Lesmateriaal</a>
         <a href="#vragen"><i class="fas fa-comments"></i> Vragen stellen</a>
-        <a href="#voortgang"><i class="fas fa-chart-line"></i> Voortgang</a>
         <a href="#agenda"><i class="fas fa-calendar-alt"></i> Agenda</a>
         <a href="#notities"><i class="fas fa-sticky-note"></i> Notities</a>
         <a href="webshop.html"><i class="fas fa-shopping-bag"></i> Webshop</a>
@@ -107,7 +106,7 @@
       <div class="dash-header" data-animate>
         <div>
           <h2>Goedendag, <span id="dashboard-name-2">ouder</span>!</h2>
-          <p>Hier vind je alles over de voortgang en lessen van Emma.</p>
+          <p>Hier vind je het lesmateriaal en de lessen van <span class="dash-kind-naam">je kind</span>.</p>
         </div>
         <div class="dash-header-icon"><i class="fas fa-graduation-cap"></i></div>
       </div>
@@ -159,29 +158,6 @@
         </div>
       </section>
 
-      <!-- VOORTGANG -->
-      <section id="voortgang" style="margin-bottom:40px;" data-animate>
-        <div class="dash-section-title"><i class="fas fa-chart-line"></i> Voortgang Emma</div>
-        <div class="prog-card">
-          <div class="prog-item">
-            <div class="prog-label">Rekenen <span>72%</span></div>
-            <div class="prog-bar"><div class="prog-fill" data-width="72%" style="width:0"></div></div>
-          </div>
-          <div class="prog-item">
-            <div class="prog-label">Taal &amp; Lezen <span style="color:var(--green)">85%</span></div>
-            <div class="prog-bar"><div class="prog-fill" data-width="85%" style="width:0;background:linear-gradient(90deg,var(--green),#04c994)"></div></div>
-          </div>
-          <div class="prog-item">
-            <div class="prog-label">Engels <span style="color:#c88a00">60%</span></div>
-            <div class="prog-bar"><div class="prog-fill" data-width="60%" style="width:0;background:linear-gradient(90deg,var(--yellow),#ffb347)"></div></div>
-          </div>
-          <div class="prog-item">
-            <div class="prog-label">Leervaardigheden <span>78%</span></div>
-            <div class="prog-bar"><div class="prog-fill" data-width="78%" style="width:0"></div></div>
-          </div>
-        </div>
-      </section>
-
       <!-- AGENDA -->
       <section id="agenda" style="margin-bottom:40px;" data-animate>
         <div class="dash-section-title"><i class="fas fa-calendar-alt"></i> Komende lessen</div>
@@ -226,14 +202,22 @@
 
 <script src="main.js"></script>
 <script>
-  // User info
-  const userEmail = sessionStorage.getItem('portaal_user') || 'ouder@email.nl';
-  const userName = userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
-  document.querySelectorAll('#dashboard-name, #dashboard-name-2, .dash-user-name').forEach(el => el.textContent = userName);
+  // Auth guard — main.js doet de redirect als niet ingelogd
+  const userEmail  = localStorage.getItem('ouder_email') || '';
+  const kindNaam   = localStorage.getItem('ouder_kindNaam') || '';
+  const userName   = localStorage.getItem('ouder_name') || (userEmail ? userEmail.split('@')[0] : 'ouder');
 
-  // Sidebar logout
+  // Namen invullen
+  document.querySelectorAll('#dashboard-name, #dashboard-name-2, .dash-user-name').forEach(el => el.textContent = userName);
+  document.querySelectorAll('.dash-kind-naam').forEach(el => el.textContent = kindNaam || 'je kind');
+
+  // Uitloggen (sidebar)
   document.getElementById('logout-btn-side')?.addEventListener('click', e => {
-    e.preventDefault(); sessionStorage.removeItem('portaal_user'); window.location.href = 'portaal.html';
+    e.preventDefault();
+    localStorage.removeItem('ouder_email');
+    localStorage.removeItem('ouder_kindNaam');
+    localStorage.removeItem('ouder_name');
+    window.location.href = 'portaal.html';
   });
 
   // Format date
@@ -329,7 +313,7 @@
           lessonTitle,
           question,
           askedBy: userEmail,
-          childName: 'Emma'
+          childName: kindNaam || 'Onbekend'
         })
       });
       if (res.ok) {
@@ -394,7 +378,7 @@
 
   // Sidebar scroll highlight
   document.addEventListener('scroll', () => {
-    const sections = ['materiaal','vragen','voortgang','agenda','notities'];
+    const sections = ['materiaal','vragen','agenda','notities'];
     let current = '';
     sections.forEach(id => {
       const el = document.getElementById(id);

@@ -64,27 +64,59 @@
 
     <!-- OUDER PANEL -->
     <div class="portaal-panel active" id="panel-ouder">
-      <form class="portaal-form" id="login-form" novalidate>
-        <div class="form-group">
-          <label for="login-email">E-mailadres</label>
-          <input type="email" id="login-email" placeholder="jouw@email.nl" required autocomplete="email" />
+
+      <!-- Stap 1: Inloggen -->
+      <div id="stap-login">
+        <form class="portaal-form" id="login-form" novalidate>
+          <div class="form-group">
+            <label for="login-email">E-mailadres</label>
+            <input type="email" id="login-email" placeholder="jouw@email.nl" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="login-pass">Wachtwoord</label>
+            <input type="password" id="login-pass" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <div id="ouder-error" style="display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:14px;text-align:center;">
+            <i class="fas fa-exclamation-circle"></i> Onjuist e-mailadres of wachtwoord
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+            <i class="fas fa-sign-in-alt"></i> Inloggen
+          </button>
+        </form>
+        <div class="portaal-footer">
+          Nog geen account? <a href="inschrijven.html" style="color:var(--primary);font-weight:700;">Schrijf je in</a><br /><br />
+          <i class="fas fa-lock" style="color:var(--primary);margin-right:6px;font-size:.8rem;"></i>
+          Beveiligd met SSL — jouw gegevens zijn veilig.
         </div>
-        <div class="form-group">
-          <label for="login-pass">Wachtwoord</label>
-          <input type="password" id="login-pass" placeholder="••••••••" required autocomplete="current-password" />
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:22px;">
-          <a href="#" style="font-size:.82rem;color:var(--primary);font-weight:700;">Wachtwoord vergeten?</a>
-        </div>
-        <button type="submit" class="btn btn-primary btn-full">
-          <i class="fas fa-sign-in-alt"></i> Inloggen
-        </button>
-      </form>
-      <div class="portaal-footer">
-        Nog geen account? <a href="inschrijven.html" style="color:var(--primary);font-weight:700;">Schrijf je in</a><br /><br />
-        <i class="fas fa-lock" style="color:var(--primary);margin-right:6px;font-size:.8rem;"></i>
-        Beveiligd met SSL — jouw gegevens zijn veilig.
       </div>
+
+      <!-- Stap 2: Wachtwoord wijzigen (eerste keer inloggen) -->
+      <div id="stap-wachtwoord" style="display:none;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ffaa5c);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;margin:0 auto 14px;">
+            <i class="fas fa-key"></i>
+          </div>
+          <h3 style="margin-bottom:6px;">Stel je wachtwoord in</h3>
+          <p style="font-size:.85rem;color:var(--text-muted);">Dit is je eerste inlog. Kies een nieuw persoonlijk wachtwoord.</p>
+        </div>
+        <form class="portaal-form" id="change-pass-form" novalidate>
+          <div class="form-group">
+            <label for="nieuw-pass">Nieuw wachtwoord</label>
+            <input type="password" id="nieuw-pass" placeholder="Min. 6 tekens" required minlength="6" autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label for="nieuw-pass-confirm">Bevestig wachtwoord</label>
+            <input type="password" id="nieuw-pass-confirm" placeholder="Herhaal wachtwoord" required autocomplete="new-password" />
+          </div>
+          <div id="pass-change-error" style="display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:14px;text-align:center;">
+            <i class="fas fa-exclamation-circle"></i> <span id="pass-change-error-msg">Wachtwoorden komen niet overeen.</span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="change-pass-btn">
+            <i class="fas fa-lock"></i> Wachtwoord instellen &amp; inloggen
+          </button>
+        </form>
+      </div>
+
     </div>
 
     <!-- DOCENT PANEL -->
@@ -117,6 +149,14 @@
 
 <script src="main.js"></script>
 <script>
+  // Al ingelogd? Stuur direct door
+  if (localStorage.getItem('ouder_email')) {
+    window.location.replace('portaal-dashboard.html');
+  }
+
+  let pendingEmail = '';
+  let pendingPass  = '';
+
   function switchTab(tab, btn) {
     document.querySelectorAll('.portaal-tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.portaal-panel').forEach(p => p.classList.remove('active'));
@@ -124,38 +164,44 @@
     document.getElementById('panel-' + tab).classList.add('active');
   }
 
-  // Ouder/leerling login
+  // ── Stap 1: Inloggen ──────────────────────────────────
   document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim();
     const pass  = document.getElementById('login-pass').value;
     if (!email || !pass) return;
 
-    const btn = e.target.querySelector('button[type=submit]');
+    const btn    = document.getElementById('login-btn');
+    const errEl  = document.getElementById('ouder-error');
+    errEl.style.display = 'none';
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
 
-    let errEl = document.getElementById('ouder-error');
-    if (!errEl) {
-      errEl = document.createElement('div');
-      errEl.id = 'ouder-error';
-      errEl.style.cssText = 'display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:14px;text-align:center;';
-      errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Onjuist e-mailadres of wachtwoord';
-      e.target.insertBefore(errEl, e.target.querySelector('button'));
-    }
-    errEl.style.display = 'none';
-
     try {
-      const res = await fetch('/api/verify-parent', {
+      const res  = await fetch('/api/verify-parent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass })
       });
+      const data = await res.json();
+
       if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('ouder_email', email);
-        localStorage.setItem('ouder_kindNaam', data.kindNaam || '');
-        window.location.href = 'portaal-dashboard.html';
+        if (data.mustChangePassword) {
+          // Bewaar tijdelijk voor wachtwoord-wijzig stap
+          pendingEmail = email;
+          pendingPass  = pass;
+          localStorage.setItem('ouder_kindNaam', data.kindNaam || '');
+          localStorage.setItem('ouder_name',     data.name     || '');
+          // Toon stap 2
+          document.getElementById('stap-login').style.display     = 'none';
+          document.getElementById('stap-wachtwoord').style.display = 'block';
+        } else {
+          // Normaal inloggen
+          localStorage.setItem('ouder_email',   email);
+          localStorage.setItem('ouder_kindNaam', data.kindNaam || '');
+          localStorage.setItem('ouder_name',     data.name     || '');
+          window.location.href = 'portaal-dashboard.html';
+        }
       } else {
         errEl.style.display = 'block';
         btn.disabled = false;
@@ -168,22 +214,65 @@
     }
   });
 
-  // Docent login
-  document.getElementById('docent-login-form').addEventListener('submit', async e => {
+  // ── Stap 2: Wachtwoord instellen ──────────────────────
+  document.getElementById('change-pass-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const pass = document.getElementById('docent-pass').value.trim();
-    if (!pass) return;
-    const errEl = document.getElementById('docent-error');
+    const nieuw    = document.getElementById('nieuw-pass').value;
+    const bevestig = document.getElementById('nieuw-pass-confirm').value;
+    const errEl    = document.getElementById('pass-change-error');
+    const errMsg   = document.getElementById('pass-change-error-msg');
+    const btn      = document.getElementById('change-pass-btn');
     errEl.style.display = 'none';
 
-    const btn = e.target.querySelector('button[type=submit]');
+    if (nieuw !== bevestig) {
+      errMsg.textContent = 'Wachtwoorden komen niet overeen.';
+      errEl.style.display = 'block'; return;
+    }
+    if (nieuw.length < 6) {
+      errMsg.textContent = 'Wachtwoord moet minimaal 6 tekens zijn.';
+      errEl.style.display = 'block'; return;
+    }
+
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opslaan...';
 
     try {
-      const res = await fetch('/api/verify-password', {
+      const res = await fetch('/api/parent/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail, currentPassword: pendingPass, newPassword: nieuw })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('ouder_email', pendingEmail);
+        window.location.href = 'portaal-dashboard.html';
+      } else {
+        errMsg.textContent = data.error || 'Opslaan mislukt.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-lock"></i> Wachtwoord instellen &amp; inloggen';
+      }
+    } catch {
+      errMsg.textContent = 'Netwerkfout. Probeer opnieuw.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-lock"></i> Wachtwoord instellen &amp; inloggen';
+    }
+  });
+
+  // ── Docent login ──────────────────────────────────────
+  document.getElementById('docent-login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pass  = document.getElementById('docent-pass').value.trim();
+    const errEl = document.getElementById('docent-error');
+    const btn   = e.target.querySelector('button[type=submit]');
+    if (!pass) return;
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+    try {
+      const res = await fetch('/api/verify-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacherPassword: pass })
       });
       if (res.ok) {

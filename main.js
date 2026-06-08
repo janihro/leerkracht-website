@@ -208,50 +208,31 @@ if (contactForm) {
 }
 
 // ===========================
-// PORTAAL LOGIN
-// ===========================
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-  const loginBtn = loginForm.querySelector('button[type="submit"]');
-  loginForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const email = loginForm.querySelector('input[type="email"]').value;
-    const pass = loginForm.querySelector('input[type="password"]').value;
-    if (!email || !pass) return;
-
-    if (loginBtn) {
-      loginBtn.textContent = 'Inloggen...';
-      loginBtn.disabled = true;
-    }
-    setTimeout(() => {
-      sessionStorage.setItem('portaal_user', email);
-      window.location.href = 'portaal-dashboard.html';
-    }, 600);
-  });
-}
-
-// ===========================
 // PORTAAL UITLOGGEN
 // ===========================
-const logoutBtn = document.getElementById('logout-btn');
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', e => {
-    e.preventDefault();
-    sessionStorage.removeItem('portaal_user');
-    window.location.href = 'portaal.html';
-  });
+function portaalLogout() {
+  localStorage.removeItem('ouder_email');
+  localStorage.removeItem('ouder_kindNaam');
+  localStorage.removeItem('ouder_name');
+  localStorage.removeItem('ouder_pass');
+  window.location.href = 'portaal.html';
 }
+document.querySelectorAll('#logout-btn, #logout-btn-side').forEach(btn => {
+  btn.addEventListener('click', e => { e.preventDefault(); portaalLogout(); });
+});
 
 // ===========================
 // DASHBOARD GUARD & NAME
 // ===========================
 if (document.body.classList.contains('dashboard-page')) {
-  const user = sessionStorage.getItem('portaal_user');
-  if (!user) {
+  const email = localStorage.getItem('ouder_email');
+  if (!email) {
     window.location.href = 'portaal.html';
   } else {
-    const name = user.split('@')[0].charAt(0).toUpperCase() + user.split('@')[0].slice(1);
+    const kindNaam = localStorage.getItem('ouder_kindNaam') || '';
+    const name = localStorage.getItem('ouder_name') || email.split('@')[0];
     document.querySelectorAll('.dash-user-name, #dashboard-name').forEach(el => el.textContent = name);
+    document.querySelectorAll('.dash-kind-naam').forEach(el => el.textContent = kindNaam);
   }
 }
 
