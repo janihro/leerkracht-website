@@ -33,6 +33,25 @@
     #navbar .nav-links a.active { color: var(--nonf-goud) !important; font-weight: 800; }
     #navbar .nav-cta { background: var(--nonf-oranje) !important; color: #fff !important; border-color: var(--nonf-oranje) !important; }
     #navbar .hamburger span { background: #fff !important; }
+    /* ── MOBIEL: dropdown menu donkerblauw ── */
+    @media (max-width: 900px) {
+      #navbar .nav-links {
+        background: #1A4E8A !important;
+        border-top-color: rgba(255,255,255,.15) !important;
+      }
+      #navbar .nav-links li { border-bottom-color: rgba(255,255,255,.1) !important; }
+      #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+      #navbar .nav-links a:hover,
+      #navbar .nav-links a.active {
+        background: rgba(255,255,255,.1) !important;
+        color: #F4A928 !important;
+      }
+      #navbar .nav-cta {
+        background: #E8763A !important;
+        color: #fff !important;
+        margin-top: 6px;
+      }
+    }
 
     /* Hero */
     .nonf-hero {
@@ -799,4 +818,5 @@
 <script src="main.js"></script>
 </body>
 </html>
+
 

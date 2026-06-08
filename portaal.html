@@ -30,6 +30,25 @@
     #navbar .nav-links a.active { color: #F4A928 !important; font-weight: 800; }
     #navbar .nav-cta { background: #E8763A !important; color: #fff !important; border-color: #E8763A !important; }
     #navbar .hamburger span { background: #fff !important; }
+    /* ── MOBIEL: dropdown menu donkerblauw ── */
+    @media (max-width: 900px) {
+      #navbar .nav-links {
+        background: #1A4E8A !important;
+        border-top-color: rgba(255,255,255,.15) !important;
+      }
+      #navbar .nav-links li { border-bottom-color: rgba(255,255,255,.1) !important; }
+      #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+      #navbar .nav-links a:hover,
+      #navbar .nav-links a.active {
+        background: rgba(255,255,255,.1) !important;
+        color: #F4A928 !important;
+      }
+      #navbar .nav-cta {
+        background: #E8763A !important;
+        color: #fff !important;
+        margin-top: 6px;
+      }
+    }
     footer { background: #0d2a52 !important; }
     .footer-logo-wrap, footer h5 { color: #fff !important; }
     footer p, footer a { color: rgba(255,255,255,.65) !important; }
@@ -318,6 +337,7 @@
 </script>
 </body>
 </html>
+
 
 
 
