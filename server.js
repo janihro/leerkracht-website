@@ -24,6 +24,9 @@ const ADMIN_FILE         = path.join(DATA_DIR, 'admin.json');
 const GALLERY_FILE       = path.join(DATA_DIR, 'gallery.json');
 const PRODUCTS_FILE      = path.join(DATA_DIR, 'products.json');
 const AGENDA_FILE        = path.join(DATA_DIR, 'agenda.json');
+const TEACHERS_FILE      = path.join(DATA_DIR, 'teachers.json');
+
+const ALL_PERMISSIONS = ['vragen', 'agenda', 'materiaal', 'inschrijvingen', 'galerij'];
 
 // ─── INITIALISEER DATA FILES ──────────────────────────────
 if (!fs.existsSync(QUESTIONS_FILE))     fs.writeFileSync(QUESTIONS_FILE,     JSON.stringify({ questions: [] }, null, 2));
@@ -34,6 +37,7 @@ if (!fs.existsSync(ACCOUNTS_FILE))      fs.writeFileSync(ACCOUNTS_FILE,      JSO
 if (!fs.existsSync(GALLERY_FILE))       fs.writeFileSync(GALLERY_FILE,       JSON.stringify({ items: [] }, null, 2));
 if (!fs.existsSync(PRODUCTS_FILE))      fs.writeFileSync(PRODUCTS_FILE,      JSON.stringify({ products: [] }, null, 2));
 if (!fs.existsSync(AGENDA_FILE))        fs.writeFileSync(AGENDA_FILE,        JSON.stringify({ items: [] }, null, 2));
+if (!fs.existsSync(TEACHERS_FILE))     fs.writeFileSync(TEACHERS_FILE,     JSON.stringify({ teachers: [] }, null, 2));
 if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
   siteName: 'LeerKracht', slogan: 'Nos Orguyo, Nos Futuro',
   email: 'info@leerkracht.nl', telefoon: '06 — XX XX XX XX', whatsapp: '',
@@ -120,6 +124,30 @@ function getAdminPass() {
 
 // Auth helpers
 function teacherAuth(password) { return safeCompare(password, TEACHER_PASS); }
+
+// Multi-teacher auth: geeft teacher-object terug of null
+function getTeacher(req) {
+  const username = sanitize(req.headers['x-teacher-username'] || req.body?.teacherUsername, 200);
+  const password = sanitize(req.headers['x-teacher-password'] || req.body?.teacherPassword, 200);
+  if (!password) return null;
+  const data = readJSON(TEACHERS_FILE);
+  const teachers = data.teachers || [];
+  if (teachers.length > 0) {
+    if (!username) return null;
+    const t = teachers.find(t2 => t2.username === username && t2.active !== false);
+    if (t && verifyPassword(password, t.password)) return t;
+    return null;
+  }
+  // Legacy fallback (geen docenten aangemaakt)
+  if (safeCompare(password, TEACHER_PASS)) {
+    return { id: 'legacy', name: 'Docent', username: 'docent', permissions: ALL_PERMISSIONS };
+  }
+  return null;
+}
+function hasPermission(teacher, perm) {
+  if (!teacher) return false;
+  return Array.isArray(teacher.permissions) && teacher.permissions.includes(perm);
+}
 function adminAuth(req) {
   const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword, 200);
   if (!provided) return false;
@@ -223,9 +251,12 @@ app.post('/api/verify-password', (req, res) => {
   if (!checkRateLimit(`teacher:${ip}`, 10, 60000)) {
     return res.status(429).json({ ok: false, error: 'Te veel pogingen. Wacht 1 minuut.' });
   }
-  const { teacherPassword } = req.body;
-  if (teacherAuth(sanitize(teacherPassword, 200))) res.json({ ok: true });
-  else res.status(401).json({ ok: false });
+  const teacher = getTeacher(req);
+  if (teacher) {
+    res.json({ ok: true, id: teacher.id, name: teacher.name, username: teacher.username, permissions: teacher.permissions });
+  } else {
+    res.status(401).json({ ok: false });
+  }
 });
 
 // ─── Q&A ──────────────────────────────────────────────────
@@ -256,8 +287,9 @@ app.post('/api/questions', (req, res) => {
 });
 
 app.post('/api/questions/:id/answer', (req, res) => {
-  const { answer, teacherPassword } = req.body;
-  if (!teacherAuth(sanitize(teacherPassword, 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!teacher || !hasPermission(teacher, 'vragen')) return res.status(401).json({ error: 'Geen toegang' });
+  const { answer } = req.body;
   if (!sanitize(answer, 5000)) return res.status(400).json({ error: 'Antwoord mag niet leeg zijn' });
   const data = readJSON(QUESTIONS_FILE);
   const q = (data.questions||[]).find(q => q.id === req.params.id);
@@ -269,7 +301,8 @@ app.post('/api/questions/:id/answer', (req, res) => {
 });
 
 app.delete('/api/questions/:id', (req, res) => {
-  if (!teacherAuth(sanitize(req.body.teacherPassword, 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!teacher || !hasPermission(teacher, 'vragen')) return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(QUESTIONS_FILE);
   data.questions = (data.questions||[]).filter(q => q.id !== req.params.id);
   writeJSON(QUESTIONS_FILE, data);
@@ -286,7 +319,8 @@ app.get('/api/files', (req, res) => {
 });
 
 app.post('/api/files', (req, res) => {
-  if (!teacherAuth(sanitize(req.headers['x-teacher-password'], 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!teacher || !hasPermission(teacher, 'materiaal')) return res.status(401).json({ error: 'Geen toegang' });
   upload.single('file')(req, res, err => {
     if (err) return res.status(400).json({ error: 'Upload mislukt' });
     if (!req.file) return res.status(400).json({ error: 'Geen bestand ontvangen' });
@@ -303,7 +337,8 @@ app.post('/api/files', (req, res) => {
 });
 
 app.delete('/api/files/:id', (req, res) => {
-  if (!teacherAuth(sanitize(req.body.teacherPassword, 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!teacher || !hasPermission(teacher, 'materiaal')) return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(FILES_META);
   const file = (data.files||[]).find(f => f.id === req.params.id);
   if (!file) return res.status(404).json({ error: 'Niet gevonden' });
@@ -346,7 +381,8 @@ app.delete('/api/reviews/:id', (req, res) => {
 
 // ─── REGISTRATIONS ────────────────────────────────────────
 app.get('/api/registrations', (req, res) => {
-  if (!teacherAuth(sanitize(req.query.teacherPassword, 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'inschrijvingen'))) return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(REGISTRATIONS_FILE);
   res.json((data.registrations||[]).sort((a,b) => new Date(b.submittedAt)-new Date(a.submittedAt)));
 });
@@ -374,7 +410,8 @@ app.post('/api/registrations', (req, res) => {
 });
 
 app.patch('/api/registrations/:id', (req, res) => {
-  if (!teacherAuth(sanitize(req.body.teacherPassword, 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'inschrijvingen'))) return res.status(401).json({ error: 'Geen toegang' });
   const allowed = ['nieuw','contact opgenomen','ingeschreven','afgewezen'];
   const status  = sanitize(req.body.status, 50);
   if (!allowed.includes(status)) return res.status(400).json({ error: 'Ongeldige status' });
@@ -387,7 +424,8 @@ app.patch('/api/registrations/:id', (req, res) => {
 });
 
 app.delete('/api/registrations/:id', (req, res) => {
-  if (!teacherAuth(sanitize(req.body.teacherPassword, 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'inschrijvingen'))) return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(REGISTRATIONS_FILE);
   data.registrations = (data.registrations||[]).filter(r => r.id !== req.params.id);
   writeJSON(REGISTRATIONS_FILE, data);
@@ -554,7 +592,9 @@ app.get('/api/gallery', (req, res) => {
   res.json((data.items||[]).sort((a,b) => new Date(b.uploadedAt)-new Date(a.uploadedAt)));
 });
 app.post('/api/gallery', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const teacher = getTeacher(req);
+  if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'galerij')))
+    return res.status(401).json({ error: 'Geen toegang' });
   galleryUpload.single('image')(req, res, err => {
     if (err) return res.status(400).json({ error: 'Upload mislukt' });
     if (!req.file) return res.status(400).json({ error: 'Geen afbeelding ontvangen' });
@@ -569,7 +609,9 @@ app.post('/api/gallery', (req, res) => {
   });
 });
 app.patch('/api/gallery/:id', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const teacher = getTeacher(req);
+  if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'galerij')))
+    return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(GALLERY_FILE);
   const item = (data.items||[]).find(i => i.id === req.params.id);
   if (!item) return res.status(404).json({ error: 'Niet gevonden' });
@@ -579,7 +621,9 @@ app.patch('/api/gallery/:id', (req, res) => {
   res.json(item);
 });
 app.delete('/api/gallery/:id', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const teacher = getTeacher(req);
+  if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'galerij')))
+    return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(GALLERY_FILE);
   const item = (data.items||[]).find(i => i.id === req.params.id);
   if (!item) return res.status(404).json({ error: 'Niet gevonden' });
@@ -645,8 +689,8 @@ app.delete('/api/products/:id', (req, res) => {
 
 // ─── AGENDA ACCOUNTS (docent mag lijst zien voor picker) ──
 app.get('/api/agenda/accounts', (req, res) => {
-  const pass = sanitize(req.headers['x-teacher-password'] || req.query.teacherPassword, 200);
-  if (!teacherAuth(pass) && !adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if (!teacher && !adminAuth(req)) return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(ACCOUNTS_FILE);
   const safe = (data.accounts || []).map(({ password: _, mustChangePassword: __, ...a }) => a);
   res.json(safe);
@@ -662,7 +706,7 @@ app.get('/api/agenda', (req, res) => {
     return da - db;
   });
   const email    = sanitize(req.query.email, 200);
-  const isTeacher = teacherAuth(sanitize(req.query.teacherPassword || req.headers['x-teacher-password'], 200));
+  const isTeacher = !!getTeacher(req);
   const isAdmin   = adminAuth(req);
   // Docent/admin: alles zien
   if (isTeacher || isAdmin) return res.json(items);
@@ -681,8 +725,9 @@ app.get('/api/agenda', (req, res) => {
 
 // POST — nieuw agenda-item aanmaken (docent)
 app.post('/api/agenda', (req, res) => {
-  if (!teacherAuth(sanitize(req.body.teacherPassword || req.headers['x-teacher-password'], 200)) && !adminAuth(req))
-    return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if ((!teacher || !hasPermission(teacher, 'agenda')) && !adminAuth(req))
+    return res.status(401).json({ error: 'Geen toegang' });
   const titel       = sanitize(req.body.titel, 200);
   const beschrijving= sanitize(req.body.beschrijving, 1000);
   const datum       = sanitize(req.body.datum, 20);
@@ -703,8 +748,9 @@ app.post('/api/agenda', (req, res) => {
 
 // PUT — agenda-item bewerken (docent)
 app.put('/api/agenda/:id', (req, res) => {
-  if (!teacherAuth(sanitize(req.body.teacherPassword || req.headers['x-teacher-password'], 200)) && !adminAuth(req))
-    return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if ((!teacher || !hasPermission(teacher, 'agenda')) && !adminAuth(req))
+    return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(AGENDA_FILE);
   const item = (data.items || []).find(i => i.id === req.params.id);
   if (!item) return res.status(404).json({ error: 'Niet gevonden' });
@@ -723,12 +769,69 @@ app.put('/api/agenda/:id', (req, res) => {
 
 // DELETE — agenda-item verwijderen (docent)
 app.delete('/api/agenda/:id', (req, res) => {
-  const pass = req.body?.teacherPassword || req.headers['x-teacher-password'];
-  if (!teacherAuth(sanitize(pass, 200)) && !adminAuth(req))
-    return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const teacher = getTeacher(req);
+  if ((!teacher || !hasPermission(teacher, 'agenda')) && !adminAuth(req))
+    return res.status(401).json({ error: 'Geen toegang' });
   const data = readJSON(AGENDA_FILE);
   data.items = (data.items || []).filter(i => i.id !== req.params.id);
   writeJSON(AGENDA_FILE, data);
+  res.json({ success: true });
+});
+
+// ─── DOCENTEN BEHEER (admin) ──────────────────────────────
+app.get('/api/admin/teachers', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const data = readJSON(TEACHERS_FILE);
+  const safe = (data.teachers || []).map(({ password: _, ...t }) => t);
+  res.json(safe);
+});
+
+app.post('/api/admin/teachers', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const name        = sanitize(req.body.name, 100);
+  const username    = sanitize(req.body.username, 100);
+  const password    = sanitize(req.body.password, 200);
+  const permissions = Array.isArray(req.body.permissions)
+    ? req.body.permissions.filter(p => ALL_PERMISSIONS.includes(p))
+    : ['vragen','agenda','materiaal','inschrijvingen'];
+  if (!name || !username || !password) return res.status(400).json({ error: 'Naam, gebruikersnaam en wachtwoord zijn verplicht' });
+  const data = readJSON(TEACHERS_FILE);
+  if (!data.teachers) data.teachers = [];
+  if (data.teachers.find(t => t.username === username))
+    return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
+  const teacher = { id: generateId(), name, username, password: hashPassword(password), permissions, active: true, createdAt: new Date().toISOString() };
+  data.teachers.push(teacher);
+  writeJSON(TEACHERS_FILE, data);
+  const { password: _, ...safe } = teacher;
+  res.status(201).json(safe);
+});
+
+app.put('/api/admin/teachers/:id', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const data    = readJSON(TEACHERS_FILE);
+  const teacher = (data.teachers || []).find(t => t.id === req.params.id);
+  if (!teacher) return res.status(404).json({ error: 'Niet gevonden' });
+  if (req.body.name     !== undefined) teacher.name     = sanitize(req.body.name, 100);
+  if (req.body.username !== undefined) {
+    const u = sanitize(req.body.username, 100);
+    if (data.teachers.find(t => t.username === u && t.id !== req.params.id))
+      return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
+    teacher.username = u;
+  }
+  if (req.body.password) teacher.password = hashPassword(sanitize(req.body.password, 200));
+  if (Array.isArray(req.body.permissions))
+    teacher.permissions = req.body.permissions.filter(p => ALL_PERMISSIONS.includes(p));
+  if (req.body.active !== undefined) teacher.active = !!req.body.active;
+  writeJSON(TEACHERS_FILE, data);
+  const { password: _, ...safe } = teacher;
+  res.json(safe);
+});
+
+app.delete('/api/admin/teachers/:id', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const data = readJSON(TEACHERS_FILE);
+  data.teachers = (data.teachers || []).filter(t => t.id !== req.params.id);
+  writeJSON(TEACHERS_FILE, data);
   res.json({ success: true });
 });
 

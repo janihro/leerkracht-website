@@ -243,6 +243,10 @@
     <p>Log in met je docentenwachtwoord om vragen van ouders te bekijken en te beantwoorden.</p>
 
     <form id="docent-login-form" style="text-align:left;">
+      <div class="form-group" id="login-username-wrap">
+        <label for="docent-user">Gebruikersnaam</label>
+        <input type="text" id="docent-user" placeholder="Jouw gebruikersnaam" autocomplete="username" />
+      </div>
       <div class="form-group">
         <label for="docent-pass">Wachtwoord</label>
         <input type="password" id="docent-pass" placeholder="Voer het docentenwachtwoord in" autocomplete="current-password" />
@@ -254,7 +258,7 @@
         <i class="fas fa-sign-in-alt"></i> Inloggen als docent
       </button>
     </form>
-    <p style="margin-top:20px;font-size:.78rem;color:var(--text-muted);">
+    <p style="margin-top:20px;font-size:.78rem;color:var(--text-muted);" id="login-hint-legacy">
       <i class="fas fa-lock" style="color:var(--primary);margin-right:4px;"></i>
       Standaard wachtwoord: <code style="background:#f0eeff;padding:1px 6px;border-radius:4px;">leerkracht2026</code>
     </p>
@@ -267,17 +271,20 @@
 
     <!-- Section tabs -->
     <div class="section-tabs">
-      <button class="section-tab active" id="tab-vragen" onclick="showSection('vragen',this)">
+      <button class="section-tab active" id="tab-vragen" data-perm="vragen" onclick="showSection('vragen',this)">
         <i class="fas fa-comments"></i> Vragen
       </button>
-      <button class="section-tab" id="tab-agenda" onclick="showSection('agenda',this)">
+      <button class="section-tab" id="tab-agenda" data-perm="agenda" onclick="showSection('agenda',this)">
         <i class="fas fa-calendar-alt"></i> Agenda
       </button>
-      <button class="section-tab" id="tab-materiaal" onclick="showSection('materiaal',this)">
+      <button class="section-tab" id="tab-materiaal" data-perm="materiaal" onclick="showSection('materiaal',this)">
         <i class="fas fa-upload"></i> Materiaal
       </button>
-      <button class="section-tab" id="tab-inschrijvingen" onclick="showSection('inschrijvingen',this)">
+      <button class="section-tab" id="tab-inschrijvingen" data-perm="inschrijvingen" onclick="showSection('inschrijvingen',this)">
         <i class="fas fa-user-plus"></i> Inschrijvingen
+      </button>
+      <button class="section-tab" id="tab-galerij" data-perm="galerij" onclick="showSection('galerij',this)" style="display:none;">
+        <i class="fas fa-images"></i> Galerij
       </button>
     </div>
 
@@ -531,12 +538,61 @@
 
     </div><!-- end section-inschrijvingen -->
 
+    <!-- ── GALERIJ SECTIE ── -->
+    <div class="section-panel" id="section-galerij">
+      <div class="docent-panel-header">
+        <div>
+          <h2><i class="fas fa-images" style="color:var(--primary);margin-right:10px;"></i>Galerij beheren</h2>
+          <p>Upload en verwijder afbeeldingen in de publieke galerij.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadGalleryDocent()"><i class="fas fa-sync-alt"></i> Vernieuwen</button>
+      </div>
+
+      <div class="upload-card">
+        <h3><i class="fas fa-cloud-upload-alt"></i> Afbeelding uploaden</h3>
+        <div class="upload-drop" id="gal-drop-zone" onclick="document.getElementById('gal-file-input').click()">
+          <input type="file" id="gal-file-input" accept=".jpg,.jpeg,.png,.gif,.webp" />
+          <i class="fas fa-image"></i>
+          <p><strong>Klik om een afbeelding te kiezen</strong> of sleep het hier naartoe</p>
+          <p style="font-size:.76rem;margin-top:6px;">JPG, PNG, GIF, WebP · max 20 MB</p>
+        </div>
+        <div class="selected-file" id="gal-selected-file" style="display:none;">
+          <i class="fas fa-image"></i>
+          <span id="gal-selected-name">—</span>
+          <span id="gal-selected-size" style="color:var(--text-muted);margin-left:auto;font-size:.75rem;"></span>
+        </div>
+        <div class="upload-form-grid">
+          <div>
+            <label>Titel</label>
+            <input type="text" id="gal-title" placeholder="Naam van de afbeelding (optioneel)" />
+          </div>
+          <div>
+            <label>Beschrijving</label>
+            <input type="text" id="gal-desc" placeholder="Korte omschrijving (optioneel)" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="gal-upload-btn" onclick="uploadGalleryDocent()">
+          <i class="fas fa-cloud-upload-alt"></i> Uploaden
+        </button>
+        <div id="gal-msg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:.84rem;font-weight:700;"></div>
+      </div>
+
+      <div class="docent-panel-header" style="margin-bottom:16px;margin-top:8px;">
+        <div><h2><i class="fas fa-th" style="color:var(--primary);margin-right:10px;"></i>Alle foto's</h2></div>
+      </div>
+      <div id="gallery-docent-list">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>
+      </div>
+    </div><!-- end section-galerij -->
+
   </div>
 </div>
 
 <script src="main.js"></script>
 <script>
   let teacherPass = '';
+  let teacherUser = '';
+  let teacherPerms = [];
   let allQuestions = [];
   let activeFilter = 'all';
 
@@ -552,15 +608,41 @@
     return (email || '?').charAt(0).toUpperCase();
   }
 
+  function applyPermissions(permissions) {
+    // Toon/verberg tabs op basis van rechten
+    document.querySelectorAll('.section-tab[data-perm]').forEach(tab => {
+      const perm = tab.dataset.perm;
+      tab.style.display = permissions.includes(perm) ? '' : 'none';
+    });
+    // Zorg dat eerste zichtbare tab actief is
+    const firstTab = document.querySelector('.section-tab[data-perm]:not([style*="none"])');
+    if (firstTab) {
+      const name = firstTab.id.replace('tab-','');
+      document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
+      firstTab.classList.add('active');
+      const panel = document.getElementById('section-'+name);
+      if (panel) panel.classList.add('active');
+    }
+    // Verberg legacy hint als er een username systeem is
+    if (teacherUser && teacherUser !== 'docent') {
+      const hint = document.getElementById('login-hint-legacy');
+      if (hint) hint.style.display = 'none';
+    }
+  }
+
   function showPanel() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('docent-panel-wrap').style.display = 'block';
     document.getElementById('docent-nav-right').style.display = 'flex';
+    applyPermissions(teacherPerms);
   }
 
   function showLogin(msg) {
-    teacherPass = '';
+    teacherPass = ''; teacherUser = ''; teacherPerms = [];
     localStorage.removeItem('docent_pass');
+    localStorage.removeItem('docent_user');
+    localStorage.removeItem('docent_perms');
     document.getElementById('docent-panel-wrap').style.display = 'none';
     document.getElementById('docent-nav-right').style.display = 'none';
     document.getElementById('login-screen').style.display = 'block';
@@ -589,18 +671,24 @@
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
 
+    const user = document.getElementById('docent-user').value.trim();
     try {
       const res = await fetch('/api/verify-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacherPassword: pass })
+        body: JSON.stringify({ teacherUsername: user, teacherPassword: pass })
       });
       if (res.ok) {
-        teacherPass = pass;
-        localStorage.setItem('docent_pass', pass);
+        const data = await res.json();
+        teacherPass  = pass;
+        teacherUser  = user || data.username || 'docent';
+        teacherPerms = data.permissions || ['vragen','agenda','materiaal','inschrijvingen'];
+        localStorage.setItem('docent_pass',  teacherPass);
+        localStorage.setItem('docent_user',  teacherUser);
+        localStorage.setItem('docent_perms', JSON.stringify(teacherPerms));
         showPanel();
-        loadQuestions();
-        loadFiles();
+        if (teacherPerms.includes('vragen'))        loadQuestions();
+        if (teacherPerms.includes('materiaal'))     loadFiles();
       } else {
         errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Onjuist wachtwoord';
         errEl.style.display = 'block';
@@ -620,13 +708,17 @@
     showLogin();
   });
 
-  // Restore session from localStorage (survives browser restarts on mobile)
-  const savedPass = localStorage.getItem('docent_pass');
+  // Restore session from localStorage
+  const savedPass  = localStorage.getItem('docent_pass');
+  const savedUser  = localStorage.getItem('docent_user');
+  const savedPerms = localStorage.getItem('docent_perms');
   if (savedPass) {
-    teacherPass = savedPass;
+    teacherPass  = savedPass;
+    teacherUser  = savedUser  || 'docent';
+    teacherPerms = savedPerms ? JSON.parse(savedPerms) : ['vragen','agenda','materiaal','inschrijvingen'];
     showPanel();
-    loadQuestions();
-    loadFiles();
+    if (teacherPerms.includes('vragen'))    loadQuestions();
+    if (teacherPerms.includes('materiaal')) loadFiles();
   }
 
   // Section tabs
@@ -636,7 +728,8 @@
     btn.classList.add('active');
     document.getElementById('section-' + name).classList.add('active');
     if (name === 'inschrijvingen') loadRegistrations();
-    if (name === 'agenda') { loadAgenda(); loadAccountsForPicker(); }
+    if (name === 'agenda')         { loadAgenda(); loadAccountsForPicker(); }
+    if (name === 'galerij')        loadGalleryDocent();
   }
 
   // Filter
@@ -842,7 +935,7 @@
       progressBar.style.width = '60%';
       const res = await fetch('/api/files', {
         method: 'POST',
-        headers: { 'x-teacher-password': teacherPass },
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser, 'x-teacher-username': teacherUser},
         body: formData
       });
       progressBar.style.width = '100%';
@@ -959,7 +1052,7 @@
     const list = document.getElementById('registrations-list');
     list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
     try {
-      const res = await fetch(`/api/registrations?teacherPassword=${encodeURIComponent(teacherPass)}`);
+      const res = await fetch('/api/registrations', { headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser } });
       if (res.status === 401) { handle401(); return; }
       allRegistrations = await res.json();
       renderRegistrations();
@@ -1085,7 +1178,7 @@
     list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
     try {
       const res = await fetch('/api/agenda', {
-        headers: { 'x-teacher-password': teacherPass }
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser, 'x-teacher-username': teacherUser}
       });
       if (res.status === 401) { handle401(); return; }
       allAgendaItems = await res.json();
@@ -1131,7 +1224,7 @@
   async function loadAccountsForPicker() {
     try {
       const res = await fetch('/api/agenda/accounts', {
-        headers: { 'x-teacher-password': teacherPass }
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser, 'x-teacher-username': teacherUser}
       });
       if (res.ok) allAccounts = await res.json();
     } catch {}
@@ -1195,7 +1288,7 @@
       const method = editId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass },
+        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser },
         body: JSON.stringify(body)
       });
       if (res.status === 401) { handle401(); return; }
@@ -1257,7 +1350,7 @@
     try {
       const res = await fetch(`/api/agenda/${id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass }
+        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser }
       });
       if (res.status === 401) { handle401(); return; }
       if (res.ok) {
@@ -1279,6 +1372,135 @@
 
   function esc(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ========== GALERIJ ========== */
+  let galleryDocent = [];
+
+  async function loadGalleryDocent() {
+    const list = document.getElementById('gallery-docent-list');
+    if (!list) return;
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
+    try {
+      const res = await fetch('/api/gallery');
+      if (!res.ok) throw new Error();
+      galleryDocent = await res.json();
+      renderGalleryDocent();
+    } catch {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> Kon galerij niet laden.</div>';
+    }
+  }
+
+  function renderGalleryDocent() {
+    const list = document.getElementById('gallery-docent-list');
+    if (!list) return;
+    if (!galleryDocent.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-images"></i><br>Nog geen afbeeldingen.</div>';
+      return;
+    }
+    list.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">' +
+      galleryDocent.map(item => `
+      <div class="gal-item" id="gal-item-${esc(item.id)}" style="background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;">
+        <img src="${esc(item.url)}" alt="${esc(item.title||'')}" style="width:100%;height:160px;object-fit:cover;" onerror="this.style.display='none'" />
+        <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-weight:700;font-size:.9rem;">${esc(item.title||'Zonder titel')}</div>
+          ${item.description ? `<div style="font-size:.8rem;color:var(--text-muted);">${esc(item.description)}</div>` : ''}
+          <div style="margin-top:auto;display:flex;gap:8px;align-items:center;justify-content:space-between;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer;">
+              <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="toggleGalleryDocent('${esc(item.id)}', this.checked)" />
+              Zichtbaar
+            </label>
+            <button class="btn btn-danger btn-sm" onclick="deleteGalleryItemDocent('${esc(item.id)}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+    `).join('') + '</div>';
+  }
+
+  // File-input preview for gallery
+  document.addEventListener('DOMContentLoaded', () => {
+    const fi = document.getElementById('gal-file-input');
+    if (fi) {
+      fi.addEventListener('change', () => {
+        const file = fi.files[0];
+        const sel = document.getElementById('gal-selected-file');
+        const nm = document.getElementById('gal-selected-name');
+        const sz = document.getElementById('gal-selected-size');
+        if (file && sel && nm) {
+          nm.textContent = file.name;
+          if (sz) sz.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+          sel.style.display = 'flex';
+        } else if (sel) {
+          sel.style.display = 'none';
+        }
+      });
+    }
+  });
+
+  async function uploadGalleryDocent() {
+    const fileInput = document.getElementById('gal-file-input');
+    const titleInput = document.getElementById('gal-title');
+    const descInput = document.getElementById('gal-desc');
+    const btn = document.getElementById('gal-upload-btn');
+    const msgEl = document.getElementById('gal-msg');
+
+    if (!fileInput || !fileInput.files.length) {
+      if (msgEl) { msgEl.textContent = '⚠ Selecteer eerst een afbeelding.'; msgEl.style.display='block'; msgEl.style.color='#c0392b'; }
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+    formData.append('title', titleInput ? titleInput.value.trim() : '');
+    formData.append('description', descInput ? descInput.value.trim() : '');
+    formData.append('teacherPassword', teacherPass);
+    formData.append('teacherUsername', teacherUser);
+
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/gallery', {
+        method: 'POST',
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser },
+        body: formData
+      });
+      if (res.status === 401) { handle401(); return; }
+      if (!res.ok) throw new Error();
+      if (fileInput) fileInput.value = '';
+      if (titleInput) titleInput.value = '';
+      if (descInput) descInput.value = '';
+      if (msgEl) { msgEl.textContent = '✓ Afbeelding geüpload!'; msgEl.style.display='block'; msgEl.style.color='#059669'; setTimeout(()=>msgEl.style.display='none',3000); }
+      await loadGalleryDocent();
+    } catch {
+      if (msgEl) { msgEl.textContent = '⚠ Upload mislukt.'; msgEl.style.display='block'; msgEl.style.color='#c0392b'; }
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function toggleGalleryDocent(id, visible) {
+    try {
+      await fetch(`/api/gallery/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser },
+        body: JSON.stringify({ visible })
+      });
+    } catch {}
+  }
+
+  async function deleteGalleryItemDocent(id) {
+    if (!confirm('Afbeelding verwijderen?')) return;
+    try {
+      const res = await fetch(`/api/gallery/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser }
+      });
+      if (res.status === 401) { handle401(); return; }
+      if (res.ok) {
+        document.getElementById('gal-item-' + id)?.remove();
+        galleryDocent = galleryDocent.filter(i => i.id !== id);
+        if (!galleryDocent.length) renderGalleryDocent();
+      }
+    } catch {}
   }
 </script>
 </body>

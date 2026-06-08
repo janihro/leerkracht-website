@@ -94,6 +94,16 @@
     .sidebar-footer a { color: #fff; font-weight: 700; }
     .sidebar-footer a:hover { opacity: 1; text-decoration: underline; }
 
+    /* PERM CHECKBOXES */
+    .perm-check {
+      display: flex; align-items: center; gap: 7px; cursor: pointer;
+      background: var(--bg); border: 2px solid var(--border); border-radius: 8px;
+      padding: 8px 14px; font-size: .85rem; font-weight: 700; transition: all .15s;
+      user-select: none;
+    }
+    .perm-check:hover { border-color: var(--primary); color: var(--primary); }
+    .perm-check input[type="checkbox"] { accent-color: var(--primary); width: 15px; height: 15px; cursor: pointer; }
+
     /* MAIN */
     .admin-main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
     .admin-topbar {
@@ -298,6 +308,10 @@
       <div class="sidebar-label">Gegevens</div>
       <button class="sidebar-link" onclick="showPanel('export',this)">
         <i class="fas fa-download"></i> Exporteer data
+      </button>
+      <div class="sidebar-label">Beheer</div>
+      <button class="sidebar-link" onclick="showPanel('docenten',this)">
+        <i class="fas fa-chalkboard-teacher"></i> Docenten
       </button>
       <div class="sidebar-label">Beveiliging</div>
       <button class="sidebar-link" onclick="showPanel('wachtwoord',this)">
@@ -726,6 +740,58 @@
         </div>
       </div>
 
+      <!-- ── DOCENTEN ─────────────────────────────────── -->
+      <div class="panel" id="panel-docenten">
+        <div class="panel-header">
+          <h2>Docenten beheren</h2>
+          <p>Maak docentaccounts aan en stel per docent in welke onderdelen zij kunnen beheren.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:28px;">
+          <h3 id="docent-form-title" style="font-size:1rem;font-weight:800;margin-bottom:18px;"><i class="fas fa-user-plus" style="color:var(--primary);margin-right:8px;"></i>Nieuwe docent aanmaken</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="form-group">
+              <label>Naam</label>
+              <input type="text" id="dt-naam" placeholder="Volledige naam" />
+            </div>
+            <div class="form-group">
+              <label>Gebruikersnaam</label>
+              <input type="text" id="dt-user" placeholder="Inlognaam (geen spaties)" autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Wachtwoord <span id="dt-pass-hint" style="color:var(--text-muted);font-size:.78rem;">(verplicht bij aanmaken)</span></label>
+            <input type="password" id="dt-pass" placeholder="Wachtwoord" autocomplete="new-password" />
+          </div>
+          <div class="form-group" style="margin-bottom:18px;">
+            <label style="display:block;margin-bottom:10px;font-weight:700;">Rechten</label>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              <label class="perm-check"><input type="checkbox" value="vragen" class="dt-perm" /> <i class="fas fa-question-circle"></i> Vragen</label>
+              <label class="perm-check"><input type="checkbox" value="agenda" class="dt-perm" /> <i class="fas fa-calendar-alt"></i> Agenda</label>
+              <label class="perm-check"><input type="checkbox" value="materiaal" class="dt-perm" /> <i class="fas fa-folder-open"></i> Materiaal</label>
+              <label class="perm-check"><input type="checkbox" value="inschrijvingen" class="dt-perm" /> <i class="fas fa-clipboard-list"></i> Inschrijvingen</label>
+              <label class="perm-check"><input type="checkbox" value="galerij" class="dt-perm" /> <i class="fas fa-images"></i> Galerij</label>
+            </div>
+          </div>
+          <div id="dt-msg" style="display:none;padding:10px 14px;border-radius:8px;font-size:.84rem;font-weight:700;margin-bottom:14px;"></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="saveTeacher()"><i class="fas fa-save"></i> <span id="dt-save-label">Aanmaken</span></button>
+            <button class="btn btn-outline" id="dt-cancel-btn" style="display:none;" onclick="cancelEditTeacher()"><i class="fas fa-times"></i> Annuleren</button>
+          </div>
+          <input type="hidden" id="dt-edit-id" value="" />
+        </div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h3 style="font-size:1rem;font-weight:800;margin:0;"><i class="fas fa-users" style="color:var(--primary);margin-right:8px;"></i>Alle docenten</h3>
+            <button class="btn btn-outline btn-sm" onclick="loadTeachers()"><i class="fas fa-sync-alt"></i> Vernieuwen</button>
+          </div>
+          <div id="teachers-list">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── WACHTWOORD ────────────────────────────────── -->
       <div class="panel" id="panel-wachtwoord">
         <div class="panel-header">
@@ -772,6 +838,7 @@ const panels = {
   'webshop': 'Webshop producten',
   'export': 'Exporteer data',
   'wachtwoord': 'Wachtwoord wijzigen',
+  'docenten': 'Docenten beheren',
 };
 
 // ══════════════════ LOGIN ════════════════════════════════
@@ -817,6 +884,7 @@ function initAdmin() {
   loadAccounts();
   loadReviews();
   loadGalleryAdmin();
+  loadTeachers();
 }
 
 // ══════════════════ NAVIGATION ═══════════════════════════
@@ -832,6 +900,7 @@ function showPanel(name, btn) {
   if (name === 'reviews') loadReviews();
   if (name === 'galerij') loadGalleryAdmin();
   if (name === 'webshop') loadProductsAdmin();
+  if (name === 'docenten') loadTeachers();
 }
 
 function toggleSidebar() {
@@ -1387,6 +1456,156 @@ function stars(n) {
 }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════ DOCENTEN ══════════════════════════════
+const ALL_PERMS = ['vragen','agenda','materiaal','inschrijvingen','galerij'];
+const PERM_LABELS = { vragen:'Vragen', agenda:'Agenda', materiaal:'Materiaal', inschrijvingen:'Inschrijvingen', galerij:'Galerij' };
+
+async function loadTeachers() {
+  const list = document.getElementById('teachers-list');
+  if (!list) return;
+  list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
+  try {
+    const res = await fetch('/api/admin/teachers', { headers: { 'x-admin-password': adminPass } });
+    if (!res.ok) throw new Error();
+    const { teachers } = await res.json();
+    if (!teachers.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-chalkboard-teacher"></i><br>Nog geen docenten aangemaakt.</div>';
+      return;
+    }
+    list.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);">
+          <th style="padding:10px 12px;text-align:left;">Naam</th>
+          <th style="padding:10px 12px;text-align:left;">Gebruikersnaam</th>
+          <th style="padding:10px 12px;text-align:left;">Rechten</th>
+          <th style="padding:10px 12px;text-align:left;">Status</th>
+          <th style="padding:10px 12px;text-align:right;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${teachers.map(t => `
+        <tr style="border-bottom:1px solid var(--border);" id="tr-teacher-${esc(t.id)}">
+          <td style="padding:12px;">${esc(t.name)}</td>
+          <td style="padding:12px;font-family:monospace;">${esc(t.username)}</td>
+          <td style="padding:12px;">${(t.permissions||[]).map(p =>
+            `<span style="background:rgba(91,79,207,.1);color:var(--primary);border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:700;margin-right:4px;">${esc(PERM_LABELS[p]||p)}</span>`
+          ).join('')||'<span style="color:var(--text-muted);font-size:.82rem;">Geen rechten</span>'}</td>
+          <td style="padding:12px;">
+            <span style="background:${t.active!==false?'rgba(6,214,160,.12)':'rgba(192,57,43,.1)'};color:${t.active!==false?'#059669':'#c0392b'};border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:700;">
+              ${t.active!==false ? 'Actief' : 'Inactief'}
+            </span>
+          </td>
+          <td style="padding:12px;text-align:right;">
+            <button class="btn btn-outline btn-sm" onclick="editTeacher(${JSON.stringify(esc(t.id))})"><i class="fas fa-pen"></i></button>
+            <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="deleteTeacher(${JSON.stringify(esc(t.id))}, ${JSON.stringify(esc(t.name))})"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  } catch {
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> Kon docenten niet laden.</div>';
+  }
+}
+
+async function saveTeacher() {
+  const editId = document.getElementById('dt-edit-id').value;
+  const naam = document.getElementById('dt-naam').value.trim();
+  const user = document.getElementById('dt-user').value.trim().replace(/\s+/g,'');
+  const pass = document.getElementById('dt-pass').value;
+  const perms = [...document.querySelectorAll('.dt-perm:checked')].map(c => c.value);
+  const msgEl = document.getElementById('dt-msg');
+
+  if (!naam) { showDtMsg('Vul een naam in.', 'error'); return; }
+  if (!user) { showDtMsg('Vul een gebruikersnaam in.', 'error'); return; }
+  if (!editId && !pass) { showDtMsg('Vul een wachtwoord in.', 'error'); return; }
+
+  const body = { name: naam, username: user, permissions: perms };
+  if (pass) body.password = pass;
+
+  try {
+    const url = editId ? `/api/admin/teachers/${editId}` : '/api/admin/teachers';
+    const method = editId ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type':'application/json', 'x-admin-password': adminPass },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) { showDtMsg(data.error || 'Opslaan mislukt.', 'error'); return; }
+    showDtMsg(editId ? '✓ Docent bijgewerkt!' : '✓ Docent aangemaakt!', 'success');
+    resetTeacherForm();
+    loadTeachers();
+  } catch {
+    showDtMsg('Er is iets misgegaan.', 'error');
+  }
+}
+
+let teachersCache = [];
+
+async function editTeacher(id) {
+  // Fetch fresh list to get current data
+  try {
+    const res = await fetch('/api/admin/teachers', { headers: { 'x-admin-password': adminPass } });
+    const { teachers } = await res.json();
+    const t = teachers.find(x => x.id === id);
+    if (!t) return;
+
+    document.getElementById('dt-edit-id').value = t.id;
+    document.getElementById('dt-naam').value = t.name;
+    document.getElementById('dt-user').value = t.username;
+    document.getElementById('dt-pass').value = '';
+    document.getElementById('dt-pass-hint').textContent = '(leeg laten = ongewijzigd)';
+    document.querySelectorAll('.dt-perm').forEach(cb => {
+      cb.checked = (t.permissions||[]).includes(cb.value);
+    });
+    document.getElementById('dt-form-title').innerHTML = '<i class="fas fa-user-edit" style="color:var(--primary);margin-right:8px;"></i>Docent bewerken';
+    document.getElementById('dt-save-label').textContent = 'Opslaan';
+    document.getElementById('dt-cancel-btn').style.display = '';
+    document.getElementById('card').scrollIntoView({ behavior:'smooth' });
+  } catch {}
+}
+
+function cancelEditTeacher() {
+  resetTeacherForm();
+}
+
+function resetTeacherForm() {
+  document.getElementById('dt-edit-id').value = '';
+  document.getElementById('dt-naam').value = '';
+  document.getElementById('dt-user').value = '';
+  document.getElementById('dt-pass').value = '';
+  document.getElementById('dt-pass-hint').textContent = '(verplicht bij aanmaken)';
+  document.querySelectorAll('.dt-perm').forEach(cb => cb.checked = false);
+  document.getElementById('docent-form-title').innerHTML = '<i class="fas fa-user-plus" style="color:var(--primary);margin-right:8px;"></i>Nieuwe docent aanmaken';
+  document.getElementById('dt-save-label').textContent = 'Aanmaken';
+  document.getElementById('dt-cancel-btn').style.display = 'none';
+  document.getElementById('dt-msg').style.display = 'none';
+}
+
+async function deleteTeacher(id, name) {
+  if (!confirm(`Docent "${name}" verwijderen?`)) return;
+  try {
+    const res = await fetch(`/api/admin/teachers/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-password': adminPass }
+    });
+    if (res.ok) {
+      document.getElementById('tr-teacher-' + id)?.remove();
+      const list = document.getElementById('teachers-list');
+      if (list && !list.querySelector('tr[id^="tr-teacher-"]')) loadTeachers();
+    }
+  } catch {}
+}
+
+function showDtMsg(msg, type) {
+  const el = document.getElementById('dt-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? 'rgba(6,214,160,.12)' : 'rgba(192,57,43,.1)';
+  el.style.color = type === 'success' ? '#059669' : '#c0392b';
+  if (type === 'success') setTimeout(() => el.style.display = 'none', 3500);
 }
 </script>
 </body>
