@@ -9,6 +9,53 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Q&A styles */
+    .qa-lesson-block { margin-bottom: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--white); }
+    .qa-lesson-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; cursor: pointer; user-select: none;
+      background: var(--white); transition: background .2s;
+    }
+    .qa-lesson-header:hover { background: #f8f7ff; }
+    .qa-lesson-header-left { display: flex; align-items: center; gap: 12px; }
+    .qa-lesson-icon { width: 36px; height: 36px; border-radius: 9px; background: rgba(91,79,207,0.1); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 0.9rem; flex-shrink: 0; }
+    .qa-lesson-title { font-weight: 700; font-size: 0.92rem; }
+    .qa-lesson-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+    .qa-badge { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 99px; }
+    .qa-badge.answered { background: var(--green); }
+    .qa-toggle-icon { color: var(--text-muted); font-size: 0.8rem; transition: transform .3s; }
+    .qa-toggle-icon.open { transform: rotate(180deg); }
+
+    .qa-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
+    .qa-body.open { display: block; }
+
+    .qa-thread { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .qa-message { display: flex; gap: 10px; align-items: flex-start; }
+    .qa-message.answer { flex-direction: row-reverse; }
+    .qa-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; color: #fff; }
+    .qa-avatar.parent { background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
+    .qa-avatar.teacher { background: linear-gradient(135deg, var(--green), #04c994); }
+    .qa-bubble { max-width: 85%; }
+    .qa-bubble-inner { padding: 10px 14px; border-radius: 12px; font-size: 0.88rem; line-height: 1.6; }
+    .qa-message:not(.answer) .qa-bubble-inner { background: #f4f3ff; color: var(--text); border-bottom-left-radius: 4px; }
+    .qa-message.answer .qa-bubble-inner { background: linear-gradient(135deg, var(--green), #04c994); color: #fff; border-bottom-right-radius: 4px; }
+    .qa-bubble-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; padding: 0 4px; }
+    .qa-message.answer .qa-bubble-meta { text-align: right; }
+
+    .qa-pending { background: rgba(255,209,102,0.15); border: 1px solid rgba(255,209,102,0.4); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.85rem; color: #92600a; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+
+    .qa-form { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .qa-form label { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+    .qa-form textarea { resize: none; min-height: 80px; font-size: 0.9rem; border-radius: var(--radius-sm); }
+    .qa-submit { align-self: flex-end; }
+
+    .qa-empty { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.88rem; }
+
+    /* Progress bar */
+    .prog-bar { background: #f0eeff; border-radius: 99px; height: 8px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 1s cubic-bezier(.4,0,.2,1); }
+  </style>
 </head>
 <body class="dashboard-page">
 
@@ -43,6 +90,7 @@
       </div>
       <nav class="dash-nav">
         <a href="#materiaal" class="active"><i class="fas fa-book-open"></i> Lesmateriaal</a>
+        <a href="#vragen"><i class="fas fa-comments"></i> Vragen stellen</a>
         <a href="#voortgang"><i class="fas fa-chart-line"></i> Voortgang</a>
         <a href="#agenda"><i class="fas fa-calendar-alt"></i> Agenda</a>
         <a href="#notities"><i class="fas fa-sticky-note"></i> Notities</a>
@@ -80,7 +128,7 @@
             <div class="les-icon"><i class="fas fa-book-open"></i></div>
             <div class="les-body">
               <h4>Taal — Week 22</h4>
-              <p>Begrijpend lezen tekst "De vluchtige vos". Met vragen.</p>
+              <p>Begrijpend lezen tekst "De vluchtige vos".</p>
               <span class="les-tag">Beschikbaar</span>
             </div>
           </div>
@@ -119,6 +167,95 @@
         </div>
       </section>
 
+      <!-- VRAGEN STELLEN -->
+      <section id="vragen" style="margin-bottom:40px;" data-animate>
+        <div class="dash-section-title"><i class="fas fa-comments"></i> Vragen over een les</div>
+        <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">
+          Heeft Emma een vraag over de lesstof? Stel hem hier — de docent beantwoordt hem zo snel mogelijk.
+        </p>
+
+        <div id="qa-container">
+          <!-- Dynamisch geladen per les -->
+          <div class="qa-lesson-block">
+            <div class="qa-lesson-header" onclick="toggleQA(this,'rekenen-week-23')">
+              <div class="qa-lesson-header-left">
+                <div class="qa-lesson-icon"><i class="fas fa-calculator"></i></div>
+                <div>
+                  <div class="qa-lesson-title">Rekenen — Week 23</div>
+                  <div class="qa-lesson-meta">Breuken optellen en aftrekken</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="qa-count-badge" data-lesson="rekenen-week-23"></span>
+                <i class="fas fa-chevron-down qa-toggle-icon"></i>
+              </div>
+            </div>
+            <div class="qa-body" id="qa-rekenen-week-23">
+              <div class="qa-thread" id="thread-rekenen-week-23"></div>
+              <div class="qa-form">
+                <label>Stel een vraag over deze les</label>
+                <textarea id="input-rekenen-week-23" placeholder="Bijv: Emma begrijpt niet hoe je 1/3 + 1/4 uitrekent. Kunt u dit uitleggen?" rows="3"></textarea>
+                <button class="btn btn-primary btn-sm qa-submit" onclick="submitQuestion('rekenen-week-23','Rekenen — Week 23')">
+                  <i class="fas fa-paper-plane"></i> Verstuur vraag
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="qa-lesson-block">
+            <div class="qa-lesson-header" onclick="toggleQA(this,'taal-week-22')">
+              <div class="qa-lesson-header-left">
+                <div class="qa-lesson-icon" style="background:rgba(6,214,160,0.1);color:var(--green)"><i class="fas fa-book-open"></i></div>
+                <div>
+                  <div class="qa-lesson-title">Taal — Week 22</div>
+                  <div class="qa-lesson-meta">Begrijpend lezen</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="qa-count-badge" data-lesson="taal-week-22"></span>
+                <i class="fas fa-chevron-down qa-toggle-icon"></i>
+              </div>
+            </div>
+            <div class="qa-body" id="qa-taal-week-22">
+              <div class="qa-thread" id="thread-taal-week-22"></div>
+              <div class="qa-form">
+                <label>Stel een vraag over deze les</label>
+                <textarea id="input-taal-week-22" placeholder="Stel hier een vraag over de taalles..." rows="3"></textarea>
+                <button class="btn btn-primary btn-sm qa-submit" onclick="submitQuestion('taal-week-22','Taal — Week 22')">
+                  <i class="fas fa-paper-plane"></i> Verstuur vraag
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="qa-lesson-block">
+            <div class="qa-lesson-header" onclick="toggleQA(this,'engels-week-22')">
+              <div class="qa-lesson-header-left">
+                <div class="qa-lesson-icon" style="background:rgba(255,209,102,0.15);color:#c88a00"><i class="fas fa-globe"></i></div>
+                <div>
+                  <div class="qa-lesson-title">Engels — Week 22</div>
+                  <div class="qa-lesson-meta">Woordenschat & luisteren</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="qa-count-badge" data-lesson="engels-week-22"></span>
+                <i class="fas fa-chevron-down qa-toggle-icon"></i>
+              </div>
+            </div>
+            <div class="qa-body" id="qa-engels-week-22">
+              <div class="qa-thread" id="thread-engels-week-22"></div>
+              <div class="qa-form">
+                <label>Stel een vraag over deze les</label>
+                <textarea id="input-engels-week-22" placeholder="Stel hier een vraag over de Engelse les..." rows="3"></textarea>
+                <button class="btn btn-primary btn-sm qa-submit" onclick="submitQuestion('engels-week-22','Engels — Week 22')">
+                  <i class="fas fa-paper-plane"></i> Verstuur vraag
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- VOORTGANG -->
       <section id="voortgang" style="margin-bottom:40px;" data-animate>
         <div class="dash-section-title"><i class="fas fa-chart-line"></i> Voortgang Emma</div>
@@ -148,24 +285,15 @@
         <div class="prog-card">
           <div class="agenda-item">
             <div class="agenda-date-box">10<small>jun</small></div>
-            <div class="agenda-body">
-              <h4>Rekenen — Breuken (vervolg)</h4>
-              <p>16:00–17:00 · [Locatie] of online</p>
-            </div>
+            <div class="agenda-body"><h4>Rekenen — Breuken (vervolg)</h4><p>16:00–17:00 · [Locatie] of online</p></div>
           </div>
           <div class="agenda-item">
             <div class="agenda-date-box">12<small>jun</small></div>
-            <div class="agenda-body">
-              <h4>Taal — Begrijpend lezen</h4>
-              <p>15:30–16:30 · Online</p>
-            </div>
+            <div class="agenda-body"><h4>Taal — Begrijpend lezen</h4><p>15:30–16:30 · Online</p></div>
           </div>
           <div class="agenda-item">
             <div class="agenda-date-box">17<small>jun</small></div>
-            <div class="agenda-body">
-              <h4>Engels — Woordenschat &amp; luisteren</h4>
-              <p>16:00–17:00 · [Locatie]</p>
-            </div>
+            <div class="agenda-body"><h4>Engels — Woordenschat &amp; luisteren</h4><p>16:00–17:00 · [Locatie]</p></div>
           </div>
         </div>
       </section>
@@ -176,15 +304,15 @@
         <div class="prog-card">
           <div class="notitie-item">
             <strong>7 juni 2026 — Rekenen</strong>
-            <p>Emma heeft vandaag goed haar best gedaan met breuken optellen. Ze begrijpt het principe, maar heeft nog oefening nodig met ongelijknamige breuken. Huiswerk meegegeven.</p>
+            <p>Emma heeft vandaag goed haar best gedaan met breuken optellen. Ze begrijpt het principe, maar heeft nog oefening nodig met ongelijknamige breuken.</p>
           </div>
           <div class="notitie-item">
             <strong>5 juni 2026 — Taal</strong>
-            <p>Begrijpend lezen gaat erg goed! Emma scoorde 8/10 op de oefentekst. We gaan volgende week iets uitdagender materiaal proberen.</p>
+            <p>Begrijpend lezen gaat erg goed! Emma scoorde 8/10 op de oefentekst.</p>
           </div>
           <div class="notitie-item">
             <strong>3 juni 2026 — Leervaardigheden</strong>
-            <p>We hebben geoefend met een weektaakplanner. Emma is enthousiast en heeft beloofd het thuis ook te proberen. Goed resultaat!</p>
+            <p>We hebben geoefend met een weektaakplanner. Emma is enthousiast!</p>
           </div>
         </div>
       </section>
@@ -195,34 +323,141 @@
 
 <script src="main.js"></script>
 <script>
-  // Sync second name element
-  const user = sessionStorage.getItem('portaal_user') || 'ouder@email.nl';
-  const name = user.split('@')[0].charAt(0).toUpperCase() + user.split('@')[0].slice(1);
-  const el2 = document.getElementById('dashboard-name-2');
-  if (el2) el2.textContent = name;
+  // User info
+  const userEmail = sessionStorage.getItem('portaal_user') || 'ouder@email.nl';
+  const userName = userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
+  document.querySelectorAll('#dashboard-name, #dashboard-name-2, .dash-user-name').forEach(el => el.textContent = userName);
 
   // Sidebar logout
-  const logoutSide = document.getElementById('logout-btn-side');
-  if (logoutSide) {
-    logoutSide.addEventListener('click', e => {
-      e.preventDefault();
-      sessionStorage.removeItem('portaal_user');
-      window.location.href = 'portaal.html';
-    });
+  document.getElementById('logout-btn-side')?.addEventListener('click', e => {
+    e.preventDefault(); sessionStorage.removeItem('portaal_user'); window.location.href = 'portaal.html';
+  });
+
+  // Format date
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
-  // Sidebar nav highlight on scroll
-  const sections = ['materiaal','voortgang','agenda','notities'];
-  const links = document.querySelectorAll('.dash-nav a');
-  window.addEventListener('scroll', () => {
+  // Render thread for a lesson
+  function renderThread(lessonId, questions) {
+    const thread = document.getElementById('thread-' + lessonId);
+    if (!thread) return;
+    const lessonQs = questions.filter(q => q.lessonId === lessonId);
+    if (lessonQs.length === 0) {
+      thread.innerHTML = '<div class="qa-empty"><i class="fas fa-comment-dots" style="font-size:1.5rem;opacity:.3;margin-bottom:8px;display:block;"></i>Nog geen vragen gesteld voor deze les.</div>';
+      return;
+    }
+    thread.innerHTML = lessonQs.map(q => `
+      <div style="background:#f8f7ff;border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+        <div class="qa-message">
+          <div class="qa-avatar parent">${userName.charAt(0)}</div>
+          <div class="qa-bubble">
+            <div class="qa-bubble-inner">${q.question}</div>
+            <div class="qa-bubble-meta">${formatDate(q.timestamp)}</div>
+          </div>
+        </div>
+        ${q.answer ? `
+        <div class="qa-message answer" style="margin-top:8px;">
+          <div class="qa-avatar teacher"><i class="fas fa-chalkboard-teacher" style="font-size:.75rem;"></i></div>
+          <div class="qa-bubble">
+            <div class="qa-bubble-inner">${q.answer}</div>
+            <div class="qa-bubble-meta">Docent · ${formatDate(q.answeredAt)}</div>
+          </div>
+        </div>` : `
+        <div class="qa-pending" style="margin-top:8px;">
+          <i class="fas fa-clock"></i> De docent beantwoordt deze vraag zo snel mogelijk.
+        </div>`}
+      </div>
+    `).join('');
+
+    // Update badge
+    const badge = document.querySelector(`.qa-count-badge[data-lesson="${lessonId}"]`);
+    if (badge) {
+      const unanswered = lessonQs.filter(q => !q.answer).length;
+      if (unanswered > 0) {
+        badge.textContent = unanswered + ' open';
+        badge.className = 'qa-badge';
+      } else if (lessonQs.length > 0) {
+        badge.textContent = 'Beantwoord ✓';
+        badge.className = 'qa-badge answered';
+      } else {
+        badge.textContent = '';
+      }
+    }
+  }
+
+  // Load all questions
+  async function loadQuestions() {
+    try {
+      const res = await fetch(`/api/questions?email=${encodeURIComponent(userEmail)}`);
+      const questions = await res.json();
+      ['rekenen-week-23','taal-week-22','engels-week-22'].forEach(id => renderThread(id, questions));
+    } catch {
+      // Silently fail if API not available
+    }
+  }
+
+  // Toggle Q&A block open/closed
+  function toggleQA(header, lessonId) {
+    const body = document.getElementById('qa-' + lessonId);
+    const icon = header.querySelector('.qa-toggle-icon');
+    body.classList.toggle('open');
+    icon.classList.toggle('open');
+    if (body.classList.contains('open')) loadQuestions();
+  }
+
+  // Submit question
+  async function submitQuestion(lessonId, lessonTitle) {
+    const textarea = document.getElementById('input-' + lessonId);
+    const question = textarea.value.trim();
+    if (!question) { textarea.focus(); return; }
+
+    const btn = textarea.closest('.qa-form').querySelector('.qa-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Versturen...';
+
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonId,
+          lessonTitle,
+          question,
+          askedBy: userEmail,
+          childName: 'Emma'
+        })
+      });
+      if (res.ok) {
+        textarea.value = '';
+        await loadQuestions();
+        btn.innerHTML = '<i class="fas fa-check"></i> Verstuurd!';
+        btn.style.background = 'linear-gradient(135deg,var(--green),#04c994)';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-paper-plane"></i> Verstuur vraag';
+          btn.style.background = '';
+        }, 2000);
+      }
+    } catch {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Verstuur vraag';
+    }
+  }
+
+  loadQuestions();
+
+  // Sidebar scroll highlight
+  document.addEventListener('scroll', () => {
+    const sections = ['materiaal','vragen','voortgang','agenda','notities'];
     let current = '';
     sections.forEach(id => {
       const el = document.getElementById(id);
       if (el && window.scrollY >= el.offsetTop - 120) current = id;
     });
-    links.forEach(a => {
-      a.classList.remove('active');
-      if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+    document.querySelectorAll('.dash-nav a').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
     });
   }, { passive: true });
 </script>
