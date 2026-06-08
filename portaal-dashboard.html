@@ -115,54 +115,10 @@
       <!-- LESMATERIAAL -->
       <section id="materiaal" style="margin-bottom:40px;" data-animate>
         <div class="dash-section-title"><i class="fas fa-book-open"></i> Lesmateriaal</div>
-        <div class="les-grid">
-          <div class="les-card">
-            <div class="les-icon"><i class="fas fa-calculator"></i></div>
-            <div class="les-body">
-              <h4>Rekenen — Week 23</h4>
-              <p>Breuken optellen en aftrekken. Oefenbladen + uitlegvideo.</p>
-              <span class="les-tag nieuw">Nieuw</span>
-            </div>
-          </div>
-          <div class="les-card">
-            <div class="les-icon"><i class="fas fa-book-open"></i></div>
-            <div class="les-body">
-              <h4>Taal — Week 22</h4>
-              <p>Begrijpend lezen tekst "De vluchtige vos".</p>
-              <span class="les-tag">Beschikbaar</span>
-            </div>
-          </div>
-          <div class="les-card">
-            <div class="les-icon"><i class="fas fa-file-pdf"></i></div>
-            <div class="les-body">
-              <h4>Huiswerkopdracht rekenen</h4>
-              <p>PDF oefenblad — te printen of digitaal invullen.</p>
-              <span class="les-tag">Beschikbaar</span>
-            </div>
-          </div>
-          <div class="les-card">
-            <div class="les-icon"><i class="fas fa-video"></i></div>
-            <div class="les-body">
-              <h4>Uitlegvideo — Breuken</h4>
-              <p>5 minuten video-uitleg bij de lesstof van week 23.</p>
-              <span class="les-tag nieuw">Nieuw</span>
-            </div>
-          </div>
-          <div class="les-card">
-            <div class="les-icon"><i class="fas fa-globe"></i></div>
-            <div class="les-body">
-              <h4>Engels — Week 22</h4>
-              <p>Woordenschat oefeningen + luisteropdracht.</p>
-              <span class="les-tag">Beschikbaar</span>
-            </div>
-          </div>
-          <div class="les-card">
-            <div class="les-icon" style="background:rgba(255,209,102,.18);color:#c88a00"><i class="fas fa-star"></i></div>
-            <div class="les-body">
-              <h4>Bonusopdracht — Puzzel</h4>
-              <p>Leuke uitdaging voor als de reguliere stof klaar is.</p>
-              <span class="les-tag" style="background:rgba(255,209,102,.2);color:#b45309;">Bonus</span>
-            </div>
+        <div class="les-grid" id="les-grid-dynamic">
+          <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);font-size:.88rem;">
+            <i class="fas fa-spinner fa-spin" style="font-size:1.4rem;margin-bottom:10px;display:block;"></i>
+            Lesmateriaal laden...
           </div>
         </div>
       </section>
@@ -447,6 +403,47 @@
   }
 
   loadQuestions();
+  loadLesmateriaal();
+
+  // Load lesson files from API
+  async function loadLesmateriaal() {
+    const grid = document.getElementById('les-grid-dynamic');
+    try {
+      const res = await fetch('/api/files');
+      const files = await res.json();
+      if (files.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);font-size:.88rem;"><i class="fas fa-folder-open" style="font-size:1.6rem;opacity:.3;margin-bottom:10px;display:block;"></i>De docent heeft nog geen lesmateriaal geüpload.</div>';
+        return;
+      }
+      grid.innerHTML = files.map(f => {
+        const ic = fileIconInfo(f.mimetype);
+        const isNew = (Date.now() - new Date(f.uploadedAt)) < 7 * 24 * 3600 * 1000;
+        return `
+          <a href="${f.url}" target="_blank" class="les-card" style="text-decoration:none;cursor:pointer;">
+            <div class="les-icon" style="background:${ic.bg};color:${ic.color}"><i class="fas ${ic.icon}"></i></div>
+            <div class="les-body">
+              <h4>${f.title}</h4>
+              <p>${f.description || f.vak}</p>
+              <span class="les-tag${isNew ? ' nieuw' : ''}">${isNew ? 'Nieuw' : f.vak}</span>
+            </div>
+          </a>`;
+      }).join('');
+    } catch {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);font-size:.88rem;">Lesmateriaal kon niet worden geladen.</div>';
+    }
+  }
+
+  function fileIconInfo(mime) {
+    if (!mime) return { icon: 'fa-file', bg: 'rgba(91,79,207,.1)', color: 'var(--primary)' };
+    if (mime === 'application/pdf') return { icon: 'fa-file-pdf', bg: 'rgba(231,76,60,.12)', color: '#c0392b' };
+    if (mime.includes('word')) return { icon: 'fa-file-word', bg: 'rgba(41,128,185,.12)', color: '#2980b9' };
+    if (mime.includes('powerpoint') || mime.includes('presentation')) return { icon: 'fa-file-powerpoint', bg: 'rgba(231,76,60,.1)', color: '#c0392b' };
+    if (mime.includes('excel') || mime.includes('spreadsheet')) return { icon: 'fa-file-excel', bg: 'rgba(39,174,96,.12)', color: '#27ae60' };
+    if (mime.startsWith('image/')) return { icon: 'fa-file-image', bg: 'rgba(39,174,96,.12)', color: '#27ae60' };
+    if (mime.startsWith('video/')) return { icon: 'fa-file-video', bg: 'rgba(142,68,173,.12)', color: '#8e44ad' };
+    if (mime.startsWith('audio/')) return { icon: 'fa-file-audio', bg: 'rgba(230,126,34,.12)', color: '#e67e22' };
+    return { icon: 'fa-file', bg: 'rgba(91,79,207,.1)', color: 'var(--primary)' };
+  }
 
   // Sidebar scroll highlight
   document.addEventListener('scroll', () => {

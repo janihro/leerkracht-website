@@ -87,11 +87,63 @@
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .empty-state i { font-size: 3rem; opacity: .3; margin-bottom: 16px; display: block; }
 
+    /* Section tabs */
+    .section-tabs { display: flex; gap: 6px; margin-bottom: 28px; background: var(--white); border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow); }
+    .section-tab { flex:1; padding: 11px; border-radius: 9px; border: none; background: none; font-family: var(--font-body); font-weight: 800; font-size: .88rem; cursor: pointer; color: var(--text-muted); transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .section-tab.active { background: var(--primary); color: #fff; }
+    .section-panel { display: none; }
+    .section-panel.active { display: block; }
+
+    /* Upload */
+    .upload-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; margin-bottom: 24px; }
+    .upload-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    .upload-drop {
+      border: 2px dashed var(--primary); border-radius: var(--radius-sm); padding: 32px 20px;
+      text-align: center; cursor: pointer; transition: background .2s; margin-bottom: 18px;
+      background: rgba(91,79,207,.03);
+    }
+    .upload-drop:hover, .upload-drop.dragover { background: rgba(91,79,207,.08); }
+    .upload-drop i { font-size: 2rem; color: var(--primary); opacity: .6; margin-bottom: 10px; display: block; }
+    .upload-drop p { font-size: .88rem; color: var(--text-muted); margin: 0; }
+    .upload-drop strong { color: var(--primary); }
+    .upload-drop input[type=file] { display: none; }
+
+    .upload-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .upload-form-grid .full { grid-column: 1/-1; }
+    .upload-form-grid label { font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); display: block; margin-bottom: 5px; }
+    .upload-form-grid input, .upload-form-grid select, .upload-form-grid textarea { width: 100%; font-size: .88rem; border-radius: var(--radius-sm); border: 2px solid var(--border); padding: 9px 12px; font-family: var(--font-body); transition: border-color .2s; }
+    .upload-form-grid input:focus, .upload-form-grid select:focus, .upload-form-grid textarea:focus { border-color: var(--primary); outline: none; }
+    .upload-form-grid textarea { resize: none; min-height: 60px; }
+
+    .selected-file { background: rgba(91,79,207,.06); border-radius: 8px; padding: 10px 14px; font-size: .84rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .selected-file i { color: var(--primary); }
+
+    /* File list */
+    .file-item { background: var(--white); border-radius: var(--radius-sm); box-shadow: var(--shadow); padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; transition: box-shadow .2s; }
+    .file-item:hover { box-shadow: var(--shadow-xl); }
+    .file-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .file-icon.pdf { background: rgba(231,76,60,.12); color: #c0392b; }
+    .file-icon.doc { background: rgba(41,128,185,.12); color: #2980b9; }
+    .file-icon.img { background: rgba(39,174,96,.12); color: #27ae60; }
+    .file-icon.vid { background: rgba(142,68,173,.12); color: #8e44ad; }
+    .file-icon.other { background: rgba(91,79,207,.1); color: var(--primary); }
+    .file-body { flex: 1; min-width: 0; }
+    .file-body h4 { font-size: .9rem; font-weight: 800; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-body p { font-size: .75rem; color: var(--text-muted); margin: 0; }
+    .file-tag { display: inline-block; font-size: .68rem; font-weight: 800; padding: 2px 8px; border-radius: 99px; background: rgba(91,79,207,.1); color: var(--primary); margin-right: 6px; }
+    .file-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    .upload-progress { background: #f0eeff; border-radius: 99px; height: 6px; overflow: hidden; margin-top: 10px; display: none; }
+    .upload-progress-bar { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width .3s; width: 0; }
+
     @media (max-width: 640px) {
       .docent-login-card { padding: 36px 24px; }
       .stats-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
       .stat-card .num { font-size: 1.5rem; }
       .filter-tabs { flex-wrap: wrap; }
+      .upload-form-grid { grid-template-columns: 1fr; }
+      .section-tabs { flex-direction: column; }
+      .file-item { flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -140,38 +192,117 @@
 <div class="docent-wrap" id="docent-panel-wrap" style="display:none;">
   <div class="docent-panel">
 
-    <div class="docent-panel-header">
-      <div>
-        <h2><i class="fas fa-comments" style="color:var(--primary);margin-right:10px;"></i>Vragen van ouders</h2>
-        <p>Beantwoord vragen over de lesstof — ouders zien de antwoorden direct in het portaal.</p>
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="loadQuestions()"><i class="fas fa-sync-alt"></i> Vernieuwen</button>
+    <!-- Section tabs -->
+    <div class="section-tabs">
+      <button class="section-tab active" id="tab-vragen" onclick="showSection('vragen',this)">
+        <i class="fas fa-comments"></i> Vragen van ouders
+      </button>
+      <button class="section-tab" id="tab-materiaal" onclick="showSection('materiaal',this)">
+        <i class="fas fa-upload"></i> Lesmateriaal uploaden
+      </button>
     </div>
 
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="num" id="stat-total">—</div>
-        <div class="lbl">Totaal</div>
+    <!-- ── VRAGEN SECTIE ── -->
+    <div class="section-panel active" id="section-vragen">
+      <div class="docent-panel-header">
+        <div>
+          <h2><i class="fas fa-comments" style="color:var(--primary);margin-right:10px;"></i>Vragen van ouders</h2>
+          <p>Beantwoord vragen over de lesstof — ouders zien de antwoorden direct in het portaal.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadQuestions()"><i class="fas fa-sync-alt"></i> Vernieuwen</button>
       </div>
-      <div class="stat-card">
-        <div class="num" id="stat-open" style="color:#c0392b;">—</div>
-        <div class="lbl">Open</div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="num" id="stat-total">—</div>
+          <div class="lbl">Totaal</div>
+        </div>
+        <div class="stat-card">
+          <div class="num" id="stat-open" style="color:#c0392b;">—</div>
+          <div class="lbl">Open</div>
+        </div>
+        <div class="stat-card">
+          <div class="num" id="stat-answered" style="color:var(--green);">—</div>
+          <div class="lbl">Beantwoord</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="num" id="stat-answered" style="color:var(--green);">—</div>
-        <div class="lbl">Beantwoord</div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setFilter('all',this)">Alle vragen</button>
+        <button class="filter-tab" onclick="setFilter('open',this)">Open</button>
+        <button class="filter-tab" onclick="setFilter('answered',this)">Beantwoord</button>
+      </div>
+
+      <div id="questions-list">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>Vragen laden...</div>
       </div>
     </div>
 
-    <div class="filter-tabs">
-      <button class="filter-tab active" onclick="setFilter('all',this)">Alle vragen</button>
-      <button class="filter-tab" onclick="setFilter('open',this)">Open</button>
-      <button class="filter-tab" onclick="setFilter('answered',this)">Beantwoord</button>
-    </div>
+    <!-- ── LESMATERIAAL SECTIE ── -->
+    <div class="section-panel" id="section-materiaal">
 
-    <div id="questions-list">
-      <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>Vragen laden...</div>
-    </div>
+      <!-- Upload formulier -->
+      <div class="upload-card">
+        <h3><i class="fas fa-cloud-upload-alt"></i> Nieuw bestand uploaden</h3>
+
+        <div class="upload-drop" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.mp3,.txt,.zip" />
+          <i class="fas fa-file-upload"></i>
+          <p><strong>Klik om een bestand te kiezen</strong> of sleep het hier naartoe</p>
+          <p style="font-size:.76rem;margin-top:6px;">PDF, Word, PowerPoint, afbeelding, video · max 50 MB</p>
+        </div>
+
+        <div class="selected-file" id="selected-file" style="display:none;">
+          <i class="fas fa-file"></i>
+          <span id="selected-file-name">—</span>
+          <span id="selected-file-size" style="color:var(--text-muted);margin-left:auto;font-size:.75rem;"></span>
+        </div>
+
+        <div class="upload-form-grid">
+          <div class="full">
+            <label>Titel *</label>
+            <input type="text" id="upload-title" placeholder="Bijv: Rekenen Week 23 — Breuken" />
+          </div>
+          <div>
+            <label>Vak</label>
+            <select id="upload-vak">
+              <option value="Algemeen">Algemeen</option>
+              <option value="Rekenen">Rekenen</option>
+              <option value="Taal">Taal</option>
+              <option value="Engels">Engels</option>
+              <option value="Leervaardigheden">Leervaardigheden</option>
+              <option value="Bonus">Bonus / Extra</option>
+            </select>
+          </div>
+          <div>
+            <label>Beschrijving</label>
+            <input type="text" id="upload-desc" placeholder="Korte omschrijving (optioneel)" />
+          </div>
+        </div>
+
+        <div class="upload-progress" id="upload-progress">
+          <div class="upload-progress-bar" id="upload-progress-bar"></div>
+        </div>
+
+        <button class="btn btn-primary" id="upload-btn" onclick="uploadFile()">
+          <i class="fas fa-cloud-upload-alt"></i> Uploaden
+        </button>
+      </div>
+
+      <!-- Geüploade bestanden -->
+      <div class="docent-panel-header" style="margin-bottom:16px;">
+        <div>
+          <h2><i class="fas fa-folder-open" style="color:var(--primary);margin-right:10px;"></i>Geüploade bestanden</h2>
+          <p>Alle bestanden zijn direct zichtbaar in het portaal van ouders.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadFiles()"><i class="fas fa-sync-alt"></i> Vernieuwen</button>
+      </div>
+
+      <div id="files-list">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Bestanden laden...</div>
+      </div>
+
+    </div><!-- end section-materiaal -->
 
   </div>
 </div>
@@ -236,6 +367,15 @@
     document.getElementById('docent-panel-wrap').style.display = 'block';
     document.getElementById('docent-nav-right').style.display = 'flex';
     loadQuestions();
+    loadFiles();
+  }
+
+  // Section tabs
+  function showSection(name, btn) {
+    document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('section-' + name).classList.add('active');
   }
 
   // Filter
@@ -372,6 +512,163 @@
         </div>`;
     }
   }
+
+  // ─── FILE UPLOAD ────────────────────────────────
+
+  let selectedFile = null;
+
+  document.getElementById('file-input').addEventListener('change', e => {
+    selectedFile = e.target.files[0];
+    showSelectedFile(selectedFile);
+  });
+
+  // Drag and drop
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    selectedFile = e.dataTransfer.files[0];
+    showSelectedFile(selectedFile);
+  });
+
+  function showSelectedFile(file) {
+    if (!file) return;
+    document.getElementById('selected-file').style.display = 'flex';
+    document.getElementById('selected-file-name').textContent = file.name;
+    document.getElementById('selected-file-size').textContent = formatSize(file.size);
+    // Auto-fill title if empty
+    if (!document.getElementById('upload-title').value) {
+      document.getElementById('upload-title').value = file.name.replace(/\.[^.]+$/, '');
+    }
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function fileIcon(mime) {
+    if (!mime) return { cls: 'other', icon: 'fa-file' };
+    if (mime === 'application/pdf') return { cls: 'pdf', icon: 'fa-file-pdf' };
+    if (mime.includes('word')) return { cls: 'doc', icon: 'fa-file-word' };
+    if (mime.includes('powerpoint') || mime.includes('presentation')) return { cls: 'doc', icon: 'fa-file-powerpoint' };
+    if (mime.includes('excel') || mime.includes('spreadsheet')) return { cls: 'doc', icon: 'fa-file-excel' };
+    if (mime.startsWith('image/')) return { cls: 'img', icon: 'fa-file-image' };
+    if (mime.startsWith('video/')) return { cls: 'vid', icon: 'fa-file-video' };
+    if (mime.startsWith('audio/')) return { cls: 'vid', icon: 'fa-file-audio' };
+    return { cls: 'other', icon: 'fa-file' };
+  }
+
+  async function uploadFile() {
+    if (!selectedFile) { alert('Selecteer eerst een bestand.'); return; }
+    const title = document.getElementById('upload-title').value.trim();
+    if (!title) { document.getElementById('upload-title').focus(); return; }
+
+    const btn = document.getElementById('upload-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploaden...';
+
+    const progressWrap = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('upload-progress-bar');
+    progressWrap.style.display = 'block';
+    progressBar.style.width = '30%';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('title', title);
+    formData.append('description', document.getElementById('upload-desc').value.trim());
+    formData.append('vak', document.getElementById('upload-vak').value);
+
+    try {
+      progressBar.style.width = '60%';
+      const res = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'x-teacher-password': teacherPass },
+        body: formData
+      });
+      progressBar.style.width = '100%';
+
+      if (res.status === 401) { alert('Onjuist wachtwoord.'); return; }
+      if (!res.ok) { const e = await res.json(); alert('Fout: ' + e.error); return; }
+
+      // Reset form
+      selectedFile = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('upload-title').value = '';
+      document.getElementById('upload-desc').value = '';
+      document.getElementById('upload-vak').value = 'Algemeen';
+      document.getElementById('selected-file').style.display = 'none';
+      btn.innerHTML = '<i class="fas fa-check"></i> Geüpload!';
+      btn.style.background = 'linear-gradient(135deg,var(--green),#04c994)';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Uploaden';
+        btn.style.background = '';
+        progressWrap.style.display = 'none';
+        progressBar.style.width = '0';
+      }, 1500);
+      await loadFiles();
+    } catch {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Uploaden';
+      progressWrap.style.display = 'none';
+      alert('Upload mislukt. Controleer de verbinding.');
+    }
+  }
+
+  async function loadFiles() {
+    const list = document.getElementById('files-list');
+    if (!list) return;
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Bestanden laden...</div>';
+    try {
+      const res = await fetch('/api/files');
+      const files = await res.json();
+      if (files.length === 0) {
+        list.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i> Nog geen bestanden geüpload.</div>';
+        return;
+      }
+      list.innerHTML = files.map(f => {
+        const ic = fileIcon(f.mimetype);
+        return `
+          <div class="file-item" id="fi-${f.id}">
+            <div class="file-icon ${ic.cls}"><i class="fas ${ic.icon}"></i></div>
+            <div class="file-body">
+              <h4>${f.title}</h4>
+              <p>
+                <span class="file-tag">${f.vak}</span>
+                ${f.description ? `<span style="color:var(--text-muted)">${f.description} · </span>` : ''}
+                <span style="color:var(--text-muted)">${formatSize(f.size)} · ${formatDate(f.uploadedAt)}</span>
+              </p>
+            </div>
+            <div class="file-actions">
+              <a href="${f.url}" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Bekijken</a>
+              <button class="btn-delete" onclick="deleteFile('${f.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> Kon bestanden niet laden.</div>';
+    }
+  }
+
+  async function deleteFile(id) {
+    if (!confirm('Weet je zeker dat je dit bestand wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+    try {
+      const res = await fetch(`/api/files/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherPassword: teacherPass })
+      });
+      if (res.status === 401) { alert('Onjuist wachtwoord.'); return; }
+      if (res.ok) loadFiles();
+    } catch {}
+  }
+
+  // ─── DELETE QUESTION ────────────────────────────────
 
   // Delete question
   async function deleteQuestion(id) {
