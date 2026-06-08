@@ -140,11 +140,15 @@
     <div class="portaal-panel" id="panel-docent">
       <form class="portaal-form" id="docent-login-form" novalidate>
         <div class="form-group">
-          <label for="docent-pass">Docentenwachtwoord</label>
+          <label for="docent-user">Gebruikersnaam</label>
+          <input type="text" id="docent-user" placeholder="Jouw gebruikersnaam" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="docent-pass">Wachtwoord</label>
           <input type="password" id="docent-pass" placeholder="••••••••" required autocomplete="current-password" />
         </div>
         <div id="docent-error" style="display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:14px;text-align:center;">
-          <i class="fas fa-exclamation-circle"></i> Onjuist wachtwoord
+          <i class="fas fa-exclamation-circle"></i> Onjuiste gebruikersnaam of wachtwoord
         </div>
         <button type="submit" class="btn btn-primary btn-full">
           <i class="fas fa-chalkboard-teacher"></i> Inloggen als docent
@@ -280,20 +284,25 @@
   // ── Docent login ──────────────────────────────────────
   document.getElementById('docent-login-form').addEventListener('submit', async e => {
     e.preventDefault();
+    const user  = document.getElementById('docent-user').value.trim();
     const pass  = document.getElementById('docent-pass').value.trim();
     const errEl = document.getElementById('docent-error');
     const btn   = e.target.querySelector('button[type=submit]');
-    if (!pass) return;
+    if (!user || !pass) { errEl.style.display = 'block'; return; }
     errEl.style.display = 'none';
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
     try {
       const res = await fetch('/api/verify-password', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacherPassword: pass })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-teacher-username': user, 'x-teacher-password': pass },
+        body: JSON.stringify({ teacherPassword: pass, teacherUsername: user })
       });
       if (res.ok) {
+        const data = await res.json();
         localStorage.setItem('docent_pass', pass);
+        localStorage.setItem('docent_user', user);
+        localStorage.setItem('docent_perms', JSON.stringify(data.permissions || []));
         window.location.href = 'docent.html';
       } else {
         errEl.style.display = 'block';
