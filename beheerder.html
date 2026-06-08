@@ -1560,10 +1560,10 @@ async function editTeacher(id) {
     document.querySelectorAll('.dt-perm').forEach(cb => {
       cb.checked = (t.permissions||[]).includes(cb.value);
     });
-    document.getElementById('dt-form-title').innerHTML = '<i class="fas fa-user-edit" style="color:var(--primary);margin-right:8px;"></i>Docent bewerken';
+    document.getElementById('docent-form-title').innerHTML = '<i class="fas fa-user-edit" style="color:var(--primary);margin-right:8px;"></i>Docent bewerken';
     document.getElementById('dt-save-label').textContent = 'Opslaan';
     document.getElementById('dt-cancel-btn').style.display = '';
-    document.getElementById('card').scrollIntoView({ behavior:'smooth' });
+    document.getElementById('panel-docenten').scrollIntoView({ behavior:'smooth' });
   } catch {}
 }
 
