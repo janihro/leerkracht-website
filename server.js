@@ -16,10 +16,12 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 const QUESTIONS_FILE = path.join(DATA_DIR, 'questions.json');
 const FILES_META = path.join(DATA_DIR, 'files.json');
 const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
+const REVIEWS_FILE = path.join(DATA_DIR, 'reviews.json');
 
 if (!fs.existsSync(QUESTIONS_FILE)) fs.writeFileSync(QUESTIONS_FILE, JSON.stringify({ questions: [] }, null, 2));
 if (!fs.existsSync(FILES_META)) fs.writeFileSync(FILES_META, JSON.stringify({ files: [] }, null, 2));
 if (!fs.existsSync(REGISTRATIONS_FILE)) fs.writeFileSync(REGISTRATIONS_FILE, JSON.stringify({ registrations: [] }, null, 2));
+if (!fs.existsSync(REVIEWS_FILE)) fs.writeFileSync(REVIEWS_FILE, JSON.stringify({ reviews: [] }, null, 2));
 
 function readJSON(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
@@ -176,6 +178,41 @@ app.delete('/api/files/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// ─── REVIEWS API ──────────────────────────────────────────
+
+app.get('/api/reviews', (req, res) => {
+  const data = readJSON(REVIEWS_FILE);
+  const reviews = (data.reviews || []).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  res.json(reviews);
+});
+
+app.post('/api/reviews', (req, res) => {
+  const { name, role, rating, text } = req.body;
+  if (!name?.trim() || !text?.trim() || !rating) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
+  const data = readJSON(REVIEWS_FILE);
+  if (!data.reviews) data.reviews = [];
+  const review = {
+    id: generateId(),
+    name: name.trim(),
+    role: (role || '').trim(),
+    rating: Math.min(5, Math.max(1, parseInt(rating) || 5)),
+    text: text.trim(),
+    submittedAt: new Date().toISOString(),
+  };
+  data.reviews.push(review);
+  writeJSON(REVIEWS_FILE, data);
+  res.status(201).json(review);
+});
+
+app.delete('/api/reviews/:id', (req, res) => {
+  const { teacherPassword } = req.body;
+  if (teacherPassword !== TEACHER_PASS) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(REVIEWS_FILE);
+  data.reviews = (data.reviews || []).filter(r => r.id !== req.params.id);
+  writeJSON(REVIEWS_FILE, data);
+  res.json({ success: true });
+});
+
 // ─── REGISTRATIONS API ────────────────────────────────────
 
 // GET all registrations (teacher only)
@@ -189,7 +226,7 @@ app.get('/api/registrations', (req, res) => {
 
 // POST new registration (public)
 app.post('/api/registrations', (req, res) => {
-  const { voornaam, achternaam, email, telefoon, kindNaam, leerjaar, vak, bericht } = req.body;
+  const { voornaam, achternaam, email, telefoon, kindNaam, leeftijd, leerjaar, vak, bericht } = req.body;
   if (!voornaam || !email || !kindNaam) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
   const data = readJSON(REGISTRATIONS_FILE);
   if (!data.registrations) data.registrations = [];
@@ -197,7 +234,7 @@ app.post('/api/registrations', (req, res) => {
     id: generateId(),
     voornaam, achternaam, email,
     telefoon: telefoon || '',
-    kindNaam, leerjaar, vak,
+    kindNaam, leeftijd: leeftijd || leerjaar || '', vak,
     bericht: bericht || '',
     status: 'nieuw',
     submittedAt: new Date().toISOString(),

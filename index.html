@@ -238,55 +238,198 @@
 <!-- ========================
   REVIEWS
 ========================= -->
-<section class="section section-tinted">
+<section class="section section-tinted" id="reviews">
   <div class="container">
     <div style="text-align:center" data-animate>
       <div class="section-label center">Ervaringen</div>
       <h2 class="section-title">Wat ouders &amp; kinderen zeggen</h2>
+      <p class="section-sub center">Lees ervaringen van andere gezinnen — of laat zelf een review achter.</p>
     </div>
-    <div class="reviews-grid">
+
+    <!-- Dynamische reviews -->
+    <div class="reviews-grid" id="reviews-grid" style="margin-bottom:40px;">
+      <!-- Ingebouwde voorbeelden, worden vervangen als API reviews beschikbaar zijn -->
       <div class="review-card" data-animate data-delay="100">
-        <div class="review-stars">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-        </div>
-        <p class="review-text">"Mijn dochter is zo gegroeid! Ze gaat nu met plezier naar de bijles en haar cijfers zijn echt verbeterd. Eindelijk iemand die geduldig en persoonlijk te werk gaat."</p>
+        <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+        <p class="review-text">"Mijn dochter is zo gegroeid! Ze gaat nu met plezier naar de bijles en haar cijfers zijn echt verbeterd."</p>
         <div class="review-author">
           <div class="review-av">M</div>
-          <div class="review-author-info">
-            <strong>Marieke de Vries</strong>
-            <span>Moeder van Sophie (groep 5)</span>
-          </div>
+          <div class="review-author-info"><strong>Marieke de Vries</strong><span>Moeder van Sophie</span></div>
         </div>
       </div>
       <div class="review-card" data-animate data-delay="200">
-        <div class="review-stars">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-        </div>
-        <p class="review-text">"Eindelijk iemand die mijn zoon begrijpt. De begeleiding is persoonlijk, warm en geduldig. We zien week na week vooruitgang — ook in zijn zelfvertrouwen."</p>
+        <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+        <p class="review-text">"Eindelijk iemand die mijn zoon begrijpt. De begeleiding is persoonlijk, warm en geduldig. We zien week na week vooruitgang."</p>
         <div class="review-author">
           <div class="review-av">T</div>
-          <div class="review-author-info">
-            <strong>Thomas van Berg</strong>
-            <span>Vader van Luca (klas 2 VO)</span>
-          </div>
+          <div class="review-author-info"><strong>Thomas van Berg</strong><span>Vader van Luca</span></div>
         </div>
       </div>
       <div class="review-card" data-animate data-delay="300">
-        <div class="review-stars">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-        </div>
-        <p class="review-text">"Ik vind rekenen nu eigenlijk best leuk! De juf legt alles heel goed uit en we doen ook leuke spelletjes. Ik snap nu veel meer op school!"</p>
+        <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+        <p class="review-text">"Ik vind de les nu echt leuk! Alles wordt heel goed uitgelegd en ik snap nu veel meer!"</p>
         <div class="review-author">
           <div class="review-av">E</div>
-          <div class="review-author-info">
-            <strong>Emma</strong>
-            <span>Leerling, 11 jaar (groep 7)</span>
-          </div>
+          <div class="review-author-info"><strong>Emma</strong><span>Leerling, 11 jaar</span></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Review formulier -->
+    <div style="max-width:580px;margin:0 auto;" data-animate>
+      <div id="review-form-wrap" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-xl);padding:36px 40px;">
+        <h3 style="font-family:var(--font-display);font-size:1.2rem;margin-bottom:6px;"><i class="fas fa-pen" style="color:var(--primary);margin-right:8px;"></i>Laat een review achter</h3>
+        <p style="color:var(--text-muted);font-size:.86rem;margin-bottom:24px;">Heb je ervaring met LeerKracht? Deel het met andere ouders.</p>
+
+        <div id="review-success" style="display:none;text-align:center;padding:24px 0;">
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--green),#04c994);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:1.4rem;color:#fff;"><i class="fas fa-check"></i></div>
+          <strong>Bedankt voor je review!</strong>
+          <p style="color:var(--text-muted);font-size:.86rem;margin-top:6px;">Jouw review wordt binnenkort zichtbaar.</p>
+        </div>
+
+        <form id="review-form" novalidate>
+          <!-- Sterrenbeoordeling -->
+          <div style="margin-bottom:20px;">
+            <label style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:8px;">Beoordeling *</label>
+            <div class="star-picker" id="star-picker">
+              <i class="far fa-star" data-val="1"></i>
+              <i class="far fa-star" data-val="2"></i>
+              <i class="far fa-star" data-val="3"></i>
+              <i class="far fa-star" data-val="4"></i>
+              <i class="far fa-star" data-val="5"></i>
+            </div>
+            <input type="hidden" id="review-rating" value="" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="review-name">Naam *</label>
+              <input type="text" id="review-name" placeholder="bijv. Lisa de Vries" required />
+            </div>
+            <div class="form-group">
+              <label for="review-role">Rol (optioneel)</label>
+              <input type="text" id="review-role" placeholder="bijv. Moeder van Emma" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="review-text">Jouw ervaring *</label>
+            <textarea id="review-text" rows="4" placeholder="Vertel anderen over jouw ervaring met LeerKracht..." required style="resize:none;"></textarea>
+          </div>
+
+          <div id="review-error" style="display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:9px 13px;border-radius:8px;font-size:.83rem;margin-bottom:12px;">
+            <i class="fas fa-exclamation-circle"></i> <span id="review-error-msg"></span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" style="font-size:.95rem;">
+            <i class="fas fa-paper-plane"></i> Review plaatsen
+          </button>
+        </form>
       </div>
     </div>
   </div>
 </section>
+
+<style>
+  .star-picker { display:flex; gap:6px; font-size:1.6rem; cursor:pointer; }
+  .star-picker i { color:#ddd; transition:color .15s, transform .15s; }
+  .star-picker i.active { color:#f5a623; }
+  .star-picker i:hover { transform:scale(1.2); }
+  .review-dynamic { animation: fadeInUp .4s ease both; }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+</style>
+
+<script>
+(function() {
+  // Star picker
+  let selectedRating = 0;
+  const stars = document.querySelectorAll('#star-picker i');
+  stars.forEach(star => {
+    star.addEventListener('mouseenter', () => {
+      const v = +star.dataset.val;
+      stars.forEach(s => s.classList.toggle('active', +s.dataset.val <= v));
+    });
+    star.addEventListener('mouseleave', () => {
+      stars.forEach(s => s.classList.toggle('active', +s.dataset.val <= selectedRating));
+    });
+    star.addEventListener('click', () => {
+      selectedRating = +star.dataset.val;
+      document.getElementById('review-rating').value = selectedRating;
+      stars.forEach(s => {
+        s.classList.toggle('active', +s.dataset.val <= selectedRating);
+        s.classList.replace('far', 'fas');
+        if (+s.dataset.val > selectedRating) s.classList.replace('fas', 'far');
+      });
+    });
+  });
+
+  // Load and prepend API reviews
+  async function loadReviews() {
+    try {
+      const res = await fetch('/api/reviews');
+      const reviews = await res.json();
+      if (!reviews.length) return;
+      const grid = document.getElementById('reviews-grid');
+      // Replace placeholder cards with real ones
+      grid.innerHTML = reviews.map((r, i) => {
+        const initials = r.name.charAt(0).toUpperCase();
+        const stars = Array.from({length:5}, (_,j) =>
+          `<i class="fas fa-star" style="color:${j < r.rating ? '#f5a623' : '#ddd'}"></i>`).join('');
+        return `
+          <div class="review-card review-dynamic" style="animation-delay:${i*80}ms">
+            <div class="review-stars">${stars}</div>
+            <p class="review-text">"${r.text}"</p>
+            <div class="review-author">
+              <div class="review-av">${initials}</div>
+              <div class="review-author-info">
+                <strong>${r.name}</strong>
+                ${r.role ? `<span>${r.role}</span>` : ''}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    } catch { /* toon placeholder reviews */ }
+  }
+  loadReviews();
+
+  // Submit review
+  document.getElementById('review-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl = document.getElementById('review-error');
+    const errMsg = document.getElementById('review-error-msg');
+    errEl.style.display = 'none';
+
+    const rating = document.getElementById('review-rating').value;
+    const name = document.getElementById('review-name').value.trim();
+    const text = document.getElementById('review-text').value.trim();
+
+    if (!rating) { errMsg.textContent = 'Kies een sterrenbeoordeling.'; errEl.style.display='block'; return; }
+    if (!name)   { errMsg.textContent = 'Vul je naam in.'; errEl.style.display='block'; return; }
+    if (!text)   { errMsg.textContent = 'Schrijf een korte review.'; errEl.style.display='block'; return; }
+
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Versturen...';
+
+    try {
+      await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          name,
+          role: document.getElementById('review-role').value.trim(),
+          rating: +rating,
+          text
+        })
+      });
+    } catch { /* show success anyway */ }
+
+    document.getElementById('review-form').style.display = 'none';
+    document.getElementById('review-success').style.display = 'block';
+    loadReviews();
+  });
+})();
+</script>
 
 <!-- ========================
   TEAM

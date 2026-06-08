@@ -156,15 +156,8 @@
             <input type="text" id="kind-naam" placeholder="bijv. Emma" required />
           </div>
           <div class="form-group">
-            <label for="leerjaar">Leerjaar / groep *</label>
-            <select id="leerjaar" required>
-              <option value="">Selecteer...</option>
-              <option>Groep 3</option><option>Groep 4</option><option>Groep 5</option>
-              <option>Groep 6</option><option>Groep 7</option><option>Groep 8</option>
-              <option>Klas 1 VO</option><option>Klas 2 VO</option>
-              <option>Klas 3 VO</option><option>Klas 4 VO</option>
-              <option>Volwassene</option>
-            </select>
+            <label for="leeftijd">Leeftijd kind *</label>
+            <input type="number" id="leeftijd" placeholder="bijv. 8" min="4" max="99" required />
           </div>
         </div>
 
@@ -233,7 +226,7 @@
           email: document.getElementById('email').value.trim(),
           telefoon: document.getElementById('telefoon').value.trim(),
           kindNaam: document.getElementById('kind-naam').value.trim(),
-          leerjaar: document.getElementById('leerjaar').value,
+          leeftijd: document.getElementById('leeftijd').value,
           vak: 'Papiaments les',
           bericht: document.getElementById('bericht').value.trim(),
         })
