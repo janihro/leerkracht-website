@@ -124,21 +124,33 @@
   // Docent login
   document.getElementById('docent-login-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const pass = document.getElementById('docent-pass').value;
+    const pass = document.getElementById('docent-pass').value.trim();
     if (!pass) return;
     const errEl = document.getElementById('docent-error');
     errEl.style.display = 'none';
 
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+
     try {
-      const res = await fetch('/api/questions');
+      const res = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherPassword: pass })
+      });
       if (res.ok) {
-        sessionStorage.setItem('docent_pass', pass);
+        localStorage.setItem('docent_pass', pass);
         window.location.href = 'docent.html';
       } else {
         errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-chalkboard-teacher"></i> Inloggen als docent';
       }
     } catch {
       errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-chalkboard-teacher"></i> Inloggen als docent';
     }
   });
 </script>

@@ -63,6 +63,16 @@ app.use(express.static(path.join(__dirname)));
 // Serve uploaded files
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// ─── AUTH CHECK ────────────────────────────────────────────
+app.post('/api/verify-password', (req, res) => {
+  const { teacherPassword } = req.body;
+  if (teacherPassword === TEACHER_PASS) {
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ ok: false });
+  }
+});
+
 // ─── Q&A API ───────────────────────────────────────────────
 
 app.get('/api/questions', (req, res) => {

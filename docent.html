@@ -370,47 +370,79 @@
     return (email || '?').charAt(0).toUpperCase();
   }
 
-  // Login form
+  function showPanel() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('docent-panel-wrap').style.display = 'block';
+    document.getElementById('docent-nav-right').style.display = 'flex';
+  }
+
+  function showLogin(msg) {
+    teacherPass = '';
+    localStorage.removeItem('docent_pass');
+    document.getElementById('docent-panel-wrap').style.display = 'none';
+    document.getElementById('docent-nav-right').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('docent-pass').value = '';
+    if (msg) {
+      const err = document.getElementById('login-error');
+      err.innerHTML = '<i class="fas fa-lock"></i> ' + msg;
+      err.style.display = 'block';
+    }
+  }
+
+  // Called anywhere a 401 is received
+  function handle401() {
+    showLogin('Sessie verlopen. Log opnieuw in.');
+  }
+
+  // Login form — verifies password against API
   document.getElementById('docent-login-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const pass = document.getElementById('docent-pass').value;
+    const pass = document.getElementById('docent-pass').value.trim();
     if (!pass) return;
+    const errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
 
-    // Verify by trying to fetch all questions (unauthenticated GET) and then posting a test
-    // Actually just store the password and try it on first real action. But let's verify immediately:
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+
     try {
-      const res = await fetch('/api/questions');
+      const res = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherPassword: pass })
+      });
       if (res.ok) {
         teacherPass = pass;
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('docent-panel-wrap').style.display = 'block';
-        document.getElementById('docent-nav-right').style.display = 'flex';
-        sessionStorage.setItem('docent_pass', pass);
+        localStorage.setItem('docent_pass', pass);
+        showPanel();
         loadQuestions();
+        loadFiles();
+      } else {
+        errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Onjuist wachtwoord';
+        errEl.style.display = 'block';
       }
     } catch {
-      document.getElementById('login-error').style.display = 'block';
+      errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Verbindingsfout. Probeer opnieuw.';
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Inloggen als docent';
     }
   });
 
   // Logout
   document.getElementById('docent-logout').addEventListener('click', e => {
     e.preventDefault();
-    sessionStorage.removeItem('docent_pass');
-    teacherPass = '';
-    document.getElementById('docent-panel-wrap').style.display = 'none';
-    document.getElementById('docent-nav-right').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'block';
-    document.getElementById('docent-pass').value = '';
+    showLogin();
   });
 
-  // Check session
-  const savedPass = sessionStorage.getItem('docent_pass');
+  // Restore session from localStorage (survives browser restarts on mobile)
+  const savedPass = localStorage.getItem('docent_pass');
   if (savedPass) {
     teacherPass = savedPass;
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('docent-panel-wrap').style.display = 'block';
-    document.getElementById('docent-nav-right').style.display = 'flex';
+    showPanel();
     loadQuestions();
     loadFiles();
   }
@@ -526,13 +558,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answer, teacherPassword: teacherPass })
       });
-      if (res.status === 401) {
-        alert('Onjuist docentenwachtwoord. Log opnieuw in.');
-        return;
-      }
-      if (res.ok) {
-        await loadQuestions();
-      }
+      if (res.status === 401) { handle401(); return; }
+      if (res.ok) await loadQuestions();
     } catch (err) {
       btn.disabled = false;
       btn.innerHTML = origText;
@@ -636,7 +663,7 @@
       });
       progressBar.style.width = '100%';
 
-      if (res.status === 401) { alert('Onjuist wachtwoord.'); return; }
+      if (res.status === 401) { handle401(); return; }
       if (!res.ok) { const e = await res.json(); alert('Fout: ' + e.error); return; }
 
       // Reset form
@@ -708,7 +735,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacherPassword: teacherPass })
       });
-      if (res.status === 401) { alert('Onjuist wachtwoord.'); return; }
+      if (res.status === 401) { handle401(); return; }
       if (res.ok) loadFiles();
     } catch {}
   }
@@ -724,10 +751,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teacherPassword: teacherPass })
       });
-      if (res.status === 401) {
-        alert('Onjuist docentenwachtwoord. Log opnieuw in.');
-        return;
-      }
+      if (res.status === 401) { handle401(); return; }
       if (res.ok) loadQuestions();
     } catch {}
   }
