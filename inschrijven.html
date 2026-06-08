@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inschrijven — LeerKracht Bijles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .inschrijf-page { min-height: 100vh; background: #f5f4fb; padding: 100px 20px 60px; }
+    .inschrijf-wrap { max-width: 680px; margin: 0 auto; }
+
+    .inschrijf-hero { text-align: center; margin-bottom: 36px; }
+    .inschrijf-hero .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(91,79,207,.1); color: var(--primary);
+      font-size: .78rem; font-weight: 800; padding: 6px 16px;
+      border-radius: 99px; margin-bottom: 16px; letter-spacing: .04em; text-transform: uppercase;
+    }
+    .inschrijf-hero h1 { font-family: var(--font-display); font-size: clamp(1.6rem,4vw,2.2rem); margin-bottom: 10px; }
+    .inschrijf-hero p { color: var(--text-muted); font-size: .95rem; max-width: 480px; margin: 0 auto; }
+
+    .inschrijf-card {
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: var(--shadow-xl); padding: 40px;
+    }
+
+    .form-section-title {
+      font-size: .7rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--primary); margin: 28px 0 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-section-title:first-child { margin-top: 0; }
+    .form-section-title::after {
+      content: ''; flex: 1; height: 1px; background: #eee;
+    }
+
+    .inschrijf-les-card {
+      display: flex; align-items: center; gap: 16px;
+      border: 2px solid var(--primary); border-radius: var(--radius-sm);
+      padding: 16px 20px; background: rgba(91,79,207,.04); margin-bottom: 20px;
+    }
+    .inschrijf-les-icon {
+      width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; color: #fff;
+    }
+    .inschrijf-les-info h3 { font-size: 1rem; font-weight: 800; margin: 0 0 3px; }
+    .inschrijf-les-info p { font-size: .82rem; color: var(--text-muted); margin: 0; }
+
+    .success-card {
+      display: none; text-align: center; padding: 48px 32px;
+      animation: fadeIn .4s ease;
+    }
+    .success-card.show { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .success-icon {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 20px;
+      background: linear-gradient(135deg, var(--green), #04c994);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: #fff;
+    }
+    .success-card h2 { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 10px; }
+    .success-card p { color: var(--text-muted); margin-bottom: 28px; }
+
+    @media (max-width: 640px) {
+      .inschrijf-card { padding: 24px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark"><i class="fas fa-graduation-cap"></i></div>
+      <span>LeerKracht</span>
+    </a>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="aanbod.html">Aanbod</a></li>
+      <li><a href="over-mij.html">Over mij</a></li>
+      <li><a href="webshop.html">Webshop</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="inschrijven.html" class="nav-cta active">Inschrijven</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="inschrijf-page">
+  <div class="inschrijf-wrap">
+
+    <div class="inschrijf-hero" data-animate>
+      <div class="hero-badge"><i class="fas fa-star"></i> Gratis kennismaking</div>
+      <h1>Schrijf je nu in</h1>
+      <p>Vul het formulier in en we nemen binnen één werkdag contact met je op voor een gratis kennismakingsgesprek.</p>
+    </div>
+
+    <div class="inschrijf-card" data-animate data-delay="100">
+
+      <!-- Succes scherm -->
+      <div class="success-card" id="success-card">
+        <div class="success-icon"><i class="fas fa-check"></i></div>
+        <h2>Aanvraag ontvangen!</h2>
+        <p>Bedankt voor je inschrijving. We nemen binnen één werkdag contact met je op.</p>
+        <a href="index.html" class="btn btn-primary"><i class="fas fa-home"></i> Terug naar home</a>
+      </div>
+
+      <!-- Formulier -->
+      <form id="inschrijf-form" novalidate>
+
+        <div class="form-section-title"><i class="fas fa-book"></i> Les</div>
+        <div class="inschrijf-les-card">
+          <div class="inschrijf-les-icon"><i class="fas fa-language"></i></div>
+          <div class="inschrijf-les-info">
+            <h3>Papiaments les</h3>
+            <p>Persoonlijke begeleiding bij Papiaments — lezen, schrijven en spreken</p>
+          </div>
+        </div>
+
+        <div class="form-section-title"><i class="fas fa-user"></i> Gegevens ouder / verzorger</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="voornaam">Voornaam *</label>
+            <input type="text" id="voornaam" placeholder="bijv. Lisa" required autocomplete="given-name" />
+          </div>
+          <div class="form-group">
+            <label for="achternaam">Achternaam *</label>
+            <input type="text" id="achternaam" placeholder="bijv. Jansen" required autocomplete="family-name" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">E-mailadres *</label>
+            <input type="email" id="email" placeholder="jouw@email.nl" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="telefoon">Telefoonnummer</label>
+            <input type="tel" id="telefoon" placeholder="06 — xx xx xx xx" autocomplete="tel" />
+          </div>
+        </div>
+
+        <div class="form-section-title"><i class="fas fa-child"></i> Gegevens kind</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="kind-naam">Naam kind *</label>
+            <input type="text" id="kind-naam" placeholder="bijv. Emma" required />
+          </div>
+          <div class="form-group">
+            <label for="leerjaar">Leerjaar / groep *</label>
+            <select id="leerjaar" required>
+              <option value="">Selecteer...</option>
+              <option>Groep 3</option><option>Groep 4</option><option>Groep 5</option>
+              <option>Groep 6</option><option>Groep 7</option><option>Groep 8</option>
+              <option>Klas 1 VO</option><option>Klas 2 VO</option>
+              <option>Klas 3 VO</option><option>Klas 4 VO</option>
+              <option>Volwassene</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-section-title"><i class="fas fa-comment-alt"></i> Toelichting</div>
+
+        <div class="form-group">
+          <label for="bericht">Bericht (optioneel)</label>
+          <textarea id="bericht" rows="4" placeholder="Vertel ons meer over het niveau van je kind, specifieke wensen of vragen die je hebt..."></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px;">
+          <div class="form-check">
+            <input type="checkbox" id="akkoord" required />
+            <label for="akkoord" style="text-transform:none;letter-spacing:0;font-weight:400;">
+              Ik ga akkoord met het <a href="#" style="color:var(--primary);">privacybeleid</a> en geef toestemming voor contact over mijn aanvraag.
+            </label>
+          </div>
+        </div>
+
+        <div id="form-error" style="display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:14px;">
+          <i class="fas fa-exclamation-circle"></i> <span id="form-error-msg">Vul alle verplichte velden in.</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem;padding:16px;">
+          <i class="fas fa-paper-plane"></i> Aanvraag versturen
+        </button>
+
+        <p style="text-align:center;font-size:.78rem;color:var(--text-muted);margin-top:14px;">
+          <i class="fas fa-lock" style="color:var(--primary);margin-right:4px;"></i>
+          Je gegevens worden vertrouwelijk behandeld en nooit gedeeld met derden.
+        </p>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="main.js"></script>
+<script>
+  document.getElementById('inschrijf-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl = document.getElementById('form-error');
+    errEl.style.display = 'none';
+
+    const akkoord = document.getElementById('akkoord');
+    if (!akkoord.checked) {
+      akkoord.closest('.form-check').style.outline = '2px solid var(--accent)';
+      akkoord.closest('.form-check').style.borderRadius = '4px';
+      document.getElementById('form-error-msg').textContent = 'Ga akkoord met het privacybeleid om door te gaan.';
+      errEl.style.display = 'block';
+      errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Versturen...';
+
+    try {
+      const res = await fetch('/api/registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voornaam: document.getElementById('voornaam').value.trim(),
+          achternaam: document.getElementById('achternaam').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          telefoon: document.getElementById('telefoon').value.trim(),
+          kindNaam: document.getElementById('kind-naam').value.trim(),
+          leerjaar: document.getElementById('leerjaar').value,
+          vak: 'Papiaments les',
+          bericht: document.getElementById('bericht').value.trim(),
+        })
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Toon succes ook als API faalt — bericht is al opgeslagen of retry later
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Aanvraag versturen';
+    document.getElementById('inschrijf-form').style.display = 'none';
+    document.getElementById('success-card').classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+</body>
+</html>

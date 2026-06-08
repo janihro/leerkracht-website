@@ -7,9 +7,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const TEACHER_PASS = process.env.TEACHER_PASSWORD || 'leerkracht2026';
 
-// Ensure data directories exist
-const DATA_DIR = path.join(__dirname, 'data');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+// Persistent storage — on Railway: mount a Volume at /app/storage
+// Set DATA_DIR and UPLOADS_DIR env vars to point into the volume
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 [DATA_DIR, UPLOADS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
 const QUESTIONS_FILE = path.join(DATA_DIR, 'questions.json');
