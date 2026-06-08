@@ -1545,16 +1545,14 @@ async function saveTeacher() {
   }
 }
 
-let teachersCache = [];
-
 function editTeacher(id) {
   const t = _teachersCache.find(x => x.id === id);
-  if (!t) { alert('Docent niet gevonden. Vernieuw de lijst.'); return; }
+  if (!t) { alert('Docent niet gevonden. Klik eerst op Vernieuwen.'); return; }
 
-  document.getElementById('dt-edit-id').value   = t.id;
-  document.getElementById('dt-naam').value       = t.name || '';
-  document.getElementById('dt-user').value       = t.username || '';
-  document.getElementById('dt-pass').value       = '';
+  document.getElementById('dt-edit-id').value = t.id;
+  document.getElementById('dt-naam').value     = t.name || '';
+  document.getElementById('dt-user').value     = t.username || '';
+  document.getElementById('dt-pass').value     = '';
 
   const hint = document.getElementById('dt-pass-hint');
   if (hint) hint.textContent = '(leeg laten = ongewijzigd)';
@@ -1564,7 +1562,7 @@ function editTeacher(id) {
   });
 
   const title = document.getElementById('docent-form-title');
-  if (title) title.innerHTML = '<i class="fas fa-user-edit" style="color:var(--primary);margin-right:8px;"></i>Docent bewerken';
+  if (title) title.innerHTML = '<i class="fas fa-user-edit" style="color:var(--primary);margin-right:8px;"></i>Docent bewerken: <em>' + esc(t.name) + '</em>';
 
   const saveLabel = document.getElementById('dt-save-label');
   if (saveLabel) saveLabel.textContent = 'Opslaan';
@@ -1572,9 +1570,18 @@ function editTeacher(id) {
   const cancelBtn = document.getElementById('dt-cancel-btn');
   if (cancelBtn) cancelBtn.style.display = '';
 
-  // Scroll naar het formulier
-  const panel = document.getElementById('panel-docenten');
-  if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+  // Scroll de admin-main container naar boven zodat het formulier zichtbaar wordt
+  const adminMain = document.querySelector('.admin-main') || document.querySelector('main');
+  if (adminMain) adminMain.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Highlight het formulier even
+  const card = document.getElementById('dt-naam').closest('.card');
+  if (card) {
+    card.style.transition = 'box-shadow .3s';
+    card.style.boxShadow = '0 0 0 3px var(--primary)';
+    setTimeout(() => card.style.boxShadow = '', 1500);
+  }
 }
 
 function cancelEditTeacher() {
