@@ -13,15 +13,39 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 [DATA_DIR, UPLOADS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
-const QUESTIONS_FILE = path.join(DATA_DIR, 'questions.json');
-const FILES_META = path.join(DATA_DIR, 'files.json');
-const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
-const REVIEWS_FILE = path.join(DATA_DIR, 'reviews.json');
+const QUESTIONS_FILE    = path.join(DATA_DIR, 'questions.json');
+const FILES_META        = path.join(DATA_DIR, 'files.json');
+const REGISTRATIONS_FILE= path.join(DATA_DIR, 'registrations.json');
+const REVIEWS_FILE      = path.join(DATA_DIR, 'reviews.json');
+const SETTINGS_FILE     = path.join(DATA_DIR, 'settings.json');
+const ACCOUNTS_FILE     = path.join(DATA_DIR, 'accounts.json');
+const ADMIN_FILE        = path.join(DATA_DIR, 'admin.json');
 
-if (!fs.existsSync(QUESTIONS_FILE)) fs.writeFileSync(QUESTIONS_FILE, JSON.stringify({ questions: [] }, null, 2));
-if (!fs.existsSync(FILES_META)) fs.writeFileSync(FILES_META, JSON.stringify({ files: [] }, null, 2));
+if (!fs.existsSync(QUESTIONS_FILE))     fs.writeFileSync(QUESTIONS_FILE,     JSON.stringify({ questions: [] }, null, 2));
+if (!fs.existsSync(FILES_META))         fs.writeFileSync(FILES_META,         JSON.stringify({ files: [] }, null, 2));
 if (!fs.existsSync(REGISTRATIONS_FILE)) fs.writeFileSync(REGISTRATIONS_FILE, JSON.stringify({ registrations: [] }, null, 2));
-if (!fs.existsSync(REVIEWS_FILE)) fs.writeFileSync(REVIEWS_FILE, JSON.stringify({ reviews: [] }, null, 2));
+if (!fs.existsSync(REVIEWS_FILE))       fs.writeFileSync(REVIEWS_FILE,       JSON.stringify({ reviews: [] }, null, 2));
+if (!fs.existsSync(ACCOUNTS_FILE))      fs.writeFileSync(ACCOUNTS_FILE,      JSON.stringify({ accounts: [] }, null, 2));
+if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
+  siteName: 'LeerKracht',
+  slogan: 'Nos Orguyo, Nos Futuro',
+  email: 'info@leerkracht.nl',
+  telefoon: '06 — XX XX XX XX',
+  whatsapp: '',
+  adres: '[Straatnaam], [Stad]',
+  openingstijden: 'Ma–vr: 9:00–19:00 · Za: 10:00–14:00',
+  instagram: '#',
+  facebook: '#',
+  tiktok: '#',
+}, null, 2));
+
+// Admin password: stored in admin.json, overridable via env, default fallback
+function getAdminPass() {
+  try {
+    const d = readJSON(ADMIN_FILE);
+    return d.password || process.env.ADMIN_PASSWORD || TEACHER_PASS;
+  } catch { return process.env.ADMIN_PASSWORD || TEACHER_PASS; }
+}
 
 function readJSON(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
@@ -266,6 +290,130 @@ app.delete('/api/registrations/:id', (req, res) => {
   data.registrations = (data.registrations || []).filter(r => r.id !== req.params.id);
   writeJSON(REGISTRATIONS_FILE, data);
   res.json({ success: true });
+});
+
+// ─── PARENT ACCOUNT LOGIN ─────────────────────────────────
+app.post('/api/verify-parent', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ ok: false });
+  const data = readJSON(ACCOUNTS_FILE);
+  const account = (data.accounts || []).find(a => a.email === email && a.password === password);
+  if (account) res.json({ ok: true, kindNaam: account.kindNaam, name: account.name });
+  else res.status(401).json({ ok: false });
+});
+
+// ─── ADMIN API ────────────────────────────────────────────
+// All admin routes require admin password in body or header
+
+function adminAuth(req) {
+  const pass = req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword;
+  return pass === getAdminPass();
+}
+
+// GET stats dashboard
+app.get('/api/admin/stats', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const registrations = readJSON(REGISTRATIONS_FILE).registrations || [];
+  const questions     = readJSON(QUESTIONS_FILE).questions || [];
+  const reviews       = readJSON(REVIEWS_FILE).reviews || [];
+  const files         = readJSON(FILES_META).files || [];
+  const accounts      = readJSON(ACCOUNTS_FILE).accounts || [];
+  res.json({
+    totalRegistrations: registrations.length,
+    newRegistrations:   registrations.filter(r => r.status === 'nieuw').length,
+    openQuestions:      questions.filter(q => !q.answer).length,
+    totalQuestions:     questions.length,
+    totalReviews:       reviews.length,
+    avgRating:          reviews.length ? (reviews.reduce((s,r)=>s+r.rating,0)/reviews.length).toFixed(1) : '—',
+    totalFiles:         files.length,
+    totalAccounts:      accounts.length,
+    recentRegistrations: registrations.slice(-5).reverse(),
+  });
+});
+
+// GET / PUT website settings
+app.get('/api/admin/settings', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  res.json(readJSON(SETTINGS_FILE));
+});
+app.put('/api/admin/settings', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const allowed = ['siteName','slogan','email','telefoon','whatsapp','adres','openingstijden','instagram','facebook','tiktok'];
+  const current = readJSON(SETTINGS_FILE);
+  allowed.forEach(k => { if (req.body[k] !== undefined) current[k] = req.body[k]; });
+  writeJSON(SETTINGS_FILE, current);
+  res.json(current);
+});
+
+// GET / POST / DELETE portal accounts
+app.get('/api/admin/accounts', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(ACCOUNTS_FILE);
+  // Never return passwords in list
+  const safe = (data.accounts || []).map(({ password: _, ...a }) => a);
+  res.json(safe);
+});
+app.post('/api/admin/accounts', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const { email, password, kindNaam, name } = req.body;
+  if (!email || !password || !kindNaam) return res.status(400).json({ error: 'E-mail, wachtwoord en naam kind zijn verplicht' });
+  const data = readJSON(ACCOUNTS_FILE);
+  if (!data.accounts) data.accounts = [];
+  if (data.accounts.find(a => a.email === email)) return res.status(409).json({ error: 'E-mailadres al in gebruik' });
+  const account = { id: generateId(), email, password, kindNaam, name: name || '', createdAt: new Date().toISOString() };
+  data.accounts.push(account);
+  writeJSON(ACCOUNTS_FILE, data);
+  const { password: _, ...safe } = account;
+  res.status(201).json(safe);
+});
+app.delete('/api/admin/accounts/:id', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(ACCOUNTS_FILE);
+  data.accounts = (data.accounts || []).filter(a => a.id !== req.params.id);
+  writeJSON(ACCOUNTS_FILE, data);
+  res.json({ success: true });
+});
+
+// POST change admin password
+app.post('/api/admin/change-password', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Huidig wachtwoord onjuist' });
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Nieuw wachtwoord moet minimaal 6 tekens zijn' });
+  const admin = fs.existsSync(ADMIN_FILE) ? readJSON(ADMIN_FILE) : {};
+  admin.password = newPassword;
+  writeJSON(ADMIN_FILE, admin);
+  res.json({ success: true });
+});
+
+// GET export registrations as CSV
+app.get('/api/admin/export-csv', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(REGISTRATIONS_FILE);
+  const rows = data.registrations || [];
+  const header = ['ID','Voornaam','Achternaam','Email','Telefoon','Kind naam','Leeftijd','Vak','Status','Bericht','Datum'];
+  const csv = [header, ...rows.map(r => [
+    r.id, r.voornaam, r.achternaam, r.email, r.telefoon,
+    r.kindNaam, r.leeftijd, r.vak, r.status,
+    (r.bericht||'').replace(/[\n\r,;"]/g,' '),
+    new Date(r.submittedAt).toLocaleString('nl-NL')
+  ])].map(row => row.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="inschrijvingen.csv"');
+  res.send('﻿' + csv); // BOM for Excel
+});
+
+// GET export reviews as CSV
+app.get('/api/admin/export-reviews-csv', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const rows = readJSON(REVIEWS_FILE).reviews || [];
+  const header = ['ID','Naam','Rol','Sterren','Tekst','Datum'];
+  const csv = [header, ...rows.map(r => [
+    r.id, r.name, r.role||'', r.rating, r.text,
+    new Date(r.submittedAt).toLocaleString('nl-NL')
+  ])].map(row => row.map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="reviews.csv"');
+  res.send('﻿' + csv);
 });
 
 app.get('*', (req, res) => {

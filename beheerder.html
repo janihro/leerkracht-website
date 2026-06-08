@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beheerder — LeerKracht</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #5B4FCF;
+      --primary-light: #7c71de;
+      --accent: #F5821F;
+      --accent-light: #ffaa5c;
+      --green: #07b78a;
+      --red: #e03a3a;
+      --white: #fff;
+      --bg: #f5f4fb;
+      --border: #e8e5f5;
+      --text: #1a1535;
+      --text-muted: #7b7a99;
+      --radius: 18px;
+      --radius-sm: 10px;
+      --shadow: 0 4px 24px rgba(91,79,207,.10);
+      --shadow-xl: 0 8px 48px rgba(91,79,207,.15);
+      --font-body: 'Nunito', sans-serif;
+      --font-display: 'Playfair Display', serif;
+      --sidebar-w: 240px;
+    }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; font-family: var(--font-body); }
+
+    /* ── LOGIN SCREEN ─────────────────────────────── */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .login-card {
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: var(--shadow-xl); padding: 48px 40px;
+      width: 100%; max-width: 400px; text-align: center;
+    }
+    .login-icon {
+      width: 72px; height: 72px; border-radius: 20px; margin: 0 auto 20px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: #fff;
+    }
+    .login-card h1 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 6px; }
+    .login-card p { color: var(--text-muted); font-size: .9rem; margin-bottom: 28px; }
+    .login-card .form-group { text-align: left; margin-bottom: 18px; }
+    .login-card label { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); display: block; margin-bottom: 7px; }
+    .login-card input { width: 100%; padding: 12px 16px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: .95rem; outline: none; transition: border-color .2s; }
+    .login-card input:focus { border-color: var(--primary); }
+    .btn-login { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; font-weight: 800; font-size: 1rem; transition: opacity .2s; }
+    .btn-login:hover { opacity: .9; }
+    .login-error { display: none; margin-top: 14px; padding: 10px 14px; background: rgba(224,58,58,.1); color: var(--red); border-radius: 8px; font-size: .84rem; }
+
+    /* ── ADMIN SHELL ──────────────────────────────── */
+    #admin-shell { display: none; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+      background: linear-gradient(180deg, var(--primary) 0%, #3d337f 100%);
+      color: #fff; display: flex; flex-direction: column; z-index: 100;
+      box-shadow: 4px 0 24px rgba(91,79,207,.2);
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.12);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sidebar-logo img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; object-position: center 15%; }
+    .sidebar-logo-text { font-weight: 800; font-size: 1rem; line-height: 1.2; }
+    .sidebar-logo-sub { font-size: .7rem; opacity: .65; font-weight: 600; }
+    .sidebar-label { font-size: .65rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; opacity: .5; padding: 20px 20px 6px; }
+    .sidebar nav { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 12px; padding: 11px 20px;
+      font-weight: 700; font-size: .88rem; color: rgba(255,255,255,.75);
+      border-left: 3px solid transparent; transition: all .18s; cursor: pointer;
+      background: none; border-right: none; border-top: none; border-bottom: none;
+      width: 100%; text-align: left;
+    }
+    .sidebar-link i { width: 18px; text-align: center; font-size: .9rem; }
+    .sidebar-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .sidebar-link.active { color: #fff; border-left-color: var(--accent); background: rgba(255,255,255,.1); }
+    .sidebar-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: .68rem; font-weight: 800; padding: 2px 7px; border-radius: 99px; }
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.12); font-size: .78rem; opacity: .6; }
+    .sidebar-footer a { color: #fff; font-weight: 700; }
+    .sidebar-footer a:hover { opacity: 1; text-decoration: underline; }
+
+    /* MAIN */
+    .admin-main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+    .admin-topbar {
+      background: var(--white); border-bottom: 2px solid var(--border);
+      padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-family: var(--font-display); font-size: 1.3rem; }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .topbar-user { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: .88rem; color: var(--text-muted); }
+    .topbar-user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; font-weight: 800; }
+    .btn-logout { padding: 8px 16px; border: 2px solid var(--border); border-radius: 8px; background: none; font-weight: 700; font-size: .82rem; color: var(--text-muted); transition: all .2s; }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+    .admin-content { flex: 1; padding: 32px; }
+
+    /* PANELS */
+    .panel { display: none; animation: fadeUp .3s ease; }
+    .panel.active { display: block; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    .panel-header { margin-bottom: 28px; }
+    .panel-header h2 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 4px; }
+    .panel-header p { color: var(--text-muted); font-size: .9rem; }
+
+    /* STAT CARDS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card {
+      background: var(--white); border-radius: var(--radius); padding: 22px 20px;
+      box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon {
+      width: 50px; height: 50px; border-radius: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #fff;
+    }
+    .stat-val { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+    .stat-label { font-size: .78rem; font-weight: 700; color: var(--text-muted); margin-top: 3px; }
+    .stat-sub { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* CARD */
+    .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; margin-bottom: 24px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .card-title { font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .card-title i { color: var(--primary); }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+    th { text-align: left; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); padding: 8px 12px; border-bottom: 2px solid var(--border); }
+    td { padding: 11px 12px; border-bottom: 1px solid #f0eef8; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(91,79,207,.03); }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-size: .72rem; font-weight: 800; }
+    .badge-new { background: rgba(91,79,207,.12); color: var(--primary); }
+    .badge-green { background: rgba(7,183,138,.12); color: var(--green); }
+    .badge-orange { background: rgba(245,130,31,.12); color: var(--accent); }
+    .badge-red { background: rgba(224,58,58,.12); color: var(--red); }
+    .badge-gray { background: #f0eef8; color: var(--text-muted); }
+
+    /* FORMS */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.span-2 { grid-column: 1 / -1; }
+    label { font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); }
+    input, textarea, select {
+      padding: 11px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+      font-family: var(--font-body); font-size: .92rem; outline: none; transition: border-color .2s;
+      background: var(--white); color: var(--text);
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px; border-radius: var(--radius-sm); font-weight: 800; font-size: .87rem; border: none; transition: all .2s; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-light)); color: #fff; }
+    .btn-accent:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-green { background: linear-gradient(135deg, var(--green), #04c994); color: #fff; }
+    .btn-danger { background: none; border: 2px solid var(--border); color: var(--text-muted); }
+    .btn-danger:hover { border-color: var(--red); color: var(--red); background: rgba(224,58,58,.06); }
+    .btn-sm { padding: 6px 14px; font-size: .8rem; }
+    .btn-icon { width: 34px; height: 34px; padding: 0; justify-content: center; border: 2px solid var(--border); background: none; color: var(--text-muted); border-radius: 8px; }
+    .btn-icon:hover { border-color: var(--red); color: var(--red); background: rgba(224,58,58,.06); }
+
+    /* ALERT */
+    .alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: .85rem; font-weight: 700; margin-bottom: 16px; display: none; }
+    .alert-success { background: rgba(7,183,138,.1); color: var(--green); }
+    .alert-error   { background: rgba(224,58,58,.1); color: var(--red); }
+    .alert.show { display: flex; align-items: center; gap: 8px; }
+
+    /* STARS */
+    .stars { color: #f59e0b; letter-spacing: 1px; font-size: .9rem; }
+
+    /* REVIEW CARD */
+    .review-item { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 16px; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 10px; }
+    .review-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: .95rem; flex-shrink: 0; }
+    .review-body { flex: 1; }
+    .review-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+    .review-name { font-weight: 800; font-size: .92rem; }
+    .review-role { font-size: .76rem; color: var(--text-muted); }
+    .review-date { font-size: .74rem; color: var(--text-muted); margin-left: auto; }
+    .review-text { font-size: .86rem; color: var(--text); line-height: 1.5; }
+    .review-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+    .empty-state i { font-size: 2.5rem; opacity: .25; display: block; margin-bottom: 12px; }
+    .empty-state p { font-size: .9rem; }
+
+    /* PASSWORD STRENGTH */
+    .pass-strength { height: 4px; border-radius: 4px; margin-top: 6px; background: #eee; overflow: hidden; }
+    .pass-strength-bar { height: 100%; width: 0; border-radius: 4px; transition: width .3s, background .3s; }
+
+    /* EXPORT SECTION */
+    .export-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .export-card { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .export-card h3 { font-size: .95rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .export-card p { font-size: .82rem; color: var(--text-muted); flex: 1; }
+
+    /* MOBILE SIDEBAR TOGGLE */
+    .sidebar-toggle { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 200; width: 50px; height: 50px; border-radius: 50%; background: var(--primary); color: #fff; border: none; font-size: 1.1rem; box-shadow: 0 4px 16px rgba(91,79,207,.4); }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 99; }
+
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); transition: transform .25s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
+      .admin-main { margin-left: 0; }
+      .admin-topbar { padding: 0 16px; }
+      .admin-content { padding: 20px 16px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.span-2 { grid-column: 1; }
+    }
+    @media (max-width: 560px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .login-card { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════ LOGIN SCREEN ══════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon"><i class="fas fa-shield-alt"></i></div>
+    <h1>Beheerderspaneel</h1>
+    <p>Voer het beheerderswachtwoord in om door te gaan.</p>
+    <form id="admin-login-form" novalidate>
+      <div class="form-group">
+        <label for="admin-pass-input">Wachtwoord</label>
+        <input type="password" id="admin-pass-input" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn-login">
+        <i class="fas fa-lock-open"></i> Inloggen
+      </button>
+      <div class="login-error" id="login-error">
+        <i class="fas fa-exclamation-circle"></i> Onjuist wachtwoord. Probeer opnieuw.
+      </div>
+    </form>
+    <p style="margin-top:24px;font-size:.78rem;color:var(--text-muted);">
+      <a href="portaal.html" style="color:var(--primary);font-weight:700;"><i class="fas fa-arrow-left"></i> Terug naar portaal</a>
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════ ADMIN SHELL ══════════════════════════ -->
+<div id="admin-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="logo.jpeg" alt="LeerKracht" />
+      <div>
+        <div class="sidebar-logo-text">LeerKracht</div>
+        <div class="sidebar-logo-sub">Beheerderspaneel</div>
+      </div>
+    </div>
+    <nav>
+      <div class="sidebar-label">Navigatie</div>
+      <button class="sidebar-link active" onclick="showPanel('overzicht',this)">
+        <i class="fas fa-tachometer-alt"></i> Overzicht
+        <span class="sidebar-badge" id="badge-new">0</span>
+      </button>
+      <button class="sidebar-link" onclick="showPanel('instellingen',this)">
+        <i class="fas fa-cog"></i> Website instellingen
+      </button>
+      <button class="sidebar-link" onclick="showPanel('accounts',this)">
+        <i class="fas fa-users"></i> Portaal accounts
+      </button>
+      <button class="sidebar-link" onclick="showPanel('reviews',this)">
+        <i class="fas fa-star"></i> Reviews
+      </button>
+      <div class="sidebar-label">Gegevens</div>
+      <button class="sidebar-link" onclick="showPanel('export',this)">
+        <i class="fas fa-download"></i> Exporteer data
+      </button>
+      <div class="sidebar-label">Beveiliging</div>
+      <button class="sidebar-link" onclick="showPanel('wachtwoord',this)">
+        <i class="fas fa-key"></i> Wachtwoord wijzigen
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      Ingelogd als beheerder<br />
+      <a href="docent.html">→ Docentenpaneel</a> &nbsp;·&nbsp;
+      <a href="index.html">→ Website</a>
+    </div>
+  </aside>
+
+  <!-- OVERLAY + TOGGLE (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div class="topbar-title" id="topbar-title">Overzicht</div>
+      <div class="topbar-actions">
+        <div class="topbar-user">
+          <div class="topbar-user-avatar">B</div>
+          Beheerder
+        </div>
+        <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Uitloggen</button>
+      </div>
+    </header>
+
+    <div class="admin-content">
+
+      <!-- ── OVERZICHT ─────────────────────────────────── -->
+      <div class="panel active" id="panel-overzicht">
+        <div class="panel-header">
+          <h2>Overzicht</h2>
+          <p>Live statistieken van jouw LeerKracht website.</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#5B4FCF,#7c71de)"><i class="fas fa-clipboard-list"></i></div>
+            <div>
+              <div class="stat-val" id="stat-total">—</div>
+              <div class="stat-label">Inschrijvingen</div>
+              <div class="stat-sub" id="stat-new">— nieuw</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#F5821F,#ffaa5c)"><i class="fas fa-question-circle"></i></div>
+            <div>
+              <div class="stat-val" id="stat-questions">—</div>
+              <div class="stat-label">Open vragen</div>
+              <div class="stat-sub" id="stat-questions-total">— totaal</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)"><i class="fas fa-star"></i></div>
+            <div>
+              <div class="stat-val" id="stat-reviews">—</div>
+              <div class="stat-label">Reviews</div>
+              <div class="stat-sub" id="stat-rating">⭐ — gemiddeld</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#07b78a,#04c994)"><i class="fas fa-users"></i></div>
+            <div>
+              <div class="stat-val" id="stat-accounts">—</div>
+              <div class="stat-label">Portaal accounts</div>
+              <div class="stat-sub" id="stat-files">— bestanden</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-clock"></i> Recente inschrijvingen</div>
+            <button class="btn btn-sm btn-primary" onclick="showPanel('export', document.querySelector('.sidebar-link:nth-of-type(5)'))">
+              <i class="fas fa-download"></i> Exporteer
+            </button>
+          </div>
+          <div id="recent-list">
+            <div class="empty-state"><i class="fas fa-inbox"></i><p>Nog geen inschrijvingen</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── WEBSITE INSTELLINGEN ──────────────────────── -->
+      <div class="panel" id="panel-instellingen">
+        <div class="panel-header">
+          <h2>Website instellingen</h2>
+          <p>Pas de contactgegevens en informatie op de website aan.</p>
+        </div>
+
+        <div class="alert alert-success" id="settings-success"><i class="fas fa-check-circle"></i> Instellingen opgeslagen!</div>
+        <div class="alert alert-error" id="settings-error"><i class="fas fa-times-circle"></i> <span id="settings-error-msg">Er is iets misgegaan.</span></div>
+
+        <form class="card" id="settings-form" onsubmit="saveSettings(event)">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-globe"></i> Algemeen</div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Website naam</label>
+              <input type="text" id="s-siteName" placeholder="LeerKracht" />
+            </div>
+            <div class="form-group">
+              <label>Slogan / ondertitel</label>
+              <input type="text" id="s-slogan" placeholder="Nos Orguyo, Nos Futuro" />
+            </div>
+          </div>
+          <div style="height:24px"></div>
+          <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-address-card"></i> Contactgegevens</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>E-mailadres</label>
+              <input type="email" id="s-email" placeholder="info@leerkracht.nl" />
+            </div>
+            <div class="form-group">
+              <label>Telefoonnummer</label>
+              <input type="tel" id="s-telefoon" placeholder="06 — XX XX XX XX" />
+            </div>
+            <div class="form-group">
+              <label>WhatsApp nummer</label>
+              <input type="tel" id="s-whatsapp" placeholder="31612345678 (zonder +)" />
+            </div>
+            <div class="form-group">
+              <label>Adres</label>
+              <input type="text" id="s-adres" placeholder="Straatnaam, Stad" />
+            </div>
+            <div class="form-group span-2">
+              <label>Openingstijden</label>
+              <input type="text" id="s-openingstijden" placeholder="Ma–vr: 9:00–19:00 · Za: 10:00–14:00" />
+            </div>
+          </div>
+          <div style="height:24px"></div>
+          <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-share-alt"></i> Sociale media</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Instagram URL</label>
+              <input type="url" id="s-instagram" placeholder="https://instagram.com/leerkracht" />
+            </div>
+            <div class="form-group">
+              <label>Facebook URL</label>
+              <input type="url" id="s-facebook" placeholder="https://facebook.com/leerkracht" />
+            </div>
+            <div class="form-group">
+              <label>TikTok URL</label>
+              <input type="url" id="s-tiktok" placeholder="https://tiktok.com/@leerkracht" />
+            </div>
+          </div>
+          <div style="height:24px"></div>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Instellingen opslaan</button>
+        </form>
+      </div>
+
+      <!-- ── ACCOUNTS ──────────────────────────────────── -->
+      <div class="panel" id="panel-accounts">
+        <div class="panel-header">
+          <h2>Portaal accounts</h2>
+          <p>Beheer ouder/leerling accounts voor het portaal.</p>
+        </div>
+
+        <div class="alert alert-success" id="accounts-success"><i class="fas fa-check-circle"></i> <span id="accounts-success-msg">Account aangemaakt!</span></div>
+        <div class="alert alert-error" id="accounts-error"><i class="fas fa-times-circle"></i> <span id="accounts-error-msg">Er is iets misgegaan.</span></div>
+
+        <!-- Nieuw account -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-user-plus"></i> Nieuw account aanmaken</div>
+          </div>
+          <form id="account-form" onsubmit="createAccount(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>E-mailadres ouder *</label>
+                <input type="email" id="a-email" placeholder="ouder@email.nl" required />
+              </div>
+              <div class="form-group">
+                <label>Wachtwoord *</label>
+                <input type="password" id="a-password" placeholder="Min. 6 tekens" required minlength="6" />
+              </div>
+              <div class="form-group">
+                <label>Naam kind *</label>
+                <input type="text" id="a-kindNaam" placeholder="bijv. Emma" required />
+              </div>
+              <div class="form-group">
+                <label>Naam ouder (optioneel)</label>
+                <input type="text" id="a-name" placeholder="bijv. Lisa Jansen" />
+              </div>
+            </div>
+            <div style="margin-top:18px;">
+              <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Account aanmaken</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Account lijst -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-list"></i> Bestaande accounts</div>
+            <button class="btn btn-sm btn-primary" onclick="loadAccounts()"><i class="fas fa-sync"></i> Vernieuwen</button>
+          </div>
+          <div id="accounts-list">
+            <div class="empty-state"><i class="fas fa-users"></i><p>Nog geen accounts aangemaakt</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── REVIEWS ───────────────────────────────────── -->
+      <div class="panel" id="panel-reviews">
+        <div class="panel-header">
+          <h2>Reviews</h2>
+          <p>Bekijk en modereer ingediende reviews.</p>
+        </div>
+
+        <div class="alert alert-success" id="reviews-success"><i class="fas fa-check-circle"></i> Review verwijderd.</div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-star"></i> Alle reviews</div>
+            <button class="btn btn-sm btn-primary" onclick="loadReviews()"><i class="fas fa-sync"></i> Vernieuwen</button>
+          </div>
+          <div id="reviews-admin-list">
+            <div class="empty-state"><i class="fas fa-star"></i><p>Nog geen reviews</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EXPORT ────────────────────────────────────── -->
+      <div class="panel" id="panel-export">
+        <div class="panel-header">
+          <h2>Exporteer data</h2>
+          <p>Download de gegevens als CSV-bestand, te openen in Excel.</p>
+        </div>
+
+        <div class="export-grid">
+          <div class="export-card">
+            <h3><i class="fas fa-clipboard-list" style="color:var(--primary)"></i> Inschrijvingen</h3>
+            <p>Exporteer alle inschrijvingen met naam, contact, leeftijd, vak en status.</p>
+            <button class="btn btn-primary" onclick="exportCSV('registrations')">
+              <i class="fas fa-download"></i> Download inschrijvingen.csv
+            </button>
+          </div>
+          <div class="export-card">
+            <h3><i class="fas fa-star" style="color:#f59e0b"></i> Reviews</h3>
+            <p>Exporteer alle reviews met naam, sterren, tekst en datum.</p>
+            <button class="btn btn-accent" onclick="exportCSV('reviews')">
+              <i class="fas fa-download"></i> Download reviews.csv
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── WACHTWOORD ────────────────────────────────── -->
+      <div class="panel" id="panel-wachtwoord">
+        <div class="panel-header">
+          <h2>Wachtwoord wijzigen</h2>
+          <p>Verander het beheerderswachtwoord. Dit geldt voor alle toekomstige inlogpogingen.</p>
+        </div>
+
+        <div class="alert alert-success" id="pass-success"><i class="fas fa-check-circle"></i> Wachtwoord succesvol gewijzigd!</div>
+        <div class="alert alert-error" id="pass-error"><i class="fas fa-times-circle"></i> <span id="pass-error-msg">Er is iets misgegaan.</span></div>
+
+        <div class="card" style="max-width:500px;">
+          <form id="pass-form" onsubmit="changePassword(event)">
+            <div class="form-group" style="margin-bottom:18px;">
+              <label>Huidig wachtwoord</label>
+              <input type="password" id="p-current" placeholder="••••••••" required autocomplete="current-password" />
+            </div>
+            <div class="form-group" style="margin-bottom:8px;">
+              <label>Nieuw wachtwoord</label>
+              <input type="password" id="p-new" placeholder="Min. 6 tekens" required minlength="6" autocomplete="new-password" oninput="checkPassStrength(this.value)" />
+              <div class="pass-strength"><div class="pass-strength-bar" id="pass-bar"></div></div>
+            </div>
+            <div class="form-group" style="margin-bottom:24px;">
+              <label>Bevestig nieuw wachtwoord</label>
+              <input type="password" id="p-confirm" placeholder="••••••••" required autocomplete="new-password" />
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Wachtwoord wijzigen</button>
+          </form>
+        </div>
+      </div>
+
+    </div><!-- /admin-content -->
+  </main>
+</div><!-- /admin-shell -->
+
+<script>
+// ══════════════════ STATE ════════════════════════════════
+let adminPass = '';
+const panels = {
+  'overzicht': 'Overzicht',
+  'instellingen': 'Website instellingen',
+  'accounts': 'Portaal accounts',
+  'reviews': 'Reviews',
+  'export': 'Exporteer data',
+  'wachtwoord': 'Wachtwoord wijzigen',
+};
+
+// ══════════════════ LOGIN ════════════════════════════════
+document.getElementById('admin-login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pass = document.getElementById('admin-pass-input').value.trim();
+  const errEl = document.getElementById('login-error');
+  const btn = e.target.querySelector('button');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/admin/stats?adminPassword=' + encodeURIComponent(pass));
+    if (res.ok) {
+      adminPass = pass;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-shell').style.display = 'block';
+      initAdmin();
+    } else {
+      errEl.style.display = 'flex';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-lock-open"></i> Inloggen';
+    }
+  } catch {
+    errEl.style.display = 'flex';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-lock-open"></i> Inloggen';
+  }
+});
+
+function logout() {
+  adminPass = '';
+  document.getElementById('admin-shell').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-pass-input').value = '';
+}
+
+// ══════════════════ INIT ═════════════════════════════════
+function initAdmin() {
+  loadStats();
+  loadSettings();
+  loadAccounts();
+  loadReviews();
+}
+
+// ══════════════════ NAVIGATION ═══════════════════════════
+function showPanel(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('topbar-title').textContent = panels[name] || name;
+  closeSidebar();
+  if (name === 'overzicht') loadStats();
+  if (name === 'accounts') loadAccounts();
+  if (name === 'reviews') loadReviews();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ══════════════════ STATS ════════════════════════════════
+async function loadStats() {
+  try {
+    const res = await fetch('/api/admin/stats?adminPassword=' + encodeURIComponent(adminPass));
+    const d = await res.json();
+    document.getElementById('stat-total').textContent = d.totalRegistrations;
+    document.getElementById('stat-new').textContent = d.newRegistrations + ' nieuw';
+    document.getElementById('stat-questions').textContent = d.openQuestions;
+    document.getElementById('stat-questions-total').textContent = d.totalQuestions + ' totaal';
+    document.getElementById('stat-reviews').textContent = d.totalReviews;
+    document.getElementById('stat-rating').textContent = '⭐ ' + d.avgRating + ' gemiddeld';
+    document.getElementById('stat-accounts').textContent = d.totalAccounts;
+    document.getElementById('stat-files').textContent = d.totalFiles + ' bestanden';
+    document.getElementById('badge-new').textContent = d.newRegistrations;
+
+    const list = document.getElementById('recent-list');
+    if (!d.recentRegistrations?.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Nog geen inschrijvingen</p></div>';
+      return;
+    }
+    list.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Naam</th><th>Kind</th><th>Leeftijd</th><th>Vak</th><th>Status</th><th>Datum</th>
+          </tr></thead>
+          <tbody>
+            ${d.recentRegistrations.map(r => `<tr>
+              <td><strong>${r.voornaam} ${r.achternaam||''}</strong><br/><small style="color:var(--text-muted)">${r.email}</small></td>
+              <td>${r.kindNaam}</td>
+              <td>${r.leeftijd||'—'}</td>
+              <td>${r.vak}</td>
+              <td>${statusBadge(r.status)}</td>
+              <td style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${fmtDate(r.submittedAt)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(err) { console.error(err); }
+}
+
+// ══════════════════ SETTINGS ═════════════════════════════
+async function loadSettings() {
+  try {
+    const res = await fetch('/api/admin/settings?adminPassword=' + encodeURIComponent(adminPass));
+    const d = await res.json();
+    const fields = ['siteName','slogan','email','telefoon','whatsapp','adres','openingstijden','instagram','facebook','tiktok'];
+    fields.forEach(f => {
+      const el = document.getElementById('s-' + f);
+      if (el) el.value = d[f] || '';
+    });
+  } catch(err) { console.error(err); }
+}
+
+async function saveSettings(e) {
+  e.preventDefault();
+  const succEl = document.getElementById('settings-success');
+  const errEl  = document.getElementById('settings-error');
+  succEl.classList.remove('show'); errEl.classList.remove('show');
+
+  const body = { adminPassword: adminPass };
+  ['siteName','slogan','email','telefoon','whatsapp','adres','openingstijden','instagram','facebook','tiktok'].forEach(f => {
+    const el = document.getElementById('s-' + f);
+    if (el) body[f] = el.value.trim();
+  });
+
+  try {
+    const res = await fetch('/api/admin/settings', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (res.ok) { succEl.classList.add('show'); setTimeout(()=>succEl.classList.remove('show'),3500); }
+    else { document.getElementById('settings-error-msg').textContent = 'Opslaan mislukt.'; errEl.classList.add('show'); }
+  } catch { document.getElementById('settings-error-msg').textContent = 'Netwerkfout.'; errEl.classList.add('show'); }
+}
+
+// ══════════════════ ACCOUNTS ═════════════════════════════
+async function loadAccounts() {
+  try {
+    const res = await fetch('/api/admin/accounts?adminPassword=' + encodeURIComponent(adminPass));
+    const accounts = await res.json();
+    const list = document.getElementById('accounts-list');
+    if (!accounts.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Nog geen accounts aangemaakt</p></div>';
+      return;
+    }
+    list.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>E-mail</th><th>Naam ouder</th><th>Kind</th><th>Aangemaakt</th><th></th></tr></thead>
+          <tbody>
+            ${accounts.map(a => `<tr>
+              <td>${a.email}</td>
+              <td>${a.name||'—'}</td>
+              <td><strong>${a.kindNaam}</strong></td>
+              <td style="font-size:.78rem;color:var(--text-muted)">${fmtDate(a.createdAt)}</td>
+              <td>
+                <button class="btn btn-icon" title="Account verwijderen" onclick="deleteAccount('${a.id}','${a.kindNaam}')">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(err) { console.error(err); }
+}
+
+async function createAccount(e) {
+  e.preventDefault();
+  const succEl = document.getElementById('accounts-success');
+  const errEl  = document.getElementById('accounts-error');
+  const msgEl  = document.getElementById('accounts-success-msg');
+  const errMsgEl = document.getElementById('accounts-error-msg');
+  succEl.classList.remove('show'); errEl.classList.remove('show');
+
+  const body = {
+    adminPassword: adminPass,
+    email: document.getElementById('a-email').value.trim(),
+    password: document.getElementById('a-password').value,
+    kindNaam: document.getElementById('a-kindNaam').value.trim(),
+    name: document.getElementById('a-name').value.trim(),
+  };
+
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aanmaken...';
+
+  try {
+    const res = await fetch('/api/admin/accounts', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (res.ok) {
+      msgEl.textContent = `Account voor ${data.kindNaam} aangemaakt!`;
+      succEl.classList.add('show');
+      setTimeout(()=>succEl.classList.remove('show'),3500);
+      e.target.reset();
+      loadAccounts();
+    } else {
+      errMsgEl.textContent = data.error || 'Aanmaken mislukt.';
+      errEl.classList.add('show');
+    }
+  } catch { errMsgEl.textContent = 'Netwerkfout.'; errEl.classList.add('show'); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-user-plus"></i> Account aanmaken';
+}
+
+async function deleteAccount(id, name) {
+  if (!confirm(`Account van "${name}" definitief verwijderen?`)) return;
+  try {
+    await fetch('/api/admin/accounts/' + id, { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ adminPassword: adminPass }) });
+    loadAccounts();
+  } catch(err) { console.error(err); }
+}
+
+// ══════════════════ REVIEWS ══════════════════════════════
+async function loadReviews() {
+  try {
+    const res = await fetch('/api/reviews');
+    const reviews = await res.json();
+    const list = document.getElementById('reviews-admin-list');
+    if (!reviews.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-star"></i><p>Nog geen reviews</p></div>';
+      return;
+    }
+    list.innerHTML = reviews.map(r => `
+      <div class="review-item" id="rev-${r.id}">
+        <div class="review-avatar">${r.name.charAt(0).toUpperCase()}</div>
+        <div class="review-body">
+          <div class="review-meta">
+            <span class="review-name">${esc(r.name)}</span>
+            ${r.role ? `<span class="review-role">${esc(r.role)}</span>` : ''}
+            <div class="stars">${stars(r.rating)}</div>
+            <span class="review-date">${fmtDate(r.submittedAt)}</span>
+          </div>
+          <div class="review-text">${esc(r.text)}</div>
+          <div class="review-actions">
+            <button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">
+              <i class="fas fa-trash-alt"></i> Verwijderen
+            </button>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(err) { console.error(err); }
+}
+
+async function deleteReview(id) {
+  if (!confirm('Deze review definitief verwijderen?')) return;
+  try {
+    const res = await fetch('/api/reviews/' + id, { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ teacherPassword: adminPass }) });
+    if (res.ok) {
+      document.getElementById('rev-' + id)?.remove();
+      const s = document.getElementById('reviews-success');
+      s.classList.add('show'); setTimeout(()=>s.classList.remove('show'),2500);
+    }
+  } catch(err) { console.error(err); }
+}
+
+// ══════════════════ EXPORT ═══════════════════════════════
+function exportCSV(type) {
+  if (type === 'registrations') {
+    window.location.href = '/api/admin/export-csv?adminPassword=' + encodeURIComponent(adminPass);
+  } else {
+    window.location.href = '/api/admin/export-reviews-csv?adminPassword=' + encodeURIComponent(adminPass);
+  }
+}
+
+// ══════════════════ PASSWORD ═════════════════════════════
+async function changePassword(e) {
+  e.preventDefault();
+  const succEl = document.getElementById('pass-success');
+  const errEl  = document.getElementById('pass-error');
+  const errMsg = document.getElementById('pass-error-msg');
+  succEl.classList.remove('show'); errEl.classList.remove('show');
+
+  const current = document.getElementById('p-current').value;
+  const newPass  = document.getElementById('p-new').value;
+  const confirm  = document.getElementById('p-confirm').value;
+
+  if (newPass !== confirm) {
+    errMsg.textContent = 'Nieuwe wachtwoorden komen niet overeen.';
+    errEl.classList.add('show'); return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/change-password', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ adminPassword: current, newPassword: newPass })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      adminPass = newPass;
+      succEl.classList.add('show'); setTimeout(()=>succEl.classList.remove('show'),4000);
+      e.target.reset();
+    } else {
+      errMsg.textContent = data.error || 'Wijzigen mislukt.';
+      errEl.classList.add('show');
+    }
+  } catch { errMsg.textContent = 'Netwerkfout.'; errEl.classList.add('show'); }
+}
+
+function checkPassStrength(val) {
+  const bar = document.getElementById('pass-bar');
+  const len = val.length;
+  const hasUpper = /[A-Z]/.test(val);
+  const hasNum = /[0-9]/.test(val);
+  const hasSym = /[^A-Za-z0-9]/.test(val);
+  let score = 0;
+  if (len >= 6) score++;
+  if (len >= 10) score++;
+  if (hasUpper) score++;
+  if (hasNum) score++;
+  if (hasSym) score++;
+  const colors = ['#e03a3a','#F5821F','#f59e0b','#07b78a','#07b78a'];
+  const widths = [20,40,60,80,100];
+  bar.style.width = (widths[score-1]||0) + '%';
+  bar.style.background = colors[score-1] || '#eee';
+}
+
+// ══════════════════ HELPERS ══════════════════════════════
+function statusBadge(status) {
+  const map = {
+    'nieuw': '<span class="badge badge-new">Nieuw</span>',
+    'contact opgenomen': '<span class="badge badge-orange">Contact opgenomen</span>',
+    'ingeschreven': '<span class="badge badge-green">Ingeschreven</span>',
+    'afgewezen': '<span class="badge badge-red">Afgewezen</span>',
+  };
+  return map[status] || `<span class="badge badge-gray">${status}</span>`;
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('nl-NL', { day:'numeric', month:'short', year:'numeric' });
+}
+function stars(n) {
+  return '★'.repeat(n) + '☆'.repeat(5-n);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

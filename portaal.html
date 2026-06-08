@@ -85,9 +85,6 @@
         <i class="fas fa-lock" style="color:var(--primary);margin-right:6px;font-size:.8rem;"></i>
         Beveiligd met SSL — jouw gegevens zijn veilig.
       </div>
-      <div class="portaal-demo-hint">
-        <strong style="color:var(--primary);">Demo:</strong> vul een e-mailadres en wachtwoord in en klik op inloggen om het dashboard te bekijken.
-      </div>
     </div>
 
     <!-- DOCENT PANEL -->
@@ -108,6 +105,11 @@
         <i class="fas fa-lock" style="color:var(--primary);margin-right:6px;font-size:.8rem;"></i>
         Alleen toegankelijk voor begeleiders.
       </div>
+      <div style="margin-top:12px;text-align:center;">
+        <a href="beheerder.html" style="font-size:.75rem;color:var(--text-muted);opacity:.5;font-weight:700;">
+          <i class="fas fa-shield-alt"></i> Beheerderspaneel
+        </a>
+      </div>
     </div>
 
   </div>
@@ -121,6 +123,50 @@
     btn.classList.add('active');
     document.getElementById('panel-' + tab).classList.add('active');
   }
+
+  // Ouder/leerling login
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+    if (!email || !pass) return;
+
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+
+    let errEl = document.getElementById('ouder-error');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.id = 'ouder-error';
+      errEl.style.cssText = 'display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:14px;text-align:center;';
+      errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Onjuist e-mailadres of wachtwoord';
+      e.target.insertBefore(errEl, e.target.querySelector('button'));
+    }
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/verify-parent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('ouder_email', email);
+        localStorage.setItem('ouder_kindNaam', data.kindNaam || '');
+        window.location.href = 'portaal-dashboard.html';
+      } else {
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Inloggen';
+      }
+    } catch {
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Inloggen';
+    }
+  });
 
   // Docent login
   document.getElementById('docent-login-form').addEventListener('submit', async e => {
