@@ -20,12 +20,14 @@ const REVIEWS_FILE      = path.join(DATA_DIR, 'reviews.json');
 const SETTINGS_FILE     = path.join(DATA_DIR, 'settings.json');
 const ACCOUNTS_FILE     = path.join(DATA_DIR, 'accounts.json');
 const ADMIN_FILE        = path.join(DATA_DIR, 'admin.json');
+const GALLERY_FILE      = path.join(DATA_DIR, 'gallery.json');
 
 if (!fs.existsSync(QUESTIONS_FILE))     fs.writeFileSync(QUESTIONS_FILE,     JSON.stringify({ questions: [] }, null, 2));
 if (!fs.existsSync(FILES_META))         fs.writeFileSync(FILES_META,         JSON.stringify({ files: [] }, null, 2));
 if (!fs.existsSync(REGISTRATIONS_FILE)) fs.writeFileSync(REGISTRATIONS_FILE, JSON.stringify({ registrations: [] }, null, 2));
 if (!fs.existsSync(REVIEWS_FILE))       fs.writeFileSync(REVIEWS_FILE,       JSON.stringify({ reviews: [] }, null, 2));
 if (!fs.existsSync(ACCOUNTS_FILE))      fs.writeFileSync(ACCOUNTS_FILE,      JSON.stringify({ accounts: [] }, null, 2));
+if (!fs.existsSync(GALLERY_FILE))       fs.writeFileSync(GALLERY_FILE,       JSON.stringify({ items: [] }, null, 2));
 if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
   siteName: 'LeerKracht',
   slogan: 'Nos Orguyo, Nos Futuro',
@@ -400,6 +402,72 @@ app.get('/api/admin/export-csv', (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="inschrijvingen.csv"');
   res.send('﻿' + csv); // BOM for Excel
+});
+
+// ─── GALLERY API ──────────────────────────────────────────
+const galleryUpload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Alleen afbeeldingen (jpg, png, gif, webp) zijn toegestaan'));
+  }
+});
+
+// GET all gallery items (public)
+app.get('/api/gallery', (req, res) => {
+  const data = readJSON(GALLERY_FILE);
+  const items = (data.items || []).sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+  res.json(items);
+});
+
+// POST upload gallery image (admin only)
+app.post('/api/gallery', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  galleryUpload.single('image')(req, res, err => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'Geen afbeelding ontvangen' });
+    const { title, description } = req.body;
+    const data = readJSON(GALLERY_FILE);
+    if (!data.items) data.items = [];
+    const item = {
+      id: generateId(),
+      title: (title || '').trim() || req.file.originalname,
+      description: (description || '').trim(),
+      storedName: req.file.filename,
+      url: '/uploads/' + req.file.filename,
+      uploadedAt: new Date().toISOString(),
+    };
+    data.items.push(item);
+    writeJSON(GALLERY_FILE, data);
+    res.status(201).json(item);
+  });
+});
+
+// PATCH gallery item (admin only — update title/description)
+app.patch('/api/gallery/:id', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(GALLERY_FILE);
+  const item = (data.items || []).find(i => i.id === req.params.id);
+  if (!item) return res.status(404).json({ error: 'Niet gevonden' });
+  if (req.body.title !== undefined) item.title = req.body.title.trim();
+  if (req.body.description !== undefined) item.description = req.body.description.trim();
+  writeJSON(GALLERY_FILE, data);
+  res.json(item);
+});
+
+// DELETE gallery item (admin only)
+app.delete('/api/gallery/:id', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(GALLERY_FILE);
+  const item = (data.items || []).find(i => i.id === req.params.id);
+  if (!item) return res.status(404).json({ error: 'Niet gevonden' });
+  const filePath = path.join(UPLOADS_DIR, item.storedName);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  data.items = data.items.filter(i => i.id !== req.params.id);
+  writeJSON(GALLERY_FILE, data);
+  res.json({ success: true });
 });
 
 // GET export reviews as CSV

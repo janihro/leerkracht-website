@@ -289,6 +289,9 @@
       <button class="sidebar-link" onclick="showPanel('reviews',this)">
         <i class="fas fa-star"></i> Reviews
       </button>
+      <button class="sidebar-link" onclick="showPanel('galerij',this)">
+        <i class="fas fa-images"></i> Galerij
+      </button>
       <div class="sidebar-label">Gegevens</div>
       <button class="sidebar-link" onclick="showPanel('export',this)">
         <i class="fas fa-download"></i> Exporteer data
@@ -522,6 +525,66 @@
         </div>
       </div>
 
+      <!-- ── GALERIJ ──────────────────────────────────── -->
+      <div class="panel" id="panel-galerij">
+        <div class="panel-header">
+          <h2>Galerij beheren</h2>
+          <p>Upload foto's voor de galerij-pagina. Bezoekers zien ze direct op gallerij.html.</p>
+        </div>
+
+        <div class="alert alert-success" id="gallery-success"><i class="fas fa-check-circle"></i> <span id="gallery-success-msg">Foto geüpload!</span></div>
+        <div class="alert alert-error" id="gallery-error"><i class="fas fa-times-circle"></i> <span id="gallery-error-msg">Er is iets misgegaan.</span></div>
+
+        <!-- Upload -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-cloud-upload-alt"></i> Foto uploaden</div>
+          </div>
+          <form id="gallery-form" onsubmit="uploadGalleryImage(event)">
+            <div class="form-grid">
+              <div class="form-group span-2">
+                <label>Afbeelding kiezen (jpg, png, gif, webp — max 20 MB)</label>
+                <div id="drop-zone" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:28px;text-align:center;cursor:pointer;transition:border-color .2s;background:#fafafa;" onclick="document.getElementById('g-file').click()">
+                  <i class="fas fa-images" style="font-size:2rem;color:var(--primary);opacity:.4;display:block;margin-bottom:8px;"></i>
+                  <p style="font-size:.85rem;color:var(--text-muted);margin:0;">Klik om een foto te kiezen, of sleep hem hierheen</p>
+                  <p id="drop-filename" style="font-size:.8rem;color:var(--primary);font-weight:700;margin-top:6px;display:none;"></p>
+                </div>
+                <input type="file" id="g-file" accept="image/*" required style="display:none;" onchange="previewFile(this)" />
+              </div>
+              <div class="form-group">
+                <label>Titel (optioneel)</label>
+                <input type="text" id="g-title" placeholder="bijv. Groepsles Papiaments" />
+              </div>
+              <div class="form-group">
+                <label>Beschrijving (optioneel)</label>
+                <input type="text" id="g-desc" placeholder="Korte omschrijving van de foto" />
+              </div>
+            </div>
+            <div style="margin-top:18px;">
+              <button type="submit" class="btn btn-primary" id="gallery-upload-btn">
+                <i class="fas fa-cloud-upload-alt"></i> Foto uploaden
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Foto lijst -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-th"></i> Geüploade foto's</div>
+            <div style="display:flex;gap:8px;">
+              <a href="gallerij.html" target="_blank" class="btn btn-sm" style="border:2px solid var(--border);color:var(--text-muted);background:none;padding:6px 14px;font-weight:800;font-size:.8rem;">
+                <i class="fas fa-external-link-alt"></i> Bekijk galerij
+              </a>
+              <button class="btn btn-sm btn-primary" onclick="loadGalleryAdmin()"><i class="fas fa-sync"></i></button>
+            </div>
+          </div>
+          <div id="gallery-admin-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
+            <div class="empty-state"><i class="fas fa-images"></i><p>Nog geen foto's geüpload</p></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── EXPORT ────────────────────────────────────── -->
       <div class="panel" id="panel-export">
         <div class="panel-header">
@@ -589,6 +652,7 @@ const panels = {
   'instellingen': 'Website instellingen',
   'accounts': 'Portaal accounts',
   'reviews': 'Reviews',
+  'galerij': 'Galerij beheren',
   'export': 'Exporteer data',
   'wachtwoord': 'Wachtwoord wijzigen',
 };
@@ -635,6 +699,7 @@ function initAdmin() {
   loadSettings();
   loadAccounts();
   loadReviews();
+  loadGalleryAdmin();
 }
 
 // ══════════════════ NAVIGATION ═══════════════════════════
@@ -648,6 +713,7 @@ function showPanel(name, btn) {
   if (name === 'overzicht') loadStats();
   if (name === 'accounts') loadAccounts();
   if (name === 'reviews') loadReviews();
+  if (name === 'galerij') loadGalleryAdmin();
 }
 
 function toggleSidebar() {
@@ -850,6 +916,109 @@ async function deleteReview(id) {
       const s = document.getElementById('reviews-success');
       s.classList.add('show'); setTimeout(()=>s.classList.remove('show'),2500);
     }
+  } catch(err) { console.error(err); }
+}
+
+// ══════════════════ GALLERY ══════════════════════════════
+function previewFile(input) {
+  const fn = document.getElementById('drop-filename');
+  if (input.files[0]) {
+    fn.textContent = '✓ ' + input.files[0].name;
+    fn.style.display = 'block';
+    document.getElementById('drop-zone').style.borderColor = 'var(--primary)';
+  }
+}
+
+// Drag & drop
+document.addEventListener('DOMContentLoaded', () => {
+  const dz = document.getElementById('drop-zone');
+  if (!dz) return;
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--primary)'; dz.style.background = 'rgba(91,79,207,.04)'; });
+  dz.addEventListener('dragleave', () => { dz.style.borderColor = 'var(--border)'; dz.style.background = '#fafafa'; });
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.style.borderColor = 'var(--border)'; dz.style.background = '#fafafa';
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const input = document.getElementById('g-file');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    previewFile(input);
+  });
+});
+
+async function uploadGalleryImage(e) {
+  e.preventDefault();
+  const succEl = document.getElementById('gallery-success');
+  const errEl  = document.getElementById('gallery-error');
+  const msgEl  = document.getElementById('gallery-success-msg');
+  const errMsg = document.getElementById('gallery-error-msg');
+  succEl.classList.remove('show'); errEl.classList.remove('show');
+
+  const fileInput = document.getElementById('g-file');
+  if (!fileInput.files[0]) { errMsg.textContent = 'Selecteer eerst een afbeelding.'; errEl.classList.add('show'); return; }
+
+  const btn = document.getElementById('gallery-upload-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploaden...';
+
+  const fd = new FormData();
+  fd.append('image', fileInput.files[0]);
+  fd.append('title', document.getElementById('g-title').value.trim());
+  fd.append('description', document.getElementById('g-desc').value.trim());
+
+  try {
+    const res = await fetch('/api/gallery', {
+      method: 'POST',
+      headers: { 'x-admin-password': adminPass },
+      body: fd
+    });
+    const data = await res.json();
+    if (res.ok) {
+      msgEl.textContent = `"${data.title}" succesvol geüpload!`;
+      succEl.classList.add('show'); setTimeout(() => succEl.classList.remove('show'), 3500);
+      e.target.reset();
+      document.getElementById('drop-filename').style.display = 'none';
+      document.getElementById('drop-zone').style.borderColor = 'var(--border)';
+      loadGalleryAdmin();
+    } else {
+      errMsg.textContent = data.error || 'Upload mislukt.';
+      errEl.classList.add('show');
+    }
+  } catch { errMsg.textContent = 'Netwerkfout.'; errEl.classList.add('show'); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Foto uploaden';
+}
+
+async function loadGalleryAdmin() {
+  try {
+    const res = await fetch('/api/gallery');
+    const items = await res.json();
+    const grid = document.getElementById('gallery-admin-grid');
+    if (!items.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-images"></i><p>Nog geen foto\'s geüpload</p></div>';
+      return;
+    }
+    grid.innerHTML = items.map(item => `
+      <div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:1;background:#eee;" id="gitem-${item.id}">
+        <img src="${item.url}" alt="${esc(item.title)}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" />
+        <div style="position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.7));display:flex;flex-direction:column;justify-content:flex-end;padding:8px;">
+          <span style="color:#fff;font-size:.73rem;font-weight:700;line-height:1.2;word-break:break-word;">${esc(item.title)}</span>
+        </div>
+        <button onclick="deleteGalleryItem('${item.id}')" title="Verwijderen"
+          style="position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:rgba(224,58,58,.85);border:none;color:#fff;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>`).join('');
+  } catch(err) { console.error(err); }
+}
+
+async function deleteGalleryItem(id) {
+  if (!confirm('Deze foto definitief verwijderen van de galerij?')) return;
+  try {
+    await fetch('/api/gallery/' + id, { method:'DELETE', headers:{'Content-Type':'application/json','x-admin-password':adminPass} });
+    document.getElementById('gitem-' + id)?.remove();
   } catch(err) { console.error(err); }
 }
 

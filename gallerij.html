@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
@@ -10,32 +10,94 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="styles.css" />
   <style>
+    /* LIGHTBOX */
     .lightbox {
-      display:none; position:fixed; inset:0;
-      background:rgba(10,10,20,0.88); z-index:2000;
-      align-items:center; justify-content:center;
-      backdrop-filter:blur(6px);
+      display: none; position: fixed; inset: 0;
+      background: rgba(10,10,20,0.92); z-index: 2000;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
     }
-    .lightbox.open { display:flex; }
-    .lightbox-card {
-      background:var(--white); border-radius:24px;
-      padding:48px 40px; max-width:480px; width:90%;
-      text-align:center; position:relative;
-      animation:lbIn .25s cubic-bezier(.4,0,.2,1);
+    .lightbox.open { display: flex; }
+    .lightbox-inner {
+      position: relative; max-width: 90vw; max-height: 90vh;
+      display: flex; flex-direction: column; align-items: center;
+      animation: lbIn .25s cubic-bezier(.4,0,.2,1);
     }
     @keyframes lbIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }
-    .lightbox-close {
-      position:absolute; top:14px; right:16px;
-      background:none; border:none; font-size:1.2rem;
-      cursor:pointer; color:var(--text-muted); padding:4px 8px;
-      border-radius:6px; transition:background .2s;
+    .lightbox-img {
+      max-width: 90vw; max-height: 75vh; border-radius: 16px;
+      object-fit: contain; box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
-    .lightbox-close:hover { background:var(--bg); }
-    .lb-icon { font-size:4rem; color:var(--primary); opacity:.2; margin-bottom:16px; }
-    .lightbox-card h3 { margin-bottom:8px; }
-    .lightbox-card p { color:var(--text-muted); font-size:.9rem; }
-    .gallery-hint { text-align:center; color:var(--text-muted); font-size:.85rem; margin-top:28px; }
-    .gallery-hint code { background:rgba(91,79,207,.08); color:var(--primary); padding:2px 8px; border-radius:4px; }
+    .lightbox-caption {
+      margin-top: 16px; text-align: center; color: #fff;
+    }
+    .lightbox-caption h3 { font-size: 1.1rem; font-weight: 800; }
+    .lightbox-caption p { font-size: .85rem; opacity: .75; margin-top: 4px; }
+    .lightbox-close {
+      position: fixed; top: 20px; right: 24px;
+      background: rgba(255,255,255,.12); border: none; color: #fff;
+      font-size: 1.3rem; cursor: pointer; padding: 8px 12px;
+      border-radius: 10px; transition: background .2s; z-index: 2010;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,.22); }
+    .lightbox-nav {
+      position: fixed; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,.12); border: none; color: #fff;
+      font-size: 1.4rem; cursor: pointer; padding: 12px 16px;
+      border-radius: 12px; transition: background .2s; z-index: 2010;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,.22); }
+    .lightbox-prev { left: 16px; }
+    .lightbox-next { right: 16px; }
+
+    /* GALLERY GRID */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .gallery-item {
+      border-radius: 16px; overflow: hidden; cursor: pointer;
+      position: relative; aspect-ratio: 4/3; background: #e8e5f5;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .gallery-item:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(91,79,207,.2); }
+    .gallery-item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .35s;
+    }
+    .gallery-item:hover img { transform: scale(1.04); }
+    .gallery-placeholder {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #e8e5f5, #d4d0f0);
+      font-size: 2.5rem; color: rgba(91,79,207,.25);
+    }
+    .gallery-overlay {
+      position: absolute; inset: 0; background: rgba(91,79,207,.0);
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s; color: #fff; font-size: 1.5rem; opacity: 0;
+    }
+    .gallery-item:hover .gallery-overlay { background: rgba(91,79,207,.35); opacity: 1; }
+    .gallery-item-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 28px 14px 12px;
+      background: linear-gradient(transparent, rgba(0,0,0,.55));
+      color: #fff; font-size: .82rem; font-weight: 700;
+      opacity: 0; transition: opacity .2s;
+    }
+    .gallery-item:hover .gallery-item-label { opacity: 1; }
+
+    /* PLACEHOLDER ICONS */
+    .ph-icons { color: rgba(91,79,207,.2); font-size: 2.5rem; }
+    .empty-gallery { text-align: center; padding: 64px 20px; color: var(--text-muted); }
+    .empty-gallery i { font-size: 3rem; opacity: .2; display: block; margin-bottom: 16px; }
+    .empty-gallery h3 { margin-bottom: 8px; }
+    .empty-gallery p { font-size: .88rem; }
+
+    @media (max-width: 600px) {
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .lightbox-nav { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -71,50 +133,23 @@
 
 <section class="section section-tinted">
   <div class="container">
-    <div class="gallery-grid" data-animate>
-      <div class="gallery-item" data-title="Groepsles rekenen" data-desc="Kinderen werken samen aan een rekensom op het whiteboard.">
-        <div class="gallery-placeholder"><i class="fas fa-chalkboard-teacher"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
-      <div class="gallery-item tall" data-title="Individuele begeleiding" data-desc="Eén-op-één begeleiding aan de lessentafel.">
-        <div class="gallery-placeholder"><i class="fas fa-user-graduate"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
-      <div class="gallery-item" data-title="Taalles" data-desc="Leerlingen oefenen met spellingkaarten.">
-        <div class="gallery-placeholder"><i class="fas fa-book-open"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
-      <div class="gallery-item" data-title="Blije leerling!" data-desc="Supertrots op een goed cijfer.">
-        <div class="gallery-placeholder"><i class="fas fa-smile-beam"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
-      <div class="gallery-item" data-title="Online les" data-desc="Bijles via het scherm — net zo persoonlijk.">
-        <div class="gallery-placeholder"><i class="fas fa-laptop"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
-      <div class="gallery-item tall" data-title="Diploma-uitreiking" data-desc="Viering na een succesvol schooljaar!">
-        <div class="gallery-placeholder"><i class="fas fa-award"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
-      <div class="gallery-item" data-title="Het team" data-desc="Ons gezellige begeleidingsteam.">
-        <div class="gallery-placeholder"><i class="fas fa-users"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
-      <div class="gallery-item" data-title="Werkmateriaal" data-desc="Ons zelf ontwikkelde lesmateriaal.">
-        <div class="gallery-placeholder"><i class="fas fa-book"></i></div>
-        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
-      </div>
+    <div class="gallery-grid" id="gallery-grid" data-animate>
+      <!-- Geladen via JS -->
     </div>
-    <p class="gallery-hint">Vervang de placeholders door echte foto's: zet je afbeeldingen in een map <code>images/</code> en gebruik <code>&lt;img&gt;</code> in de gallery-items.</p>
   </div>
 </section>
 
+<!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
-  <div class="lightbox-card">
-    <button class="lightbox-close" id="lightbox-close"><i class="fas fa-times"></i></button>
-    <div class="lb-icon" id="lb-icon"><i class="fas fa-image"></i></div>
-    <h3 id="lb-title">Foto</h3>
-    <p id="lb-desc"></p>
+  <button class="lightbox-close" id="lightbox-close"><i class="fas fa-times"></i></button>
+  <button class="lightbox-nav lightbox-prev" id="lightbox-prev"><i class="fas fa-chevron-left"></i></button>
+  <button class="lightbox-nav lightbox-next" id="lightbox-next"><i class="fas fa-chevron-right"></i></button>
+  <div class="lightbox-inner">
+    <img class="lightbox-img" id="lb-img" src="" alt="" />
+    <div class="lightbox-caption">
+      <h3 id="lb-title"></h3>
+      <p id="lb-desc"></p>
+    </div>
   </div>
 </div>
 
@@ -157,17 +192,93 @@
 
 <script src="main.js"></script>
 <script>
-  const lightbox = document.getElementById('lightbox');
-  document.querySelectorAll('.gallery-item').forEach(item => {
-    item.addEventListener('click', () => {
-      document.getElementById('lb-title').textContent = item.dataset.title || 'Foto';
-      document.getElementById('lb-desc').textContent = item.dataset.desc || '';
-      lightbox.classList.add('open');
-    });
+  const PLACEHOLDERS = [
+    { icon: 'fa-chalkboard-teacher', title: 'Groepsles', desc: 'Kinderen werken samen.' },
+    { icon: 'fa-user-graduate',      title: 'Begeleiding', desc: 'Eén-op-één aan de lessentafel.' },
+    { icon: 'fa-book-open',          title: 'Taalles', desc: 'Leerlingen oefenen.' },
+    { icon: 'fa-smile-beam',         title: 'Blij kind!', desc: 'Supertrots op een goed cijfer.' },
+    { icon: 'fa-laptop',             title: 'Online les', desc: 'Bijles via het scherm.' },
+    { icon: 'fa-award',              title: 'Diploma', desc: 'Viering na een succesvol jaar!' },
+  ];
+
+  let galleryItems = [];
+  let currentIdx = 0;
+
+  async function loadGallery() {
+    try {
+      const res = await fetch('/api/gallery');
+      const items = await res.json();
+      galleryItems = items;
+      renderGallery(items);
+    } catch {
+      renderPlaceholders();
+    }
+  }
+
+  function renderGallery(items) {
+    const grid = document.getElementById('gallery-grid');
+    if (!items.length) { renderPlaceholders(); return; }
+    grid.innerHTML = items.map((item, i) => `
+      <div class="gallery-item" data-idx="${i}" onclick="openLightbox(${i})">
+        <img src="${item.url}" alt="${esc(item.title)}" loading="lazy" />
+        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
+        ${item.title ? `<div class="gallery-item-label">${esc(item.title)}</div>` : ''}
+      </div>`).join('');
+  }
+
+  function renderPlaceholders() {
+    const grid = document.getElementById('gallery-grid');
+    grid.innerHTML = PLACEHOLDERS.map(p => `
+      <div class="gallery-item">
+        <div class="gallery-placeholder"><i class="fas ${p.icon} ph-icons"></i></div>
+        <div class="gallery-overlay"><i class="fas fa-expand-alt"></i></div>
+        <div class="gallery-item-label">${p.title}</div>
+      </div>`).join('') +
+      `<div style="grid-column:1/-1;text-align:center;padding:24px 0;color:var(--text-muted);font-size:.85rem;">
+        <i class="fas fa-images" style="margin-right:6px;opacity:.4"></i>
+        Foto's worden toegevoegd via het beheerderspaneel.
+      </div>`;
+  }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // LIGHTBOX
+  function openLightbox(idx) {
+    if (!galleryItems.length) return;
+    currentIdx = idx;
+    updateLightbox();
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function updateLightbox() {
+    const item = galleryItems[currentIdx];
+    if (!item) return;
+    document.getElementById('lb-img').src = item.url;
+    document.getElementById('lb-img').alt = item.title;
+    document.getElementById('lb-title').textContent = item.title;
+    document.getElementById('lb-desc').textContent = item.description || '';
+    document.getElementById('lightbox-prev').style.display = galleryItems.length > 1 ? '' : 'none';
+    document.getElementById('lightbox-next').style.display = galleryItems.length > 1 ? '' : 'none';
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+  document.getElementById('lightbox').addEventListener('click', e => { if (e.target === document.getElementById('lightbox')) closeLightbox(); });
+  document.getElementById('lightbox-prev').addEventListener('click', e => { e.stopPropagation(); currentIdx = (currentIdx - 1 + galleryItems.length) % galleryItems.length; updateLightbox(); });
+  document.getElementById('lightbox-next').addEventListener('click', e => { e.stopPropagation(); currentIdx = (currentIdx + 1) % galleryItems.length; updateLightbox(); });
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('lightbox').classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') { currentIdx = (currentIdx - 1 + galleryItems.length) % galleryItems.length; updateLightbox(); }
+    if (e.key === 'ArrowRight') { currentIdx = (currentIdx + 1) % galleryItems.length; updateLightbox(); }
   });
-  document.getElementById('lightbox-close').addEventListener('click', () => lightbox.classList.remove('open'));
-  lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.classList.remove('open'); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') lightbox.classList.remove('open'); });
+
+  loadGallery();
 </script>
 </body>
 </html>
