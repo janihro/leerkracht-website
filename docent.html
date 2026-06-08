@@ -136,14 +136,59 @@
     .upload-progress { background: #f0eeff; border-radius: 99px; height: 6px; overflow: hidden; margin-top: 10px; display: none; }
     .upload-progress-bar { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width .3s; width: 0; }
 
-    @media (max-width: 640px) {
-      .docent-login-card { padding: 36px 24px; }
-      .stats-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .stat-card .num { font-size: 1.5rem; }
-      .filter-tabs { flex-wrap: wrap; }
-      .upload-form-grid { grid-template-columns: 1fr; }
-      .section-tabs { flex-direction: column; }
-      .file-item { flex-wrap: wrap; }
+    @media (max-width: 768px) {
+      /* Navbar */
+      #docent-nav-right { gap: 8px; }
+      #docent-nav-right span { display: none; } /* hide "Docentenmodus" text on small screens */
+
+      /* Wrap */
+      .docent-wrap { padding: 80px 12px 48px; }
+
+      /* Panel */
+      .docent-panel { max-width: 100%; }
+
+      /* Section tabs */
+      .section-tabs { gap: 4px; padding: 4px; }
+      .section-tab { font-size: .8rem; padding: 10px 8px; gap: 5px; }
+      .section-tab i { font-size: .85rem; }
+
+      /* Panel header */
+      .docent-panel-header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px 16px; }
+      .docent-panel-header h2 { font-size: 1.1rem; }
+      .docent-panel-header .btn { align-self: stretch; text-align: center; }
+
+      /* Stats */
+      .stats-row { gap: 8px; }
+      .stat-card { padding: 14px 8px; }
+      .stat-card .num { font-size: 1.6rem; }
+      .stat-card .lbl { font-size: .68rem; }
+
+      /* Filter tabs */
+      .filter-tabs { gap: 6px; }
+      .filter-tab { padding: 6px 12px; font-size: .78rem; }
+
+      /* Question cards */
+      .question-card { padding: 16px; }
+      .qc-meta { gap: 5px; }
+      .qc-date { width: 100%; margin-left: 0; margin-top: 2px; }
+      .qc-actions { flex-wrap: wrap; }
+      .qc-actions .btn { flex: 1; text-align: center; justify-content: center; }
+
+      /* Upload card */
+      .upload-card { padding: 18px; }
+      .upload-drop { padding: 22px 14px; }
+      .upload-drop i { font-size: 1.5rem; }
+      .upload-form-grid { grid-template-columns: 1fr; gap: 10px; }
+      #upload-btn { width: 100%; justify-content: center; }
+
+      /* File items */
+      .file-item { padding: 12px 14px; gap: 10px; }
+      .file-icon { width: 38px; height: 38px; font-size: .95rem; }
+      .file-actions { width: 100%; justify-content: flex-end; }
+      .file-actions .btn { flex: 1; justify-content: center; }
+
+      /* Login card */
+      .docent-login-card { padding: 30px 20px; }
     }
   </style>
 </head>
