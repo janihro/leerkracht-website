@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webshop — LeerKracht Bijles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:36px; }
+    .filter-btn {
+      padding:9px 20px; border-radius:99px; border:1.5px solid var(--border);
+      background:var(--white); font-family:var(--font); font-weight:700; font-size:0.85rem;
+      cursor:pointer; color:var(--text-muted); transition:var(--transition);
+    }
+    .filter-btn.active, .filter-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .cart-bubble {
+      position:fixed; bottom:28px; right:28px;
+      background:linear-gradient(135deg,var(--primary),var(--primary-light));
+      color:#fff; border-radius:99px; padding:13px 22px;
+      font-weight:700; font-size:0.9rem; box-shadow:var(--shadow-lg);
+      display:flex; align-items:center; gap:10px;
+      cursor:pointer; z-index:999; transition:var(--transition);
+    }
+    .cart-bubble:hover { transform:translateY(-3px) scale(1.03); }
+    .cart-count {
+      background:var(--accent); color:#fff; border-radius:50%;
+      width:22px; height:22px; display:none; align-items:center;
+      justify-content:center; font-size:0.72rem; font-weight:800;
+    }
+  </style>
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark"><i class="fas fa-graduation-cap"></i></div>
+      <span>LeerKracht</span>
+    </a>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="aanbod.html">Aanbod</a></li>
+      <li><a href="over-mij.html">Over mij</a></li>
+      <li><a href="webshop.html" class="active">Webshop</a></li>
+      <li><a href="gallerij.html">Galerij</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="portaal.html" class="nav-cta">Ouderportaal</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="container" data-animate>
+    <div class="section-label center">Webshop</div>
+    <h1 class="section-title">Leermateriaal &amp; producten</h1>
+    <p>Werkboeken, oefensets en digitale downloads om thuis mee te oefenen.</p>
+  </div>
+</div>
+
+<section class="section section-tinted">
+  <div class="container">
+    <div class="filter-bar" data-animate>
+      <button class="filter-btn active">Alles</button>
+      <button class="filter-btn">Werkboeken</button>
+      <button class="filter-btn">Digitaal</button>
+      <button class="filter-btn">Pakketten</button>
+    </div>
+
+    <div class="shop-grid">
+      <div class="shop-card" data-animate data-delay="100">
+        <div class="shop-img"><i class="fas fa-book"></i></div>
+        <div class="shop-body">
+          <span class="shop-badge">Bestseller</span>
+          <h3>Rekenwerkboek groep 5</h3>
+          <p>64 pagina's vol oefeningen afgestemd op de kerndoelen. Met antwoorden voor ouders.</p>
+          <div class="shop-footer">
+            <span class="shop-price">€12,95</span>
+            <button class="btn-add">In mandje</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-card" data-animate data-delay="150">
+        <div class="shop-img"><i class="fas fa-file-pdf"></i></div>
+        <div class="shop-body">
+          <span class="shop-badge" style="background:var(--green)">Download</span>
+          <h3>Spellingkaarten (PDF)</h3>
+          <p>30 digitale spellingkaarten om af te drukken of op tablet te gebruiken. Direct te downloaden.</p>
+          <div class="shop-footer">
+            <span class="shop-price">€4,95</span>
+            <button class="btn-add">In mandje</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-card" data-animate data-delay="200">
+        <div class="shop-img"><i class="fas fa-box-open"></i></div>
+        <div class="shop-body">
+          <span class="shop-badge" style="background:var(--yellow);color:#6b4f00">Pakket</span>
+          <h3>Startpakket basisschool</h3>
+          <p>Rekenwerkboek + taalwerkboek + oefenkaarten. Ideaal voor de zomervakantie.</p>
+          <div class="shop-footer">
+            <span class="shop-price">€24,95</span>
+            <button class="btn-add">In mandje</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-card" data-animate data-delay="100">
+        <div class="shop-img"><i class="fas fa-laptop"></i></div>
+        <div class="shop-body">
+          <span class="shop-badge">Online</span>
+          <h3>Online oefenabonnement (1 maand)</h3>
+          <p>Toegang tot alle digitale oefeningen in het ouderportaal. Inclusief voortgangsoverzicht.</p>
+          <div class="shop-footer">
+            <span class="shop-price">€9,95</span>
+            <button class="btn-add">In mandje</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-card" data-animate data-delay="150">
+        <div class="shop-img"><i class="fas fa-book-reader"></i></div>
+        <div class="shop-body">
+          <h3>Begrijpend lezen groep 6–7</h3>
+          <p>Teksten met vragen op drie niveaus. Inclusief docentenhandleiding en antwoordenboekje.</p>
+          <div class="shop-footer">
+            <span class="shop-price">€13,95</span>
+            <button class="btn-add">In mandje</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-card" data-animate data-delay="200">
+        <div class="shop-img"><i class="fas fa-star"></i></div>
+        <div class="shop-body">
+          <span class="shop-badge" style="background:var(--accent)">Nieuw</span>
+          <h3>Motivatiekaarten (set 20)</h3>
+          <p>Kleurrijke aanmoedigingskaarten voor een positieve leerervaring. Ideaal als beloning.</p>
+          <div class="shop-footer">
+            <span class="shop-price">€7,50</span>
+            <button class="btn-add">In mandje</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="cart-bubble" id="cart-bubble" onclick="alert('Koppel hier jouw betaalsysteem (bijv. Stripe of Mollie).')">
+  <i class="fas fa-shopping-cart"></i>
+  Mandje
+  <span class="cart-count" id="cart-count-bubble">0</span>
+</div>
+
+<footer>
+  <div class="container footer-grid">
+    <div>
+      <div class="footer-logo-wrap"><div class="logo-mark"><i class="fas fa-graduation-cap"></i></div> LeerKracht</div>
+      <p>Persoonlijke bijles voor kinderen die willen groeien.</p>
+      <div class="socials">
+        <a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-facebook-f"></i></a>
+        <a href="#"><i class="fab fa-tiktok"></i></a><a href="#"><i class="fab fa-whatsapp"></i></a>
+      </div>
+    </div>
+    <div>
+      <h5>Navigatie</h5>
+      <div class="footer-links">
+        <a href="index.html">Home</a><a href="aanbod.html">Aanbod</a><a href="over-mij.html">Over mij</a>
+        <a href="webshop.html">Webshop</a><a href="faq.html">FAQ</a><a href="contact.html">Contact</a>
+      </div>
+    </div>
+    <div>
+      <h5>Contact</h5>
+      <ul class="footer-contact">
+        <li><i class="fas fa-envelope"></i> info@leerkracht.nl</li>
+        <li><i class="fas fa-phone"></i> 06 — XX XX XX XX</li>
+        <li><i class="fas fa-map-marker-alt"></i> [Stad], Nederland</li>
+      </ul>
+    </div>
+    <div>
+      <h5>Ouderportaal</h5>
+      <p style="margin-bottom:16px;">Bekijk het lesmateriaal van jouw kind.</p>
+      <a href="portaal.html" class="btn btn-ghost btn-sm"><i class="fas fa-lock"></i> Inloggen</a>
+    </div>
+  </div>
+  <div class="footer-bottom container">
+    <p>© 2026 LeerKracht</p>
+    <div style="display:flex;gap:20px;"><a href="#">Privacybeleid</a><a href="#">Algemene voorwaarden</a></div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+<script>
+  const bubble = document.getElementById('cart-count-bubble');
+  function syncBubble() {
+    const cart = JSON.parse(localStorage.getItem('lk_cart') || '[]');
+    const total = cart.reduce((s,i) => s+i.qty, 0);
+    bubble.textContent = total;
+    bubble.style.display = total ? 'flex' : 'none';
+  }
+  syncBubble();
+  document.querySelectorAll('.btn-add').forEach(b => b.addEventListener('click', () => setTimeout(syncBubble, 50)));
+</script>
+</body>
+</html>

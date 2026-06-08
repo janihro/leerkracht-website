@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact — LeerKracht Bijles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark"><i class="fas fa-graduation-cap"></i></div>
+      <span>LeerKracht</span>
+    </a>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="aanbod.html">Aanbod</a></li>
+      <li><a href="over-mij.html">Over mij</a></li>
+      <li><a href="webshop.html">Webshop</a></li>
+      <li><a href="gallerij.html">Galerij</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="contact.html" class="active">Contact</a></li>
+      <li><a href="portaal.html" class="nav-cta">Ouderportaal</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <div class="container" data-animate>
+    <div class="section-label center">Neem contact op</div>
+    <h1 class="section-title">Contact &amp; Inschrijven</h1>
+    <p>Vragen, een kennismaking aanvragen of direct inschrijven — doe het hier.</p>
+  </div>
+</div>
+
+<section class="section section-tinted" id="inschrijven">
+  <div class="container contact-layout">
+
+    <div class="contact-info" data-animate>
+      <h2 class="section-title">We horen graag van je</h2>
+      <p>Stuur een bericht, bel of app ons. We reageren doorgaans binnen één werkdag.</p>
+
+      <div class="contact-detail">
+        <div class="contact-detail-icon"><i class="fas fa-envelope"></i></div>
+        <div class="contact-detail-text">
+          <strong>E-mail</strong>
+          info@leerkracht.nl
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon"><i class="fab fa-whatsapp"></i></div>
+        <div class="contact-detail-text">
+          <strong>WhatsApp / Telefoon</strong>
+          06 — XX XX XX XX
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon"><i class="fas fa-map-marker-alt"></i></div>
+        <div class="contact-detail-text">
+          <strong>Locatie</strong>
+          [Straatnaam], [Stad]<br />
+          <span style="font-size:.85rem;color:var(--text-muted)">Lessen ook online mogelijk</span>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon"><i class="fas fa-clock"></i></div>
+        <div class="contact-detail-text">
+          <strong>Bereikbaar</strong>
+          Ma–vr: 9:00–19:00<br />Za: 10:00–14:00
+        </div>
+      </div>
+
+      <div style="margin-top:36px;">
+        <p style="font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:14px;">Volg ons</p>
+        <div class="socials" style="gap:10px;">
+          <a href="#" style="background:rgba(91,79,207,.1);color:var(--primary);width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:var(--transition);" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='rgba(91,79,207,.1)';this.style.color='var(--primary)'"><i class="fab fa-instagram"></i></a>
+          <a href="#" style="background:rgba(91,79,207,.1);color:var(--primary);width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:var(--transition);" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='rgba(91,79,207,.1)';this.style.color='var(--primary)'"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" style="background:rgba(91,79,207,.1);color:var(--primary);width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:var(--transition);" onmouseover="this.style.background='var(--primary)';this.style.color='#fff'" onmouseout="this.style.background='rgba(91,79,207,.1)';this.style.color='var(--primary)'"><i class="fab fa-tiktok"></i></a>
+          <a href="#" style="background:rgba(37,211,102,.1);color:#16a34a;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:var(--transition);" onmouseover="this.style.background='#25d366';this.style.color='#fff'" onmouseout="this.style.background='rgba(37,211,102,.1)';this.style.color='#16a34a'"><i class="fab fa-whatsapp"></i></a>
+        </div>
+      </div>
+    </div>
+
+    <div data-animate data-delay="150">
+      <div class="contact-form-wrap">
+        <h3>Stuur een bericht of schrijf je in</h3>
+        <form id="contact-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="voornaam">Voornaam ouder *</label>
+              <input type="text" id="voornaam" placeholder="bijv. Lisa" required />
+            </div>
+            <div class="form-group">
+              <label for="achternaam">Achternaam *</label>
+              <input type="text" id="achternaam" placeholder="bijv. Jansen" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="email">E-mailadres *</label>
+            <input type="email" id="email" placeholder="jouw@email.nl" required />
+          </div>
+          <div class="form-group">
+            <label for="telefoon">Telefoonnummer</label>
+            <input type="tel" id="telefoon" placeholder="06 — xx xx xx xx" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="kind-naam">Naam kind *</label>
+              <input type="text" id="kind-naam" placeholder="bijv. Emma" required />
+            </div>
+            <div class="form-group">
+              <label for="leerjaar">Leerjaar / groep *</label>
+              <select id="leerjaar" required>
+                <option value="">Selecteer...</option>
+                <option>Groep 3</option><option>Groep 4</option><option>Groep 5</option>
+                <option>Groep 6</option><option>Groep 7</option><option>Groep 8</option>
+                <option>Klas 1 VO</option><option>Klas 2 VO</option>
+                <option>Klas 3 VO</option><option>Klas 4 VO</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="vak">Vak / ondersteuningsvraag *</label>
+            <select id="vak" required>
+              <option value="">Selecteer...</option>
+              <option>Rekenen / Wiskunde</option>
+              <option>Taal / Lezen</option>
+              <option>Engels</option>
+              <option>Leervaardigheden / studiecoaching</option>
+              <option>Groepsles</option>
+              <option>Anders / meerdere vakken</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bericht">Bericht / toelichting</label>
+            <textarea id="bericht" placeholder="Vertel ons gerust meer over de situatie van uw kind, of stel een vraag..."></textarea>
+          </div>
+          <div class="form-group">
+            <div class="form-check">
+              <input type="checkbox" id="akkoord" required />
+              <label for="akkoord" style="text-transform:none;letter-spacing:0;font-weight:400;">Ik ga akkoord met het <a href="#" style="color:var(--primary);">privacybeleid</a> en geef toestemming voor contact over mijn aanvraag.</label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">
+            <i class="fas fa-paper-plane"></i> Verstuur aanvraag
+          </button>
+          <div id="success-msg" class="success-msg">
+            <i class="fas fa-check-circle"></i> Bedankt! We nemen binnen één werkdag contact met je op.
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="container footer-grid">
+    <div>
+      <div class="footer-logo-wrap"><div class="logo-mark"><i class="fas fa-graduation-cap"></i></div> LeerKracht</div>
+      <p>Persoonlijke bijles voor kinderen die willen groeien.</p>
+      <div class="socials">
+        <a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-facebook-f"></i></a>
+        <a href="#"><i class="fab fa-tiktok"></i></a><a href="#"><i class="fab fa-whatsapp"></i></a>
+      </div>
+    </div>
+    <div>
+      <h5>Navigatie</h5>
+      <div class="footer-links">
+        <a href="index.html">Home</a><a href="aanbod.html">Aanbod</a><a href="over-mij.html">Over mij</a>
+        <a href="faq.html">FAQ</a><a href="contact.html">Contact</a>
+      </div>
+    </div>
+    <div>
+      <h5>Contact</h5>
+      <ul class="footer-contact">
+        <li><i class="fas fa-envelope"></i> info@leerkracht.nl</li>
+        <li><i class="fas fa-phone"></i> 06 — XX XX XX XX</li>
+        <li><i class="fas fa-map-marker-alt"></i> [Stad], Nederland</li>
+      </ul>
+    </div>
+    <div>
+      <h5>Ouderportaal</h5>
+      <p style="margin-bottom:16px;">Bekijk het lesmateriaal van jouw kind.</p>
+      <a href="portaal.html" class="btn btn-ghost btn-sm"><i class="fas fa-lock"></i> Inloggen</a>
+    </div>
+  </div>
+  <div class="footer-bottom container">
+    <p>© 2026 LeerKracht</p>
+    <div style="display:flex;gap:20px;"><a href="#">Privacybeleid</a><a href="#">Algemene voorwaarden</a></div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>

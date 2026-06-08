@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Ouderportaal LeerKracht</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="dashboard-page">
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark"><i class="fas fa-graduation-cap"></i></div>
+      <span>LeerKracht</span>
+    </a>
+    <div style="display:flex;align-items:center;gap:14px;margin-left:auto;">
+      <span style="font-size:.85rem;color:var(--text-muted);">
+        Welkom, <strong style="color:var(--primary);" id="dashboard-name">ouder</strong>
+      </span>
+      <a href="#" id="logout-btn" class="btn btn-outline btn-sm">
+        <i class="fas fa-sign-out-alt"></i> Uitloggen
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="dashboard-page-wrap">
+  <div class="dashboard-layout container">
+
+    <!-- SIDEBAR -->
+    <aside class="dash-sidebar">
+      <div class="dash-user">
+        <div class="dash-av"><i class="fas fa-user"></i></div>
+        <div>
+          <h4 class="dash-user-name">Ouder</h4>
+          <p>Kind: <strong>Emma</strong></p>
+        </div>
+      </div>
+      <nav class="dash-nav">
+        <a href="#materiaal" class="active"><i class="fas fa-book-open"></i> Lesmateriaal</a>
+        <a href="#voortgang"><i class="fas fa-chart-line"></i> Voortgang</a>
+        <a href="#agenda"><i class="fas fa-calendar-alt"></i> Agenda</a>
+        <a href="#notities"><i class="fas fa-sticky-note"></i> Notities</a>
+        <a href="webshop.html"><i class="fas fa-shopping-bag"></i> Webshop</a>
+        <a href="contact.html"><i class="fas fa-envelope"></i> Contact</a>
+        <a href="#" id="logout-btn-side" style="margin-top:12px;color:var(--accent);"><i class="fas fa-sign-out-alt"></i> Uitloggen</a>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="dash-main">
+
+      <!-- Welkomstbanner -->
+      <div class="dash-header" data-animate>
+        <div>
+          <h2>Goedendag, <span id="dashboard-name-2">ouder</span>!</h2>
+          <p>Hier vind je alles over de voortgang en lessen van Emma.</p>
+        </div>
+        <div class="dash-header-icon"><i class="fas fa-graduation-cap"></i></div>
+      </div>
+
+      <!-- LESMATERIAAL -->
+      <section id="materiaal" style="margin-bottom:40px;" data-animate>
+        <div class="dash-section-title"><i class="fas fa-book-open"></i> Lesmateriaal</div>
+        <div class="les-grid">
+          <div class="les-card">
+            <div class="les-icon"><i class="fas fa-calculator"></i></div>
+            <div class="les-body">
+              <h4>Rekenen — Week 23</h4>
+              <p>Breuken optellen en aftrekken. Oefenbladen + uitlegvideo.</p>
+              <span class="les-tag nieuw">Nieuw</span>
+            </div>
+          </div>
+          <div class="les-card">
+            <div class="les-icon"><i class="fas fa-book-open"></i></div>
+            <div class="les-body">
+              <h4>Taal — Week 22</h4>
+              <p>Begrijpend lezen tekst "De vluchtige vos". Met vragen.</p>
+              <span class="les-tag">Beschikbaar</span>
+            </div>
+          </div>
+          <div class="les-card">
+            <div class="les-icon"><i class="fas fa-file-pdf"></i></div>
+            <div class="les-body">
+              <h4>Huiswerkopdracht rekenen</h4>
+              <p>PDF oefenblad — te printen of digitaal invullen.</p>
+              <span class="les-tag">Beschikbaar</span>
+            </div>
+          </div>
+          <div class="les-card">
+            <div class="les-icon"><i class="fas fa-video"></i></div>
+            <div class="les-body">
+              <h4>Uitlegvideo — Breuken</h4>
+              <p>5 minuten video-uitleg bij de lesstof van week 23.</p>
+              <span class="les-tag nieuw">Nieuw</span>
+            </div>
+          </div>
+          <div class="les-card">
+            <div class="les-icon"><i class="fas fa-globe"></i></div>
+            <div class="les-body">
+              <h4>Engels — Week 22</h4>
+              <p>Woordenschat oefeningen + luisteropdracht.</p>
+              <span class="les-tag">Beschikbaar</span>
+            </div>
+          </div>
+          <div class="les-card">
+            <div class="les-icon" style="background:rgba(255,209,102,.18);color:#c88a00"><i class="fas fa-star"></i></div>
+            <div class="les-body">
+              <h4>Bonusopdracht — Puzzel</h4>
+              <p>Leuke uitdaging voor als de reguliere stof klaar is.</p>
+              <span class="les-tag" style="background:rgba(255,209,102,.2);color:#b45309;">Bonus</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VOORTGANG -->
+      <section id="voortgang" style="margin-bottom:40px;" data-animate>
+        <div class="dash-section-title"><i class="fas fa-chart-line"></i> Voortgang Emma</div>
+        <div class="prog-card">
+          <div class="prog-item">
+            <div class="prog-label">Rekenen <span>72%</span></div>
+            <div class="prog-bar"><div class="prog-fill" data-width="72%" style="width:0"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-label">Taal &amp; Lezen <span style="color:var(--green)">85%</span></div>
+            <div class="prog-bar"><div class="prog-fill" data-width="85%" style="width:0;background:linear-gradient(90deg,var(--green),#04c994)"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-label">Engels <span style="color:#c88a00">60%</span></div>
+            <div class="prog-bar"><div class="prog-fill" data-width="60%" style="width:0;background:linear-gradient(90deg,var(--yellow),#ffb347)"></div></div>
+          </div>
+          <div class="prog-item">
+            <div class="prog-label">Leervaardigheden <span>78%</span></div>
+            <div class="prog-bar"><div class="prog-fill" data-width="78%" style="width:0"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AGENDA -->
+      <section id="agenda" style="margin-bottom:40px;" data-animate>
+        <div class="dash-section-title"><i class="fas fa-calendar-alt"></i> Komende lessen</div>
+        <div class="prog-card">
+          <div class="agenda-item">
+            <div class="agenda-date-box">10<small>jun</small></div>
+            <div class="agenda-body">
+              <h4>Rekenen — Breuken (vervolg)</h4>
+              <p>16:00–17:00 · [Locatie] of online</p>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-date-box">12<small>jun</small></div>
+            <div class="agenda-body">
+              <h4>Taal — Begrijpend lezen</h4>
+              <p>15:30–16:30 · Online</p>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-date-box">17<small>jun</small></div>
+            <div class="agenda-body">
+              <h4>Engels — Woordenschat &amp; luisteren</h4>
+              <p>16:00–17:00 · [Locatie]</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- NOTITIES -->
+      <section id="notities" data-animate>
+        <div class="dash-section-title"><i class="fas fa-sticky-note"></i> Notities van de begeleider</div>
+        <div class="prog-card">
+          <div class="notitie-item">
+            <strong>7 juni 2026 — Rekenen</strong>
+            <p>Emma heeft vandaag goed haar best gedaan met breuken optellen. Ze begrijpt het principe, maar heeft nog oefening nodig met ongelijknamige breuken. Huiswerk meegegeven.</p>
+          </div>
+          <div class="notitie-item">
+            <strong>5 juni 2026 — Taal</strong>
+            <p>Begrijpend lezen gaat erg goed! Emma scoorde 8/10 op de oefentekst. We gaan volgende week iets uitdagender materiaal proberen.</p>
+          </div>
+          <div class="notitie-item">
+            <strong>3 juni 2026 — Leervaardigheden</strong>
+            <p>We hebben geoefend met een weektaakplanner. Emma is enthousiast en heeft beloofd het thuis ook te proberen. Goed resultaat!</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="main.js"></script>
+<script>
+  // Sync second name element
+  const user = sessionStorage.getItem('portaal_user') || 'ouder@email.nl';
+  const name = user.split('@')[0].charAt(0).toUpperCase() + user.split('@')[0].slice(1);
+  const el2 = document.getElementById('dashboard-name-2');
+  if (el2) el2.textContent = name;
+
+  // Sidebar logout
+  const logoutSide = document.getElementById('logout-btn-side');
+  if (logoutSide) {
+    logoutSide.addEventListener('click', e => {
+      e.preventDefault();
+      sessionStorage.removeItem('portaal_user');
+      window.location.href = 'portaal.html';
+    });
+  }
+
+  // Sidebar nav highlight on scroll
+  const sections = ['materiaal','voortgang','agenda','notities'];
+  const links = document.querySelectorAll('.dash-nav a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && window.scrollY >= el.offsetTop - 120) current = id;
+    });
+    links.forEach(a => {
+      a.classList.remove('active');
+      if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+    });
+  }, { passive: true });
+</script>
+</body>
+</html>

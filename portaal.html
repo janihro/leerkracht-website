@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ouderportaal — LeerKracht Bijles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark"><i class="fas fa-graduation-cap"></i></div>
+      <span>LeerKracht</span>
+    </a>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="aanbod.html">Aanbod</a></li>
+      <li><a href="over-mij.html">Over mij</a></li>
+      <li><a href="webshop.html">Webshop</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="portaal.html" class="nav-cta active">Ouderportaal</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="portaal-page">
+  <div class="portaal-card" data-animate>
+    <div class="portaal-logo">
+      <div class="portaal-logo-icon"><i class="fas fa-graduation-cap"></i></div>
+    </div>
+    <h2>Ouderportaal</h2>
+    <p>Log in om het lesmateriaal en de voortgang van uw kind te bekijken.</p>
+
+    <form class="portaal-form" id="login-form" novalidate>
+      <div class="form-group">
+        <label for="login-email">E-mailadres</label>
+        <input type="email" id="login-email" placeholder="jouw@email.nl" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="login-pass">Wachtwoord</label>
+        <input type="password" id="login-pass" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:22px;">
+        <a href="#" style="font-size:.82rem;color:var(--primary);font-weight:700;">Wachtwoord vergeten?</a>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">
+        <i class="fas fa-sign-in-alt"></i> Inloggen
+      </button>
+    </form>
+
+    <div class="portaal-footer">
+      Nog geen account? <a href="contact.html#inschrijven" style="color:var(--primary);font-weight:700;">Schrijf je in</a><br /><br />
+      <i class="fas fa-lock" style="color:var(--primary);margin-right:6px;font-size:.8rem;"></i>
+      Beveiligd met SSL — jouw gegevens zijn veilig.
+    </div>
+
+    <div class="portaal-demo-hint">
+      <strong style="color:var(--primary);">Demo:</strong> vul een e-mailadres en wachtwoord in en klik op inloggen om het dashboard te bekijken.
+    </div>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
