@@ -1,0 +1,43 @@
+{
+  "registrations": [
+    {
+      "id": "mq5bb9bmthfw6",
+      "voornaam": "Lisa",
+      "achternaam": "Jansen",
+      "email": "lisa@voorbeeld.nl",
+      "telefoon": "06-12345678",
+      "kindNaam": "Noah",
+      "leerjaar": "Groep 6",
+      "vak": "Rekenen / Wiskunde",
+      "bericht": "Noah heeft moeite met de tafels en breuken.",
+      "status": "nieuw",
+      "submittedAt": "2026-06-08T14:34:42.802Z"
+    },
+    {
+      "id": "mq5bcn22a1irk",
+      "voornaam": "Lisa",
+      "achternaam": "Jansen",
+      "email": "lisa@voorbeeld.nl",
+      "telefoon": "06-12345678",
+      "kindNaam": "Noah",
+      "leerjaar": "Groep 6",
+      "vak": "Rekenen / Wiskunde",
+      "bericht": "Noah heeft moeite met de tafels en breuken.",
+      "status": "nieuw",
+      "submittedAt": "2026-06-08T14:35:47.258Z"
+    },
+    {
+      "id": "mq5bcn28unoh1",
+      "voornaam": "Ahmed",
+      "achternaam": "El Idrissi",
+      "email": "ahmed@voorbeeld.nl",
+      "telefoon": "",
+      "kindNaam": "Sara",
+      "leerjaar": "Klas 1 VO",
+      "vak": "Engels",
+      "bericht": "",
+      "status": "nieuw",
+      "submittedAt": "2026-06-08T14:35:47.264Z"
+    }
+  ]
+}

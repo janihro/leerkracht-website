@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bestel werkboeken, flashcards en NONF merchandise. Leermateriaal Papiamentu voor thuis." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Bestel werkboeken, flashcards en NONF merchandise. Leermateriaal Papiamentu voor thuis." />
+  <meta property="og:description" content="Bestel werkboeken, flashcards en NONF merchandise. Leermateriaal Papiamentu voor thuis." />
+  <meta property="og:image" content="https://leerkracht-website-production.up.railway.app/logo.jpeg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Bestel werkboeken, flashcards en NONF merchandise. Leermateriaal Papiamentu voor thuis." />
+  <meta name="twitter:description" content="Bestel werkboeken, flashcards en NONF merchandise. Leermateriaal Papiamentu voor thuis." />
   <title>Webshop — LeerKracht Bijles</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -394,8 +402,47 @@ function esc(s) {
 syncBubble();
 loadProducts();
 </script>
+
+<!-- WhatsApp vaste knop -->
+<a href="https://wa.me/31681529964" target="_blank" rel="noopener" class="wa-float" aria-label="WhatsApp ons">
+  <i class="fab fa-whatsapp"></i>
+</a>
+<style>
+.wa-float {
+  position: fixed; bottom: 24px; right: 24px; z-index: 998;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #25D366; color: #fff !important;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; box-shadow: 0 4px 20px rgba(37,211,102,.5);
+  transition: transform .2s, box-shadow .2s; text-decoration: none;
+}
+.wa-float:hover { transform: scale(1.1) translateY(-3px); box-shadow: 0 8px 30px rgba(37,211,102,.6); color: #fff !important; }
+</style>
+
+<!-- Cookie banner -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9997;background:#1A4E8A;color:#fff;padding:14px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 -4px 24px rgba(0,0,0,.2);">
+  <p style="margin:0;font-size:.88rem;max-width:720px;line-height:1.6;">
+    <i class="fas fa-cookie-bite" style="margin-right:8px;color:#F4A928;"></i>
+    Wij gebruiken functionele cookies om de website goed te laten werken. Er worden geen persoonsgegevens gedeeld met derden.
+  </p>
+  <div style="display:flex;gap:10px;flex-shrink:0;">
+    <button onclick="acceptCookies()" style="padding:9px 22px;border-radius:99px;border:none;background:#E8763A;color:#fff;font-weight:800;cursor:pointer;font-size:.85rem;font-family:inherit;">Accepteren</button>
+    <button onclick="declineCookies()" style="padding:9px 22px;border-radius:99px;border:1.5px solid rgba(255,255,255,.4);background:transparent;color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;font-family:inherit;">Alleen noodzakelijk</button>
+  </div>
+</div>
+<script>
+(function(){
+  if (!localStorage.getItem('nonf_cookie_consent')) {
+    document.getElementById('cookie-banner').style.display = 'flex';
+  }
+})();
+function acceptCookies()  { localStorage.setItem('nonf_cookie_consent','accepted');  document.getElementById('cookie-banner').style.display='none'; }
+function declineCookies() { localStorage.setItem('nonf_cookie_consent','declined');  document.getElementById('cookie-banner').style.display='none'; }
+</script>
 </body>
 </html>
+
+
 
 
 

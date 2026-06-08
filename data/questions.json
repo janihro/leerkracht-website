@@ -1,0 +1,15 @@
+{
+  "questions": [
+    {
+      "id": "mq59ysn6xrzs1",
+      "lessonId": "rekenen-week-23",
+      "lessonTitle": "Rekenen — Week 23",
+      "question": "Emma begrijpt niet hoe je 1/3 + 1/4 uitrekent. Kunt u dit uitleggen?",
+      "askedBy": "ouder@email.nl",
+      "childName": "Emma",
+      "timestamp": "2026-06-08T13:57:01.698Z",
+      "answer": "Goede vraag! Bij ongelijknamige breuken maak je eerst de noemers gelijk. Voor 1/3 + 1/4 gebruik je 12 als gemeenschappelijke noemer: 4/12 + 3/12 = 7/12. We oefenen dit volgende les!",
+      "answeredAt": "2026-06-08T13:57:46.079Z"
+    }
+  ]
+}

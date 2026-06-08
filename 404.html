@@ -1,0 +1,188 @@
+﻿<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Pagina niet gevonden — Nos Orguyo, Nos Futuro" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Pagina niet gevonden" />
+  <meta property="og:description" content="Pagina niet gevonden — Nos Orguyo, Nos Futuro" />
+  <meta property="og:image" content="https://leerkracht-website-production.up.railway.app/logo.jpeg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Pagina niet gevonden" />
+  <meta name="twitter:description" content="Pagina niet gevonden — Nos Orguyo, Nos Futuro" />
+  <title>Pagina niet gevonden — Nos Orguyo, Nos Futuro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    #navbar, #navbar.scrolled { background: #1A4E8A !important; box-shadow: 0 2px 16px rgba(0,0,0,.18) !important; }
+    #navbar .logo span { color: #fff !important; font-weight: 800; }
+    #navbar .logo .logo-img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
+    #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+    #navbar .nav-links a:hover { color: #F4A928 !important; }
+    #navbar .nav-cta { background: #E8763A !important; color: #fff !important; border-color: #E8763A !important; }
+    #navbar .hamburger span { background: #fff !important; }
+    @media (max-width: 900px) {
+      #navbar .nav-links { background: #1A4E8A !important; border-top-color: rgba(255,255,255,.15) !important; }
+      #navbar .nav-links li { border-bottom-color: rgba(255,255,255,.1) !important; }
+      #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+      #navbar .nav-links a:hover, #navbar .nav-links a.active { background: rgba(255,255,255,.1) !important; color: #F4A928 !important; }
+      #navbar .nav-cta { background: #E8763A !important; color: #fff !important; margin-top: 6px; }
+    }
+    footer { background: #0d2a52 !important; }
+    .footer-logo-wrap, footer h5 { color: #fff !important; }
+    footer p, footer a { color: rgba(255,255,255,.65) !important; }
+    footer a:hover { color: #F4A928 !important; }
+    .footer-bottom { border-top-color: rgba(255,255,255,.1) !important; }
+    .footer-bottom p { color: rgba(255,255,255,.5) !important; }
+
+    .err-wrap {
+      min-height: calc(100vh - 80px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 80px 20px;
+      background: linear-gradient(135deg, #1A4E8A 0%, #0f3366 60%, #1BB6AD 100%);
+    }
+    .err-card {
+      background: #fff; border-radius: 28px;
+      padding: 60px 52px; max-width: 560px; width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 80px rgba(0,0,0,.2);
+    }
+    @media (max-width: 600px) { .err-card { padding: 40px 24px; } }
+    .err-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 7rem; font-weight: 700; line-height: 1;
+      background: linear-gradient(135deg, #1A4E8A, #1BB6AD);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 4px;
+    }
+    .err-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .err-card h1 { font-family: 'Playfair Display', serif; font-size: 1.7rem; margin-bottom: 14px; color: #1A4E8A; }
+    .err-card p { color: #666; font-size: 1rem; line-height: 1.7; margin-bottom: 32px; }
+    .err-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .err-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 26px; border-radius: 99px; font-weight: 800; font-size: .92rem;
+      text-decoration: none; transition: all .2s;
+    }
+    .err-btn-primary { background: #1A4E8A; color: #fff; }
+    .err-btn-primary:hover { background: #0f3366; transform: translateY(-2px); }
+    .err-btn-outline { background: transparent; color: #1A4E8A; border: 2px solid #1A4E8A; }
+    .err-btn-outline:hover { background: #1A4E8A; color: #fff; }
+  </style>
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <img src="logo.jpeg" alt="NONF" class="logo-img" />
+      <span>Nos Orguyo, Nos Futuro</span>
+    </a>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="aanbod.html">Lesaanbod</a></li>
+      <li><a href="over-mij.html">Over NONF</a></li>
+      <li><a href="webshop.html">Webshop</a></li>
+      <li><a href="gallerij.html">Galerij</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="inschrijven.html" class="nav-cta">Inschrijven</a></li>
+      <li><a href="portaal.html">Portaal</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="err-wrap">
+  <div class="err-card" data-animate>
+    <div class="err-num">404</div>
+    <div class="err-icon">🌴</div>
+    <h1>Pagina niet gevonden</h1>
+    <p>Oeps! Deze pagina bestaat niet (meer). Misschien is de link verkeerd of is de pagina verplaatst.</p>
+    <div class="err-btns">
+      <a href="index.html" class="err-btn err-btn-primary"><i class="fas fa-home"></i> Terug naar Home</a>
+      <a href="contact.html" class="err-btn err-btn-outline"><i class="fas fa-envelope"></i> Contact</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container footer-grid">
+    <div>
+      <div class="footer-logo-wrap" style="font-size:1.1rem;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+        <img src="logo.jpeg" alt="NONF" style="width:34px;height:34px;border-radius:8px;object-fit:cover;" /> Nos Orguyo, Nos Futuro
+      </div>
+      <p style="font-size:.88rem;line-height:1.7;">"Onze trots, onze toekomst." Papiamentu taallessen voor kinderen.</p>
+    </div>
+    <div>
+      <h5>Navigatie</h5>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="aanbod.html">Lesaanbod</a>
+        <a href="gallerij.html">Galerij</a>
+        <a href="contact.html">Contact</a>
+      </div>
+    </div>
+    <div>
+      <h5>Contact</h5>
+      <ul class="footer-contact">
+        <li><i class="fas fa-envelope"></i> info@nosorguyonosfuturo.nl</li>
+        <li><i class="fas fa-phone"></i> 0681 52 99 64</li>
+      </ul>
+    </div>
+    <div>
+      <h5>Meedoen</h5>
+      <a href="inschrijven.html" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-right"></i> Aanmelden</a>
+    </div>
+  </div>
+  <div class="footer-bottom container">
+    <p>© 2026 Nos Orguyo, Nos Futuro — Alle rechten voorbehouden</p>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+
+<!-- WhatsApp vaste knop -->
+<a href="https://wa.me/31681529964" target="_blank" rel="noopener" class="wa-float" aria-label="WhatsApp ons">
+  <i class="fab fa-whatsapp"></i>
+</a>
+<style>
+.wa-float {
+  position: fixed; bottom: 24px; right: 24px; z-index: 998;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #25D366; color: #fff !important;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; box-shadow: 0 4px 20px rgba(37,211,102,.5);
+  transition: transform .2s, box-shadow .2s; text-decoration: none;
+}
+.wa-float:hover { transform: scale(1.1) translateY(-3px); box-shadow: 0 8px 30px rgba(37,211,102,.6); color: #fff !important; }
+</style>
+
+<!-- Cookie banner -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9997;background:#1A4E8A;color:#fff;padding:14px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 -4px 24px rgba(0,0,0,.2);">
+  <p style="margin:0;font-size:.88rem;max-width:720px;line-height:1.6;">
+    <i class="fas fa-cookie-bite" style="margin-right:8px;color:#F4A928;"></i>
+    Wij gebruiken functionele cookies om de website goed te laten werken. Er worden geen persoonsgegevens gedeeld met derden.
+  </p>
+  <div style="display:flex;gap:10px;flex-shrink:0;">
+    <button onclick="acceptCookies()" style="padding:9px 22px;border-radius:99px;border:none;background:#E8763A;color:#fff;font-weight:800;cursor:pointer;font-size:.85rem;font-family:inherit;">Accepteren</button>
+    <button onclick="declineCookies()" style="padding:9px 22px;border-radius:99px;border:1.5px solid rgba(255,255,255,.4);background:transparent;color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;font-family:inherit;">Alleen noodzakelijk</button>
+  </div>
+</div>
+<script>
+(function(){
+  if (!localStorage.getItem('nonf_cookie_consent')) {
+    document.getElementById('cookie-banner').style.display = 'flex';
+  }
+})();
+function acceptCookies()  { localStorage.setItem('nonf_cookie_consent','accepted');  document.getElementById('cookie-banner').style.display='none'; }
+function declineCookies() { localStorage.setItem('nonf_cookie_consent','declined');  document.getElementById('cookie-banner').style.display='none'; }
+</script>
+</body>
+</html>
+
+

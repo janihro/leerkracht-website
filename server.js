@@ -36,6 +36,20 @@ if (!fs.existsSync(REVIEWS_FILE))       fs.writeFileSync(REVIEWS_FILE,       JSO
 if (!fs.existsSync(ACCOUNTS_FILE))      fs.writeFileSync(ACCOUNTS_FILE,      JSON.stringify({ accounts: [] }, null, 2));
 if (!fs.existsSync(GALLERY_FILE))       fs.writeFileSync(GALLERY_FILE,       JSON.stringify({ items: [] }, null, 2));
 if (!fs.existsSync(PRODUCTS_FILE))      fs.writeFileSync(PRODUCTS_FILE,      JSON.stringify({ products: [] }, null, 2));
+// Seed standaard NONF producten als de lijst leeg is
+(function seedProducts() {
+  const d = readJSON(PRODUCTS_FILE);
+  if (!d.products || d.products.length > 0) return;
+  d.products = [
+    { id: 'p-seed-1', naam: 'Werkboek Papiamentu Basis (0–3 jr)', beschrijving: 'Leer de eerste woorden, kleuren en cijfers in Papiamentu. Kleurrijk werkboek voor de allerkleinsten.', prijs: 14.95, categorie: 'werkboeken', icon: 'fa-book', actief: true, volgorde: 1, createdAt: new Date().toISOString() },
+    { id: 'p-seed-2', naam: 'Werkboek Papiamentu Middenbouw (4–7 jr)', beschrijving: 'Zinnen, verhalen en oefeningen in Papiamentu voor kinderen van 4 tot 7 jaar.', prijs: 17.95, categorie: 'werkboeken', icon: 'fa-book-open', actief: true, volgorde: 2, createdAt: new Date().toISOString() },
+    { id: 'p-seed-3', naam: 'Werkboek Papiamentu Gevorderd (8–12 jr)', beschrijving: 'Grammatica, cultuur en uitdrukkingen. Voor kinderen die al basis Papiamentu kennen.', prijs: 19.95, categorie: 'werkboeken', icon: 'fa-graduation-cap', actief: true, volgorde: 3, createdAt: new Date().toISOString() },
+    { id: 'p-seed-4', naam: 'Flashcards Papiamentu (50 kaartjes)', beschrijving: '50 woord-/afbeeldingskaartjes om thuis mee te oefenen. Ideaal als aanvulling op de lessen.', prijs: 9.95, categorie: 'leermateriaal', icon: 'fa-layer-group', actief: true, volgorde: 4, createdAt: new Date().toISOString() },
+    { id: 'p-seed-5', naam: 'NONF T-shirt (kinderen)', beschrijving: '"Nos Orguyo, Nos Futuro" — Draag de trots van de ABC-eilanden. Maten: 104 t/m 152.', prijs: 19.95, categorie: 'merchandise', icon: 'fa-tshirt', actief: true, volgorde: 5, createdAt: new Date().toISOString() },
+    { id: 'p-seed-6', naam: 'NONF Tote Bag', beschrijving: 'Stoffen draagtas met NONF logo. Duurzaam, herbruikbaar en stijlvol.', prijs: 12.95, categorie: 'merchandise', icon: 'fa-shopping-bag', actief: true, volgorde: 6, createdAt: new Date().toISOString() },
+  ];
+  writeJSON(PRODUCTS_FILE, d);
+}());
 if (!fs.existsSync(AGENDA_FILE))        fs.writeFileSync(AGENDA_FILE,        JSON.stringify({ items: [] }, null, 2));
 if (!fs.existsSync(TEACHERS_FILE))     fs.writeFileSync(TEACHERS_FILE,     JSON.stringify({ teachers: [] }, null, 2));
 if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
@@ -228,6 +242,7 @@ const BLOCKED_PATHS = [
   /^\/.git/i,
   /^\/admin\.json$/i,
   /^\/accounts\.json$/i,
+  /^\/beheerder\.html$/i,   // admin panel alleen via geheime URL bereikbaar
 ];
 app.use((req, res, next) => {
   if (BLOCKED_PATHS.some(re => re.test(req.path))) return res.status(403).end();
@@ -237,7 +252,12 @@ app.use((req, res, next) => {
 // 3. Body parser met grootte limiet
 app.use(express.json({ limit: '1mb' }));
 
-// 4. Statische bestanden
+// 4. Geheime beheerder URL (vóór static middleware)
+app.get('/beheer-nonf-2026', (req, res) => {
+  res.sendFile(path.join(__dirname, 'beheerder.html'));
+});
+
+// 5. Statische bestanden
 app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
@@ -835,8 +855,11 @@ app.delete('/api/admin/teachers/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// ─── CATCH-ALL ────────────────────────────────────────────
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+// ─── CATCH-ALL / 404 ──────────────────────────────────────
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Niet gevonden' });
+  res.status(404).sendFile(path.join(__dirname, '404.html'));
+});
 
 // ─── START ────────────────────────────────────────────────
 migratePasswords();
