@@ -14,9 +14,11 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');
 
 const QUESTIONS_FILE = path.join(DATA_DIR, 'questions.json');
 const FILES_META = path.join(DATA_DIR, 'files.json');
+const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
 
 if (!fs.existsSync(QUESTIONS_FILE)) fs.writeFileSync(QUESTIONS_FILE, JSON.stringify({ questions: [] }, null, 2));
 if (!fs.existsSync(FILES_META)) fs.writeFileSync(FILES_META, JSON.stringify({ files: [] }, null, 2));
+if (!fs.existsSync(REGISTRATIONS_FILE)) fs.writeFileSync(REGISTRATIONS_FILE, JSON.stringify({ registrations: [] }, null, 2));
 
 function readJSON(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
@@ -170,6 +172,61 @@ app.delete('/api/files/:id', (req, res) => {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   data.files = data.files.filter(f => f.id !== req.params.id);
   writeJSON(FILES_META, data);
+  res.json({ success: true });
+});
+
+// ─── REGISTRATIONS API ────────────────────────────────────
+
+// GET all registrations (teacher only)
+app.get('/api/registrations', (req, res) => {
+  const { teacherPassword } = req.query;
+  if (teacherPassword !== TEACHER_PASS) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(REGISTRATIONS_FILE);
+  const list = (data.registrations || []).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  res.json(list);
+});
+
+// POST new registration (public)
+app.post('/api/registrations', (req, res) => {
+  const { voornaam, achternaam, email, telefoon, kindNaam, leerjaar, vak, bericht } = req.body;
+  if (!voornaam || !email || !kindNaam) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
+  const data = readJSON(REGISTRATIONS_FILE);
+  if (!data.registrations) data.registrations = [];
+  const reg = {
+    id: generateId(),
+    voornaam, achternaam, email,
+    telefoon: telefoon || '',
+    kindNaam, leerjaar, vak,
+    bericht: bericht || '',
+    status: 'nieuw',
+    submittedAt: new Date().toISOString(),
+  };
+  data.registrations.push(reg);
+  writeJSON(REGISTRATIONS_FILE, data);
+  res.status(201).json(reg);
+});
+
+// PATCH status (teacher only)
+app.patch('/api/registrations/:id', (req, res) => {
+  const { teacherPassword, status } = req.body;
+  if (teacherPassword !== TEACHER_PASS) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const allowed = ['nieuw', 'contact opgenomen', 'ingeschreven', 'afgewezen'];
+  if (!allowed.includes(status)) return res.status(400).json({ error: 'Ongeldige status' });
+  const data = readJSON(REGISTRATIONS_FILE);
+  const reg = (data.registrations || []).find(r => r.id === req.params.id);
+  if (!reg) return res.status(404).json({ error: 'Niet gevonden' });
+  reg.status = status;
+  writeJSON(REGISTRATIONS_FILE, data);
+  res.json(reg);
+});
+
+// DELETE registration (teacher only)
+app.delete('/api/registrations/:id', (req, res) => {
+  const { teacherPassword } = req.body;
+  if (teacherPassword !== TEACHER_PASS) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(REGISTRATIONS_FILE);
+  data.registrations = (data.registrations || []).filter(r => r.id !== req.params.id);
+  writeJSON(REGISTRATIONS_FILE, data);
   res.json({ success: true });
 });
 

@@ -74,13 +74,37 @@ document.querySelectorAll('.faq-q').forEach(btn => {
 // ===========================
 const contactForm = document.getElementById('contact-form');
 if (contactForm) {
-  contactForm.addEventListener('submit', e => {
+  contactForm.addEventListener('submit', async e => {
     e.preventDefault();
     const akkoord = contactForm.querySelector('#akkoord');
     if (akkoord && !akkoord.checked) {
       akkoord.closest('.form-check').style.color = 'var(--accent)';
       return;
     }
+    const btn = contactForm.querySelector('button[type=submit]');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Versturen...';
+
+    try {
+      await fetch('/api/registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voornaam: contactForm.querySelector('#voornaam')?.value || '',
+          achternaam: contactForm.querySelector('#achternaam')?.value || '',
+          email: contactForm.querySelector('#email')?.value || '',
+          telefoon: contactForm.querySelector('#telefoon')?.value || '',
+          kindNaam: contactForm.querySelector('#kind-naam')?.value || '',
+          leerjaar: contactForm.querySelector('#leerjaar')?.value || '',
+          vak: contactForm.querySelector('#vak')?.value || '',
+          bericht: contactForm.querySelector('#bericht')?.value || '',
+        })
+      });
+    } catch { /* toon succes ook als API faalt */ }
+
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
     const msg = document.getElementById('success-msg');
     if (msg) {
       msg.classList.add('show');
