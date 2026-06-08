@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
@@ -13,17 +13,18 @@
     .filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:36px; }
     .filter-btn {
       padding:9px 20px; border-radius:99px; border:1.5px solid var(--border);
-      background:var(--white); font-family:var(--font); font-weight:700; font-size:0.85rem;
-      cursor:pointer; color:var(--text-muted); transition:var(--transition);
+      background:var(--white); font-family:var(--font-body); font-weight:700; font-size:0.85rem;
+      cursor:pointer; color:var(--text-muted); transition:all .2s;
     }
     .filter-btn.active, .filter-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
     .cart-bubble {
       position:fixed; bottom:28px; right:28px;
       background:linear-gradient(135deg,var(--primary),var(--primary-light));
       color:#fff; border-radius:99px; padding:13px 22px;
-      font-weight:700; font-size:0.9rem; box-shadow:var(--shadow-lg);
+      font-weight:700; font-size:0.9rem; box-shadow:0 8px 32px rgba(91,79,207,.35);
       display:flex; align-items:center; gap:10px;
-      cursor:pointer; z-index:999; transition:var(--transition);
+      cursor:pointer; z-index:999; transition:all .2s;
     }
     .cart-bubble:hover { transform:translateY(-3px) scale(1.03); }
     .cart-count {
@@ -31,6 +32,47 @@
       width:22px; height:22px; display:none; align-items:center;
       justify-content:center; font-size:0.72rem; font-weight:800;
     }
+
+    /* Product card afbeelding */
+    .shop-img-real {
+      width:100%; aspect-ratio:4/3; object-fit:cover;
+      border-radius:14px 14px 0 0;
+    }
+
+    /* Winkelwagen modal */
+    .cart-modal-bg {
+      display:none; position:fixed; inset:0;
+      background:rgba(10,10,20,.6); backdrop-filter:blur(6px); z-index:1500;
+      align-items:flex-end; justify-content:flex-end;
+    }
+    .cart-modal-bg.open { display:flex; }
+    .cart-modal {
+      background:var(--white); border-radius:20px 0 0 20px;
+      width:min(420px,100vw); height:100vh; padding:28px 24px;
+      overflow-y:auto; box-shadow:-8px 0 48px rgba(0,0,0,.15);
+      animation:slideIn .25s ease;
+    }
+    @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+    .cart-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+    .cart-modal-title { font-family:var(--font-display); font-size:1.3rem; }
+    .cart-close-btn { background:none; border:2px solid var(--border); border-radius:8px; padding:7px 11px; cursor:pointer; font-size:1rem; color:var(--text-muted); }
+    .cart-close-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .cart-empty { text-align:center; padding:48px 20px; color:var(--text-muted); }
+    .cart-empty i { font-size:2.5rem; opacity:.2; display:block; margin-bottom:12px; }
+    .cart-item { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); }
+    .cart-item-icon { width:44px; height:44px; border-radius:10px; background:rgba(91,79,207,.1); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:1.1rem; flex-shrink:0; }
+    .cart-item-info { flex:1; }
+    .cart-item-name { font-weight:800; font-size:.9rem; }
+    .cart-item-price { font-size:.82rem; color:var(--text-muted); }
+    .cart-item-qty { display:flex; align-items:center; gap:8px; }
+    .qty-btn { width:26px; height:26px; border-radius:6px; border:1.5px solid var(--border); background:none; cursor:pointer; font-size:.85rem; display:flex; align-items:center; justify-content:center; }
+    .qty-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .cart-total { font-size:1.1rem; font-weight:800; padding:20px 0 8px; display:flex; justify-content:space-between; }
+    .cart-checkout-btn { width:100%; padding:15px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff; font-weight:800; font-size:1rem; cursor:pointer; margin-top:8px; transition:opacity .2s; }
+    .cart-checkout-btn:hover { opacity:.9; }
+
+    .shop-empty { text-align:center; padding:64px 20px; color:var(--text-muted); grid-column:1/-1; }
+    .shop-empty i { font-size:3rem; opacity:.2; display:block; margin-bottom:16px; }
   </style>
 </head>
 <body>
@@ -66,98 +108,39 @@
 
 <section class="section section-tinted">
   <div class="container">
-    <div class="filter-bar" data-animate>
-      <button class="filter-btn active">Alles</button>
-      <button class="filter-btn">Werkboeken</button>
-      <button class="filter-btn">Digitaal</button>
-      <button class="filter-btn">Pakketten</button>
+    <div class="filter-bar" id="filter-bar" data-animate>
+      <button class="filter-btn active" data-cat="alles">Alles</button>
     </div>
-
-    <div class="shop-grid">
-      <div class="shop-card" data-animate data-delay="100">
-        <div class="shop-img"><i class="fas fa-book"></i></div>
-        <div class="shop-body">
-          <span class="shop-badge">Bestseller</span>
-          <h3>Rekenwerkboek groep 5</h3>
-          <p>64 pagina's vol oefeningen afgestemd op de kerndoelen. Met antwoorden voor ouders.</p>
-          <div class="shop-footer">
-            <span class="shop-price">€12,95</span>
-            <button class="btn-add">In mandje</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="shop-card" data-animate data-delay="150">
-        <div class="shop-img"><i class="fas fa-file-pdf"></i></div>
-        <div class="shop-body">
-          <span class="shop-badge" style="background:var(--green)">Download</span>
-          <h3>Spellingkaarten (PDF)</h3>
-          <p>30 digitale spellingkaarten om af te drukken of op tablet te gebruiken. Direct te downloaden.</p>
-          <div class="shop-footer">
-            <span class="shop-price">€4,95</span>
-            <button class="btn-add">In mandje</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="shop-card" data-animate data-delay="200">
-        <div class="shop-img"><i class="fas fa-box-open"></i></div>
-        <div class="shop-body">
-          <span class="shop-badge" style="background:var(--yellow);color:#6b4f00">Pakket</span>
-          <h3>Startpakket basisschool</h3>
-          <p>Rekenwerkboek + taalwerkboek + oefenkaarten. Ideaal voor de zomervakantie.</p>
-          <div class="shop-footer">
-            <span class="shop-price">€24,95</span>
-            <button class="btn-add">In mandje</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="shop-card" data-animate data-delay="100">
-        <div class="shop-img"><i class="fas fa-laptop"></i></div>
-        <div class="shop-body">
-          <span class="shop-badge">Online</span>
-          <h3>Online oefenabonnement (1 maand)</h3>
-          <p>Toegang tot alle digitale oefeningen in het Portaal. Inclusief voortgangsoverzicht.</p>
-          <div class="shop-footer">
-            <span class="shop-price">€9,95</span>
-            <button class="btn-add">In mandje</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="shop-card" data-animate data-delay="150">
-        <div class="shop-img"><i class="fas fa-book-reader"></i></div>
-        <div class="shop-body">
-          <h3>Begrijpend lezen groep 6–7</h3>
-          <p>Teksten met vragen op drie niveaus. Inclusief docentenhandleiding en antwoordenboekje.</p>
-          <div class="shop-footer">
-            <span class="shop-price">€13,95</span>
-            <button class="btn-add">In mandje</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="shop-card" data-animate data-delay="200">
-        <div class="shop-img"><i class="fas fa-star"></i></div>
-        <div class="shop-body">
-          <span class="shop-badge" style="background:var(--accent)">Nieuw</span>
-          <h3>Motivatiekaarten (set 20)</h3>
-          <p>Kleurrijke aanmoedigingskaarten voor een positieve leerervaring. Ideaal als beloning.</p>
-          <div class="shop-footer">
-            <span class="shop-price">€7,50</span>
-            <button class="btn-add">In mandje</button>
-          </div>
-        </div>
-      </div>
+    <div class="shop-grid" id="shop-grid" data-animate>
+      <!-- geladen via JS -->
     </div>
   </div>
 </section>
 
-<div class="cart-bubble" id="cart-bubble" onclick="alert('Koppel hier jouw betaalsysteem (bijv. Stripe of Mollie).')">
-  <i class="fas fa-shopping-cart"></i>
-  Mandje
+<!-- Cart bubble -->
+<div class="cart-bubble" id="cart-bubble" onclick="openCart()">
+  <i class="fas fa-shopping-cart"></i> Mandje
   <span class="cart-count" id="cart-count-bubble">0</span>
+</div>
+
+<!-- Cart modal -->
+<div class="cart-modal-bg" id="cart-modal-bg" onclick="if(event.target===this)closeCart()">
+  <div class="cart-modal">
+    <div class="cart-modal-header">
+      <div class="cart-modal-title">Winkelmandje</div>
+      <button class="cart-close-btn" onclick="closeCart()"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="cart-items-list"></div>
+    <div id="cart-footer" style="display:none;">
+      <div class="cart-total"><span>Totaal</span><span id="cart-total-price">€0,00</span></div>
+      <button class="cart-checkout-btn" onclick="checkout()">
+        <i class="fas fa-credit-card"></i> Afrekenen
+      </button>
+      <p style="font-size:.74rem;color:var(--text-muted);text-align:center;margin-top:10px;">
+        Betaalintegratie volgt — je bestelling wordt geregistreerd.
+      </p>
+    </div>
+  </div>
 </div>
 
 <footer>
@@ -166,15 +149,18 @@
       <div class="footer-logo-wrap"><img src="logo.jpeg" alt="LeerKracht" class="logo-img" /> LeerKracht</div>
       <p>Persoonlijke bijles voor kinderen die willen groeien.</p>
       <div class="socials">
-        <a href="#"><i class="fab fa-instagram"></i></a><a href="#"><i class="fab fa-facebook-f"></i></a>
-        <a href="#"><i class="fab fa-tiktok"></i></a><a href="#"><i class="fab fa-whatsapp"></i></a>
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-facebook-f"></i></a>
+        <a href="#"><i class="fab fa-tiktok"></i></a>
+        <a href="#"><i class="fab fa-whatsapp"></i></a>
       </div>
     </div>
     <div>
       <h5>Navigatie</h5>
       <div class="footer-links">
-        <a href="index.html">Home</a><a href="aanbod.html">Aanbod</a><a href="over-mij.html">Over mij</a>
-        <a href="webshop.html">Webshop</a><a href="faq.html">FAQ</a><a href="contact.html">Contact</a>
+        <a href="index.html">Home</a><a href="aanbod.html">Aanbod</a>
+        <a href="over-mij.html">Over mij</a><a href="webshop.html">Webshop</a>
+        <a href="faq.html">FAQ</a><a href="contact.html">Contact</a>
       </div>
     </div>
     <div>
@@ -199,15 +185,170 @@
 
 <script src="main.js"></script>
 <script>
-  const bubble = document.getElementById('cart-count-bubble');
-  function syncBubble() {
-    const cart = JSON.parse(localStorage.getItem('lk_cart') || '[]');
-    const total = cart.reduce((s,i) => s+i.qty, 0);
-    bubble.textContent = total;
-    bubble.style.display = total ? 'flex' : 'none';
+// ── DATA ─────────────────────────────────────────────────
+let allProducts = [];
+let activeFilter = 'alles';
+
+async function loadProducts() {
+  try {
+    const res = await fetch('/api/products');
+    allProducts = await res.json();
+    buildFilters();
+    renderProducts('alles');
+  } catch {
+    document.getElementById('shop-grid').innerHTML =
+      '<div class="shop-empty"><i class="fas fa-store-slash"></i><p>Producten kunnen momenteel niet geladen worden.</p></div>';
   }
+}
+
+function buildFilters() {
+  const cats = ['alles', ...new Set(allProducts.map(p => p.categorie).filter(Boolean))];
+  const bar = document.getElementById('filter-bar');
+  bar.innerHTML = cats.map(c =>
+    `<button class="filter-btn${c==='alles'?' active':''}" data-cat="${c}" onclick="filterProducts('${c}',this)">
+      ${c.charAt(0).toUpperCase()+c.slice(1)}
+    </button>`
+  ).join('');
+}
+
+function filterProducts(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = cat;
+  renderProducts(cat);
+}
+
+function renderProducts(cat) {
+  const grid = document.getElementById('shop-grid');
+  const list = cat === 'alles' ? allProducts : allProducts.filter(p => p.categorie === cat);
+
+  if (!list.length) {
+    grid.innerHTML = '<div class="shop-empty"><i class="fas fa-box-open"></i><h3>Geen producten</h3><p>Er zijn nog geen producten in deze categorie.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = list.map((p, i) => {
+    const badgeHtml = p.badge
+      ? `<span class="shop-badge" ${p.badgeKleur ? `style="background:${p.badgeKleur}"`:''} >${esc(p.badge)}</span>`
+      : '';
+    const imgHtml = p.afbeelding
+      ? `<img src="${p.afbeelding}" alt="${esc(p.naam)}" class="shop-img-real" loading="lazy" />`
+      : `<div class="shop-img"><i class="fas ${esc(p.icon||'fa-tag')}"></i></div>`;
+    const delay = (i % 3) * 50 + 100;
+    return `
+      <div class="shop-card" data-animate data-delay="${delay}">
+        ${imgHtml}
+        <div class="shop-body">
+          ${badgeHtml}
+          <h3>${esc(p.naam)}</h3>
+          <p>${esc(p.beschrijving)}</p>
+          <div class="shop-footer">
+            <span class="shop-price">${formatPrice(p.prijs)}</span>
+            <button class="btn-add" onclick="addToCart('${p.id}','${esc(p.naam)}',${p.prijs},'${esc(p.icon||'fa-tag')}',this)">
+              In mandje
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Re-trigger animations
+  document.querySelectorAll('[data-animate]').forEach(el => {
+    el.classList.remove('animated');
+    void el.offsetWidth;
+    el.classList.add('animated');
+  });
+}
+
+// ── CART ─────────────────────────────────────────────────
+function getCart() { return JSON.parse(localStorage.getItem('lk_cart')||'[]'); }
+function saveCart(c) { localStorage.setItem('lk_cart', JSON.stringify(c)); syncBubble(); }
+
+function addToCart(id, naam, prijs, icon, btn) {
+  const cart = getCart();
+  const existing = cart.find(i => i.id === id);
+  if (existing) existing.qty++;
+  else cart.push({ id, naam, prijs, icon, qty: 1 });
+  saveCart(cart);
+  btn.textContent = '✓ Toegevoegd';
+  btn.style.background = 'var(--green)';
+  setTimeout(() => { btn.textContent = 'In mandje'; btn.style.background = ''; }, 1500);
+}
+
+function syncBubble() {
+  const cart = getCart();
+  const total = cart.reduce((s,i) => s+i.qty, 0);
+  const bubble = document.getElementById('cart-count-bubble');
+  bubble.textContent = total;
+  bubble.style.display = total ? 'flex' : 'none';
+}
+
+function openCart() {
+  renderCart();
+  document.getElementById('cart-modal-bg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCart() {
+  document.getElementById('cart-modal-bg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderCart() {
+  const cart = getCart();
+  const listEl = document.getElementById('cart-items-list');
+  const footerEl = document.getElementById('cart-footer');
+
+  if (!cart.length) {
+    listEl.innerHTML = '<div class="cart-empty"><i class="fas fa-shopping-cart"></i><p>Je mandje is leeg</p></div>';
+    footerEl.style.display = 'none';
+    return;
+  }
+
+  listEl.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="cart-item-icon"><i class="fas ${esc(item.icon)}"></i></div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${esc(item.naam)}</div>
+        <div class="cart-item-price">${formatPrice(item.prijs)} per stuk</div>
+      </div>
+      <div class="cart-item-qty">
+        <button class="qty-btn" onclick="changeQty('${item.id}',-1)"><i class="fas fa-minus"></i></button>
+        <span style="font-weight:800;min-width:20px;text-align:center">${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty('${item.id}',1)"><i class="fas fa-plus"></i></button>
+      </div>
+    </div>`).join('');
+
+  const total = cart.reduce((s,i) => s + i.prijs * i.qty, 0);
+  document.getElementById('cart-total-price').textContent = formatPrice(total);
+  footerEl.style.display = 'block';
+}
+
+function changeQty(id, delta) {
+  const cart = getCart();
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart.splice(cart.indexOf(item), 1);
+  saveCart(cart);
+  renderCart();
+}
+
+function checkout() {
+  alert('Betaalintegratie (Stripe/Mollie) kan hier gekoppeld worden.\nJe bestelling is geregistreerd!');
+  localStorage.removeItem('lk_cart');
   syncBubble();
-  document.querySelectorAll('.btn-add').forEach(b => b.addEventListener('click', () => setTimeout(syncBubble, 50)));
+  closeCart();
+}
+
+function formatPrice(p) {
+  return '€' + parseFloat(p||0).toFixed(2).replace('.', ',');
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+syncBubble();
+loadProducts();
 </script>
 </body>
 </html>

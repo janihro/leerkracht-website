@@ -21,6 +21,7 @@ const SETTINGS_FILE     = path.join(DATA_DIR, 'settings.json');
 const ACCOUNTS_FILE     = path.join(DATA_DIR, 'accounts.json');
 const ADMIN_FILE        = path.join(DATA_DIR, 'admin.json');
 const GALLERY_FILE      = path.join(DATA_DIR, 'gallery.json');
+const PRODUCTS_FILE     = path.join(DATA_DIR, 'products.json');
 
 if (!fs.existsSync(QUESTIONS_FILE))     fs.writeFileSync(QUESTIONS_FILE,     JSON.stringify({ questions: [] }, null, 2));
 if (!fs.existsSync(FILES_META))         fs.writeFileSync(FILES_META,         JSON.stringify({ files: [] }, null, 2));
@@ -28,6 +29,7 @@ if (!fs.existsSync(REGISTRATIONS_FILE)) fs.writeFileSync(REGISTRATIONS_FILE, JSO
 if (!fs.existsSync(REVIEWS_FILE))       fs.writeFileSync(REVIEWS_FILE,       JSON.stringify({ reviews: [] }, null, 2));
 if (!fs.existsSync(ACCOUNTS_FILE))      fs.writeFileSync(ACCOUNTS_FILE,      JSON.stringify({ accounts: [] }, null, 2));
 if (!fs.existsSync(GALLERY_FILE))       fs.writeFileSync(GALLERY_FILE,       JSON.stringify({ items: [] }, null, 2));
+if (!fs.existsSync(PRODUCTS_FILE))      fs.writeFileSync(PRODUCTS_FILE,      JSON.stringify({ products: [] }, null, 2));
 if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
   siteName: 'LeerKracht',
   slogan: 'Nos Orguyo, Nos Futuro',
@@ -482,6 +484,66 @@ app.get('/api/admin/export-reviews-csv', (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="reviews.csv"');
   res.send('﻿' + csv);
+});
+
+// ─── PRODUCTS API ─────────────────────────────────────────
+
+// GET all products — public, only active unless ?all=1 with admin auth
+app.get('/api/products', (req, res) => {
+  const data = readJSON(PRODUCTS_FILE);
+  let list = (data.products || []).sort((a,b) => (a.volgorde||0) - (b.volgorde||0) || new Date(a.createdAt) - new Date(b.createdAt));
+  if (!(req.query.all === '1' && adminAuth(req))) {
+    list = list.filter(p => p.actief !== false);
+  }
+  res.json(list);
+});
+
+// POST create product (admin only)
+app.post('/api/products', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const { naam, beschrijving, prijs, badge, badgeKleur, categorie, icon, afbeelding, actief, volgorde } = req.body;
+  if (!naam || prijs === undefined) return res.status(400).json({ error: 'Naam en prijs zijn verplicht' });
+  const data = readJSON(PRODUCTS_FILE);
+  if (!data.products) data.products = [];
+  const product = {
+    id: generateId(),
+    naam: naam.trim(),
+    beschrijving: (beschrijving||'').trim(),
+    prijs: parseFloat(prijs) || 0,
+    badge: (badge||'').trim(),
+    badgeKleur: badgeKleur||'',
+    categorie: (categorie||'Overig').trim(),
+    icon: (icon||'fa-tag').trim(),
+    afbeelding: afbeelding||null,
+    actief: actief !== false,
+    volgorde: parseInt(volgorde)||0,
+    createdAt: new Date().toISOString(),
+  };
+  data.products.push(product);
+  writeJSON(PRODUCTS_FILE, data);
+  res.status(201).json(product);
+});
+
+// PUT update product (admin only)
+app.put('/api/products/:id', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(PRODUCTS_FILE);
+  const p = (data.products||[]).find(p => p.id === req.params.id);
+  if (!p) return res.status(404).json({ error: 'Product niet gevonden' });
+  const fields = ['naam','beschrijving','prijs','badge','badgeKleur','categorie','icon','afbeelding','actief','volgorde'];
+  fields.forEach(k => { if (req.body[k] !== undefined) p[k] = req.body[k]; });
+  if (p.prijs !== undefined) p.prijs = parseFloat(p.prijs)||0;
+  writeJSON(PRODUCTS_FILE, data);
+  res.json(p);
+});
+
+// DELETE product (admin only)
+app.delete('/api/products/:id', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const data = readJSON(PRODUCTS_FILE);
+  data.products = (data.products||[]).filter(p => p.id !== req.params.id);
+  writeJSON(PRODUCTS_FILE, data);
+  res.json({ success: true });
 });
 
 app.get('*', (req, res) => {

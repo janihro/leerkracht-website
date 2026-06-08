@@ -292,6 +292,9 @@
       <button class="sidebar-link" onclick="showPanel('galerij',this)">
         <i class="fas fa-images"></i> Galerij
       </button>
+      <button class="sidebar-link" onclick="showPanel('webshop',this)">
+        <i class="fas fa-store"></i> Webshop
+      </button>
       <div class="sidebar-label">Gegevens</div>
       <button class="sidebar-link" onclick="showPanel('export',this)">
         <i class="fas fa-download"></i> Exporteer data
@@ -585,6 +588,119 @@
         </div>
       </div>
 
+      <!-- ── WEBSHOP ──────────────────────────────────── -->
+      <div class="panel" id="panel-webshop">
+        <div class="panel-header">
+          <h2>Webshop producten</h2>
+          <p>Voeg producten toe, bewerk ze en zet ze aan of uit. Bezoekers zien ze direct in de webshop.</p>
+        </div>
+
+        <div class="alert alert-success" id="ws-success"><i class="fas fa-check-circle"></i> <span id="ws-success-msg">Opgeslagen!</span></div>
+        <div class="alert alert-error"   id="ws-error"  ><i class="fas fa-times-circle"></i> <span id="ws-error-msg">Er is iets misgegaan.</span></div>
+
+        <!-- Nieuw product formulier -->
+        <div class="card" id="product-form-card">
+          <div class="card-header">
+            <div class="card-title" id="product-form-title"><i class="fas fa-plus-circle"></i> Nieuw product toevoegen</div>
+            <button class="btn btn-sm" id="product-cancel-btn" style="display:none;border:2px solid var(--border);background:none;color:var(--text-muted);" onclick="cancelEdit()">
+              <i class="fas fa-times"></i> Annuleren
+            </button>
+          </div>
+          <form id="product-form" onsubmit="saveProduct(event)">
+            <input type="hidden" id="p-edit-id" value="" />
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Naam *</label>
+                <input type="text" id="p-naam" placeholder="bijv. Papiaments werkboek groep 5" required />
+              </div>
+              <div class="form-group">
+                <label>Prijs (€) *</label>
+                <input type="number" id="p-prijs" placeholder="12.95" min="0" step="0.01" required />
+              </div>
+              <div class="form-group span-2">
+                <label>Beschrijving</label>
+                <textarea id="p-beschrijving" placeholder="Korte omschrijving van het product..." rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Categorie</label>
+                <select id="p-categorie">
+                  <option value="Werkboeken">Werkboeken</option>
+                  <option value="Digitaal">Digitaal</option>
+                  <option value="Pakketten">Pakketten</option>
+                  <option value="Online">Online</option>
+                  <option value="Overig">Overig</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Icoon (FontAwesome klasse)</label>
+                <select id="p-icon">
+                  <option value="fa-book">📗 Boek</option>
+                  <option value="fa-file-pdf">📄 PDF</option>
+                  <option value="fa-box-open">📦 Pakket</option>
+                  <option value="fa-laptop">💻 Laptop / Online</option>
+                  <option value="fa-star">⭐ Ster</option>
+                  <option value="fa-award">🏆 Diploma</option>
+                  <option value="fa-book-reader">📖 Lezen</option>
+                  <option value="fa-language">🗣 Taal</option>
+                  <option value="fa-calculator">🔢 Rekenen</option>
+                  <option value="fa-tag">🏷 Overig</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Badge tekst (optioneel)</label>
+                <input type="text" id="p-badge" placeholder="bijv. Bestseller, Nieuw, Sale" maxlength="20" />
+              </div>
+              <div class="form-group">
+                <label>Badge kleur</label>
+                <select id="p-badgeKleur">
+                  <option value="">Standaard (paars)</option>
+                  <option value="#07b78a">Groen (Download)</option>
+                  <option value="#F5821F">Oranje (Nieuw)</option>
+                  <option value="#f59e0b">Geel (Pakket)</option>
+                  <option value="#e03a3a">Rood (Sale)</option>
+                  <option value="#3b82f6">Blauw</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Afbeelding URL (optioneel)</label>
+                <input type="url" id="p-afbeelding" placeholder="https://... of /uploads/foto.jpg" />
+              </div>
+              <div class="form-group">
+                <label>Volgorde (getal — lager = eerder)</label>
+                <input type="number" id="p-volgorde" placeholder="0" value="0" min="0" />
+              </div>
+              <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:24px;">
+                <input type="checkbox" id="p-actief" checked style="width:18px;height:18px;accent-color:var(--primary);" />
+                <label for="p-actief" style="text-transform:none;letter-spacing:0;font-weight:700;font-size:.9rem;cursor:pointer;">
+                  Product zichtbaar in webshop
+                </label>
+              </div>
+            </div>
+            <div style="margin-top:20px;">
+              <button type="submit" class="btn btn-primary" id="product-save-btn">
+                <i class="fas fa-plus"></i> Product toevoegen
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Producten lijst -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-list"></i> Alle producten</div>
+            <div style="display:flex;gap:8px;">
+              <a href="webshop.html" target="_blank" class="btn btn-sm" style="border:2px solid var(--border);color:var(--text-muted);background:none;padding:6px 14px;font-weight:800;font-size:.8rem;">
+                <i class="fas fa-external-link-alt"></i> Bekijk webshop
+              </a>
+              <button class="btn btn-sm btn-primary" onclick="loadProductsAdmin()"><i class="fas fa-sync"></i></button>
+            </div>
+          </div>
+          <div id="products-admin-list">
+            <div class="empty-state"><i class="fas fa-store"></i><p>Nog geen producten aangemaakt</p></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── EXPORT ────────────────────────────────────── -->
       <div class="panel" id="panel-export">
         <div class="panel-header">
@@ -653,6 +769,7 @@ const panels = {
   'accounts': 'Portaal accounts',
   'reviews': 'Reviews',
   'galerij': 'Galerij beheren',
+  'webshop': 'Webshop producten',
   'export': 'Exporteer data',
   'wachtwoord': 'Wachtwoord wijzigen',
 };
@@ -714,6 +831,7 @@ function showPanel(name, btn) {
   if (name === 'accounts') loadAccounts();
   if (name === 'reviews') loadReviews();
   if (name === 'galerij') loadGalleryAdmin();
+  if (name === 'webshop') loadProductsAdmin();
 }
 
 function toggleSidebar() {
@@ -1081,6 +1199,164 @@ function checkPassStrength(val) {
   const widths = [20,40,60,80,100];
   bar.style.width = (widths[score-1]||0) + '%';
   bar.style.background = colors[score-1] || '#eee';
+}
+
+// ══════════════════ WEBSHOP ══════════════════════════════
+let editingProductId = null;
+
+async function loadProductsAdmin() {
+  try {
+    const res = await fetch('/api/products?all=1&adminPassword=' + encodeURIComponent(adminPass));
+    const products = await res.json();
+    const list = document.getElementById('products-admin-list');
+
+    if (!products.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-store"></i><p>Nog geen producten aangemaakt</p></div>';
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Product</th><th>Categorie</th><th>Prijs</th><th>Badge</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${products.map(p => `<tr id="prod-row-${p.id}">
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:36px;height:36px;border-radius:8px;background:rgba(91,79,207,.1);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0;">
+                    <i class="fas ${p.icon||'fa-tag'}"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight:800;font-size:.88rem;">${esc(p.naam)}</div>
+                    <div style="font-size:.74rem;color:var(--text-muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.beschrijving||'')}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge badge-gray">${esc(p.categorie||'')}</span></td>
+              <td style="font-weight:800;">€${parseFloat(p.prijs||0).toFixed(2).replace('.',',')}</td>
+              <td>${p.badge ? `<span class="badge" style="background:${p.badgeKleur||'rgba(91,79,207,.12)'};color:${p.badgeKleur?'#fff':'var(--primary)'};">${esc(p.badge)}</span>` : '<span style="color:var(--text-muted);font-size:.8rem;">—</span>'}</td>
+              <td>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                  <input type="checkbox" ${p.actief!==false?'checked':''} onchange="toggleProduct('${p.id}',this.checked)"
+                    style="accent-color:var(--primary);width:16px;height:16px;" />
+                  <span style="font-size:.8rem;font-weight:700;color:${p.actief!==false?'var(--green)':'var(--text-muted)'}">
+                    ${p.actief!==false?'Zichtbaar':'Verborgen'}
+                  </span>
+                </label>
+              </td>
+              <td>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn btn-icon" title="Bewerken" onclick="editProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+                    <i class="fas fa-pen"></i>
+                  </button>
+                  <button class="btn btn-icon" title="Verwijderen" onclick="deleteProduct('${p.id}','${esc(p.naam)}')">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(err) { console.error(err); }
+}
+
+async function saveProduct(e) {
+  e.preventDefault();
+  const succEl = document.getElementById('ws-success');
+  const errEl  = document.getElementById('ws-error');
+  const msgEl  = document.getElementById('ws-success-msg');
+  const errMsg = document.getElementById('ws-error-msg');
+  succEl.classList.remove('show'); errEl.classList.remove('show');
+
+  const body = {
+    adminPassword: adminPass,
+    naam:         document.getElementById('p-naam').value.trim(),
+    prijs:        document.getElementById('p-prijs').value,
+    beschrijving: document.getElementById('p-beschrijving').value.trim(),
+    categorie:    document.getElementById('p-categorie').value,
+    icon:         document.getElementById('p-icon').value,
+    badge:        document.getElementById('p-badge').value.trim(),
+    badgeKleur:   document.getElementById('p-badgeKleur').value,
+    afbeelding:   document.getElementById('p-afbeelding').value.trim() || null,
+    volgorde:     parseInt(document.getElementById('p-volgorde').value)||0,
+    actief:       document.getElementById('p-actief').checked,
+  };
+
+  const btn = document.getElementById('product-save-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opslaan...';
+
+  try {
+    const url = editingProductId ? `/api/products/${editingProductId}` : '/api/products';
+    const method = editingProductId ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (res.ok) {
+      msgEl.textContent = editingProductId ? `"${data.naam}" bijgewerkt!` : `"${data.naam}" toegevoegd!`;
+      succEl.classList.add('show'); setTimeout(()=>succEl.classList.remove('show'),3500);
+      cancelEdit();
+      loadProductsAdmin();
+    } else {
+      errMsg.textContent = data.error || 'Opslaan mislukt.';
+      errEl.classList.add('show');
+    }
+  } catch { errMsg.textContent = 'Netwerkfout.'; errEl.classList.add('show'); }
+  btn.disabled = false;
+  btn.innerHTML = editingProductId
+    ? '<i class="fas fa-save"></i> Wijzigingen opslaan'
+    : '<i class="fas fa-plus"></i> Product toevoegen';
+}
+
+function editProduct(p) {
+  editingProductId = p.id;
+  document.getElementById('p-edit-id').value = p.id;
+  document.getElementById('p-naam').value = p.naam||'';
+  document.getElementById('p-prijs').value = p.prijs||'';
+  document.getElementById('p-beschrijving').value = p.beschrijving||'';
+  document.getElementById('p-categorie').value = p.categorie||'Overig';
+  document.getElementById('p-icon').value = p.icon||'fa-tag';
+  document.getElementById('p-badge').value = p.badge||'';
+  document.getElementById('p-badgeKleur').value = p.badgeKleur||'';
+  document.getElementById('p-afbeelding').value = p.afbeelding||'';
+  document.getElementById('p-volgorde').value = p.volgorde||0;
+  document.getElementById('p-actief').checked = p.actief!==false;
+  document.getElementById('product-form-title').innerHTML = '<i class="fas fa-pen"></i> Product bewerken';
+  document.getElementById('product-save-btn').innerHTML = '<i class="fas fa-save"></i> Wijzigingen opslaan';
+  document.getElementById('product-cancel-btn').style.display = '';
+  document.getElementById('product-form-card').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function cancelEdit() {
+  editingProductId = null;
+  document.getElementById('product-form').reset();
+  document.getElementById('p-actief').checked = true;
+  document.getElementById('p-volgorde').value = 0;
+  document.getElementById('product-form-title').innerHTML = '<i class="fas fa-plus-circle"></i> Nieuw product toevoegen';
+  document.getElementById('product-save-btn').innerHTML = '<i class="fas fa-plus"></i> Product toevoegen';
+  document.getElementById('product-cancel-btn').style.display = 'none';
+}
+
+async function toggleProduct(id, actief) {
+  try {
+    await fetch(`/api/products/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ adminPassword: adminPass, actief })
+    });
+  } catch(err) { console.error(err); }
+}
+
+async function deleteProduct(id, naam) {
+  if (!confirm(`Product "${naam}" definitief verwijderen?`)) return;
+  try {
+    await fetch(`/api/products/${id}`, {
+      method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ adminPassword: adminPass })
+    });
+    loadProductsAdmin();
+  } catch(err) { console.error(err); }
 }
 
 // ══════════════════ HELPERS ══════════════════════════════
