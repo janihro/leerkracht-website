@@ -335,7 +335,12 @@ app.get('/api/admin/stats', (req, res) => {
   });
 });
 
-// GET / PUT website settings
+// GET public settings (no auth — shown on website)
+app.get('/api/settings', (req, res) => {
+  res.json(readJSON(SETTINGS_FILE));
+});
+
+// GET / PUT website settings (admin)
 app.get('/api/admin/settings', (req, res) => {
   if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
   res.json(readJSON(SETTINGS_FILE));

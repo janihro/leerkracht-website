@@ -1,4 +1,96 @@
 // ===========================
+// SITE SETTINGS — laad vanuit /api/settings
+// Werkt op elke pagina: naam, contact, socials
+// ===========================
+(async function applySettings() {
+  try {
+    const res = await fetch('/api/settings');
+    if (!res.ok) return;
+    const s = await res.json();
+
+    // ── Website naam ──────────────────────────────
+    if (s.siteName) {
+      // Nav logo tekst
+      document.querySelectorAll('.logo span').forEach(el => {
+        el.textContent = s.siteName;
+      });
+      // Footer logo tekst (text node naast img)
+      document.querySelectorAll('.footer-logo-wrap').forEach(el => {
+        el.childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+            node.textContent = ' ' + s.siteName;
+          }
+        });
+      });
+      // Copyright in footer
+      document.querySelectorAll('.footer-bottom p').forEach(el => {
+        el.textContent = el.textContent.replace(/LeerKracht/, s.siteName);
+      });
+      // Browser tabblad titel
+      document.title = document.title.replace(/LeerKracht/, s.siteName);
+    }
+
+    // ── Slogan ────────────────────────────────────
+    if (s.slogan) {
+      document.querySelectorAll('[data-setting="slogan"]').forEach(el => {
+        el.textContent = s.slogan;
+      });
+    }
+
+    // ── Contactgegevens in footer ─────────────────
+    if (s.email) {
+      document.querySelectorAll('.footer-contact .fa-envelope').forEach(i => {
+        const li = i.closest('li');
+        if (li) li.innerHTML = `<i class="fas fa-envelope"></i> <a href="mailto:${s.email}" style="color:inherit;">${s.email}</a>`;
+      });
+    }
+    if (s.telefoon) {
+      document.querySelectorAll('.footer-contact .fa-phone').forEach(i => {
+        const li = i.closest('li');
+        if (li) li.innerHTML = `<i class="fas fa-phone"></i> ${s.telefoon}`;
+      });
+    }
+    if (s.adres) {
+      document.querySelectorAll('.footer-contact .fa-map-marker-alt').forEach(i => {
+        const li = i.closest('li');
+        if (li) li.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${s.adres}`;
+      });
+    }
+
+    // ── Sociale media links ───────────────────────
+    if (s.instagram && s.instagram !== '#') {
+      document.querySelectorAll('.socials .fa-instagram, .socials-row .fa-instagram').forEach(i => {
+        const a = i.closest('a'); if (a) a.href = s.instagram;
+      });
+    }
+    if (s.facebook && s.facebook !== '#') {
+      document.querySelectorAll('.socials .fa-facebook-f, .socials-row .fa-facebook-f').forEach(i => {
+        const a = i.closest('a'); if (a) a.href = s.facebook;
+      });
+    }
+    if (s.tiktok && s.tiktok !== '#') {
+      document.querySelectorAll('.socials .fa-tiktok, .socials-row .fa-tiktok').forEach(i => {
+        const a = i.closest('a'); if (a) a.href = s.tiktok;
+      });
+    }
+    if (s.whatsapp) {
+      document.querySelectorAll('.socials .fa-whatsapp, .socials-row .fa-whatsapp').forEach(i => {
+        const a = i.closest('a');
+        if (a) a.href = `https://wa.me/${s.whatsapp.replace(/[^0-9]/g,'')}`;
+      });
+    }
+
+    // ── Openingstijden op contact pagina ──────────
+    if (s.openingstijden) {
+      document.querySelectorAll('[data-setting="openingstijden"]').forEach(el => {
+        el.textContent = s.openingstijden;
+      });
+    }
+
+  } catch { /* stil falen — website werkt gewoon met vaste tekst */ }
+})();
+
+// ===========================
 // NAVBAR scroll effect
 // ===========================
 const navbar = document.getElementById('navbar');
