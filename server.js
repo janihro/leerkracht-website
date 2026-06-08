@@ -783,7 +783,7 @@ app.get('/api/admin/teachers', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const data = readJSON(TEACHERS_FILE);
   const safe = (data.teachers || []).map(({ password: _, ...t }) => t);
-  res.json(safe);
+  res.json({ teachers: safe });
 });
 
 app.post('/api/admin/teachers', (req, res) => {

@@ -21,24 +21,41 @@
     .portaal-panel { display: none; }
     .portaal-panel.active { display: block; }
   </style>
+  <style>
+    #navbar, #navbar.scrolled { background: #1A4E8A !important; box-shadow: 0 2px 16px rgba(0,0,0,.18) !important; }
+    #navbar .logo span { color: #fff !important; font-weight: 800; }
+    #navbar .logo .logo-img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
+    #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+    #navbar .nav-links a:hover { color: #F4A928 !important; }
+    #navbar .nav-links a.active { color: #F4A928 !important; font-weight: 800; }
+    #navbar .nav-cta { background: #E8763A !important; color: #fff !important; border-color: #E8763A !important; }
+    #navbar .hamburger span { background: #fff !important; }
+    footer { background: #0d2a52 !important; }
+    .footer-logo-wrap, footer h5 { color: #fff !important; }
+    footer p, footer a { color: rgba(255,255,255,.65) !important; }
+    footer a:hover { color: #F4A928 !important; }
+    .footer-bottom { border-top-color: rgba(255,255,255,.1) !important; }
+    .footer-bottom p { color: rgba(255,255,255,.5) !important; }
+  </style>
 </head>
 <body>
 
 <nav id="navbar">
   <div class="nav-inner">
     <a href="index.html" class="logo">
-      <img src="logo.jpeg" alt="LeerKracht" class="logo-img" />
-      <span>LeerKracht</span>
+      <img src="logo.jpeg" alt="NONF" class="logo-img" />
+      <span>Nos Orguyo, Nos Futuro</span>
     </a>
     <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
     <ul class="nav-links" id="nav-links">
       <li><a href="index.html">Home</a></li>
-      <li><a href="aanbod.html">Aanbod</a></li>
-      <li><a href="over-mij.html">Over mij</a></li>
+      <li><a href="aanbod.html">Lesaanbod</a></li>
+      <li><a href="over-mij.html">Over NONF</a></li>
       <li><a href="webshop.html">Webshop</a></li>
+      <li><a href="gallerij.html">Galerij</a></li>
       <li><a href="faq.html">FAQ</a></li>
       <li><a href="contact.html">Contact</a></li>
-      <li><a href="inschrijven.html" class="nav-cta">Inschrijven</a></li>
+      <li><a href="http://bit.ly/4rVMcGH" target="_blank" class="nav-cta">Inschrijven</a></li>
       <li><a href="portaal.html" class="active">Portaal</a></li>
     </ul>
   </div>
@@ -84,7 +101,7 @@
           </button>
         </form>
         <div class="portaal-footer">
-          Nog geen account? <a href="inschrijven.html" style="color:var(--primary);font-weight:700;">Schrijf je in</a><br /><br />
+          Nog geen account? <a href="http://bit.ly/4rVMcGH" target="_blank" style="color:var(--primary);font-weight:700;">Schrijf je in</a><br /><br />
           <i class="fas fa-lock" style="color:var(--primary);margin-right:6px;font-size:.8rem;"></i>
           Beveiligd met SSL — jouw gegevens zijn veilig.
         </div>
@@ -292,3 +309,5 @@
 </script>
 </body>
 </html>
+
+
