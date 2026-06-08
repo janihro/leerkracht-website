@@ -22,12 +22,17 @@
       --nonf-coral:   #F06B5D;
     }
 
-    /* Navbar override */
-    #navbar { background: var(--nonf-blauw); }
-    #navbar .logo span { color: #fff; }
-    #navbar .nav-links a { color: rgba(255,255,255,.85); }
-    #navbar .nav-links a:hover, #navbar .nav-links a.active { color: #fff; }
+    /* Navbar override — altijd donkerblauw, ook na scrollen */
+    #navbar,
+    #navbar.scrolled { background: var(--nonf-blauw) !important; box-shadow: 0 2px 16px rgba(0,0,0,.18) !important; }
+    #navbar .logo span { color: #fff !important; font-weight: 800; }
+    #navbar .logo { display: flex; align-items: center; gap: 10px; }
+    #navbar .logo .logo-img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
+    #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+    #navbar .nav-links a:hover { color: var(--nonf-goud) !important; }
+    #navbar .nav-links a.active { color: var(--nonf-goud) !important; font-weight: 800; }
     #navbar .nav-cta { background: var(--nonf-oranje) !important; color: #fff !important; border-color: var(--nonf-oranje) !important; }
+    #navbar .hamburger span { background: #fff !important; }
 
     /* Hero */
     .nonf-hero {
@@ -296,7 +301,8 @@
 <nav id="navbar">
   <div class="nav-inner">
     <a href="index.html" class="logo">
-      <span style="font-weight:800;">NONF</span>
+      <img src="logo.jpeg" alt="NONF" class="logo-img" />
+      <span>Nos Orguyo, Nos Futuro</span>
     </a>
     <button class="hamburger" id="hamburger" aria-label="Menu">
       <span></span><span></span><span></span>
@@ -708,6 +714,7 @@
             <div class="nonf-social-row">
               <a href="#" class="nonf-social-btn" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
               <a href="#" class="nonf-social-btn" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+              <a href="#" class="nonf-social-btn" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
               <a href="#" class="nonf-social-btn" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
             </div>
           </div>
@@ -746,6 +753,7 @@
       <div class="socials" style="margin-top:16px;">
         <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
         <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
         <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
       </div>
     </div>
