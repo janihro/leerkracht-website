@@ -1278,6 +1278,7 @@ textarea { resize: vertical; min-height: 120px; }
   .hero-inner { gap: 48px; }
   .about-grid { gap: 48px; }
 }
+
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; text-align: center; }
   .hero-desc { margin: 0 auto 36px; }
@@ -1302,7 +1303,14 @@ textarea { resize: vertical; min-height: 120px; }
   .aanbod-item { grid-template-columns: 1fr; }
   .aanbod-price-block { text-align: left; }
 }
+
 @media (max-width: 640px) {
+  /* LAYOUT */
+  .section { padding: 56px 0; }
+  .section-sm { padding: 40px 0; }
+  .container { padding: 0 18px; }
+
+  /* NAV */
   .hamburger { display: flex; }
   .nav-links {
     display: none;
@@ -1310,23 +1318,104 @@ textarea { resize: vertical; min-height: 120px; }
     top: var(--nav-h); left: 0; right: 0;
     background: var(--white);
     flex-direction: column;
-    padding: 16px 20px 28px;
+    padding: 12px 16px 24px;
     box-shadow: 0 16px 40px rgba(0,0,0,0.12);
     gap: 2px;
     align-items: stretch;
     border-top: 1px solid var(--border);
   }
   .nav-links.open { display: flex; }
-  .nav-links a { padding: 13px 16px; border-radius: var(--radius-xs); }
-  .features-grid { grid-template-columns: 1fr; }
-  .aanbod-grid { grid-template-columns: 1fr; }
-  .team-grid { grid-template-columns: 1fr; }
-  .shop-grid { grid-template-columns: 1fr; }
-  .gallery-grid { grid-template-columns: 1fr 1fr; }
-  .footer-grid { grid-template-columns: 1fr; }
-  .form-row { grid-template-columns: 1fr; }
+  .nav-links a { padding: 13px 16px; border-radius: var(--radius-xs); font-size: 1rem; }
+  .nav-cta { text-align: center; margin-top: 6px; }
+
+  /* HERO */
+  .hero { min-height: auto; }
+  .hero-inner { padding: calc(var(--nav-h) + 32px) 18px 48px; gap: 32px; }
+  .hero-title { font-size: 2.2rem; }
+  .hero-desc { font-size: 1rem; }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .hero-actions .btn { justify-content: center; padding: 15px 24px; font-size: 1rem; }
+  .hero-trust { flex-wrap: wrap; gap: 10px; }
+
+  /* STATS */
   .stats-inner { grid-template-columns: 1fr 1fr; }
-  .contact-form-wrap { padding: 32px 24px; }
-  .portaal-card { padding: 36px 24px; }
-  .section { padding: 70px 0; }
+  .stat-block { padding: 24px 16px; }
+  .stat-block .num { font-size: 2rem; }
+
+  /* FEATURES — compact horizontale kaarten op mobiel */
+  .features-grid { grid-template-columns: 1fr; gap: 12px; }
+  .feature-card { padding: 22px 20px; display: flex; flex-direction: row; align-items: flex-start; gap: 16px; }
+  .feature-card .feature-icon { margin-bottom: 0; flex-shrink: 0; width: 44px; height: 44px; }
+  .feature-card h3 { font-size: 0.97rem; margin-bottom: 6px; }
+  .feature-card p { font-size: 0.85rem; }
+
+  /* AANBOD GRID — 2 col op mobiel */
+  .aanbod-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .aanbod-card { padding: 22px 16px; gap: 10px; }
+  .aanbod-card h3 { font-size: 0.92rem; }
+  .aanbod-card p { font-size: 0.82rem; }
+  .aanbod-icon { width: 44px; height: 44px; font-size: 1rem; }
+
+  /* REVIEWS */
+  .reviews-grid { grid-template-columns: 1fr; gap: 14px; }
+  .review-card { padding: 24px 20px; }
+
+  /* TEAM */
+  .team-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .team-card { padding: 22px 16px; }
+  .team-avatar { width: 56px; height: 56px; font-size: 1.1rem; }
+
+  /* SHOP */
+  .shop-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .shop-img { font-size: 2.5rem; }
+  .shop-body { padding: 16px; }
+  .shop-body h3 { font-size: 0.88rem; }
+  .shop-body p { font-size: 0.78rem; }
+  .shop-price { font-size: 1.1rem; }
+  .btn-add { padding: 7px 12px; font-size: 0.78rem; }
+
+  /* GALLERY */
+  .gallery-grid { grid-template-columns: 1fr 1fr; grid-auto-rows: 140px; gap: 10px; }
+
+  /* PAGE HERO */
+  .page-hero { padding: calc(var(--nav-h) + 36px) 0 44px; }
+  .page-hero h1 { font-size: 2rem; }
+  .page-hero p { font-size: 0.95rem; }
+
+  /* CONTACT */
+  .form-row { grid-template-columns: 1fr; }
+  .contact-form-wrap { padding: 28px 20px; }
+  .contact-form-wrap h3 { font-size: 1.1rem; }
+
+  /* PORTAAL */
+  .portaal-card { padding: 32px 20px; border-radius: 20px; }
+  .portaal-card h2 { font-size: 1.3rem; }
+
+  /* FOOTER */
+  .footer-grid { grid-template-columns: 1fr; gap: 28px; padding-bottom: 40px; }
+  footer { padding: 48px 0 0; }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    padding: 20px 18px;
+  }
+  .footer-bottom > div { justify-content: center; }
+
+  /* CTA */
+  .cta-section { padding: 64px 0; }
+  .cta-section h2 { font-size: 1.8rem; }
+  .cta-buttons { flex-direction: column; align-items: stretch; padding: 0 18px; }
+  .cta-buttons .btn { justify-content: center; }
+
+  /* DASHBOARD */
+  .dashboard-layout { padding: 20px 16px 60px; gap: 16px; }
+  .dash-header { padding: 22px 20px; }
+  .dash-header h2 { font-size: 1.1rem; }
+  .dash-header-icon { display: none; }
+  .les-grid { grid-template-columns: 1fr; }
+
+  /* AANBOD PAGINA */
+  .aanbod-item { padding: 22px 18px; gap: 16px; }
+  .aanbod-item-icon { width: 52px; height: 52px; font-size: 1.2rem; }
 }
