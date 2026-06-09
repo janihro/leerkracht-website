@@ -51,9 +51,14 @@
       });
     }
     if (s.adres) {
-      document.querySelectorAll('.footer-contact .fa-map-marker-alt').forEach(i => {
-        const li = i.closest('li');
-        if (li) li.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${s.adres}`;
+      // Vervang het eerste locatie-item en verwijder eventuele extra items
+      // (voorkomt duplicaten als er meerdere fa-map-marker-alt li's zijn)
+      const markers = [...document.querySelectorAll('.footer-contact .fa-map-marker-alt')];
+      markers.forEach((icon, idx) => {
+        const li = icon.closest('li');
+        if (!li) return;
+        if (idx === 0) li.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${s.adres}`;
+        else li.remove();
       });
     }
 
