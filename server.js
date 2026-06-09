@@ -1,8 +1,10 @@
-const express = require('express');
-const path    = require('path');
-const fs      = require('fs');
-const multer  = require('multer');
-const crypto  = require('crypto'); // ingebouwd in Node.js
+const express   = require('express');
+const path      = require('path');
+const fs        = require('fs');
+const multer    = require('multer');
+const crypto    = require('crypto'); // ingebouwd in Node.js
+const speakeasy = require('speakeasy');
+const QRCode    = require('qrcode');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -164,6 +166,27 @@ function hasPermission(teacher, perm) {
 }
 function adminAuth(req) {
   const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword, 200);
+  if (!provided) return false;
+  const stored = getAdminPass();
+  const passOk = verifyPassword(provided, stored) || safeCompare(provided, stored);
+  if (!passOk) return false;
+  // Check 2FA if enabled
+  const adminData = readJSON(ADMIN_FILE);
+  if (adminData.twoFactorEnabled && adminData.twoFactorSecret) {
+    const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
+    if (!token) return false;
+    return speakeasy.totp.verify({
+      secret: adminData.twoFactorSecret,
+      encoding: 'base32',
+      token,
+      window: 1, // allow 30s drift
+    });
+  }
+  return true;
+}
+// Alleen wachtwoord check (voor 2FA setup zelf)
+function adminAuthPasswordOnly(req) {
+  const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'], 200);
   if (!provided) return false;
   const stored = getAdminPass();
   return verifyPassword(provided, stored) || safeCompare(provided, stored);
@@ -853,6 +876,62 @@ app.delete('/api/admin/teachers/:id', (req, res) => {
   data.teachers = (data.teachers || []).filter(t => t.id !== req.params.id);
   writeJSON(TEACHERS_FILE, data);
   res.json({ success: true });
+});
+
+// ─── 2FA ──────────────────────────────────────────────────
+
+// Controleer 2FA status (alleen wachtwoord nodig — nog geen 2FA check)
+app.get('/api/admin/2fa/status', (req, res) => {
+  if (!adminAuthPasswordOnly(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const d = readJSON(ADMIN_FILE);
+  res.json({ enabled: !!(d.twoFactorEnabled && d.twoFactorSecret) });
+});
+
+// Genereer nieuw TOTP-secret + QR code (alleen wachtwoord nodig)
+app.post('/api/admin/2fa/setup', async (req, res) => {
+  if (!adminAuthPasswordOnly(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const secret = speakeasy.generateSecret({ name: 'NONF Beheer', length: 20 });
+  try {
+    const qrDataUrl = await QRCode.toDataURL(secret.otpauth_url);
+    res.json({ secret: secret.base32, qr: qrDataUrl });
+  } catch (e) {
+    res.status(500).json({ error: 'QR generatie mislukt' });
+  }
+});
+
+// Activeer 2FA (controleer code + sla secret op)
+app.post('/api/admin/2fa/enable', (req, res) => {
+  if (!adminAuthPasswordOnly(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const { secret, token } = req.body;
+  if (!secret || !token) return res.status(400).json({ error: 'Secret en token verplicht' });
+  const ok = speakeasy.totp.verify({ secret, encoding: 'base32', token: String(token), window: 1 });
+  if (!ok) return res.status(400).json({ error: 'Ongeldige code. Probeer opnieuw.' });
+  const d = readJSON(ADMIN_FILE);
+  d.twoFactorSecret  = secret;
+  d.twoFactorEnabled = true;
+  writeJSON(ADMIN_FILE, d);
+  res.json({ ok: true });
+});
+
+// Schakel 2FA uit (vereist wachtwoord + actieve TOTP code)
+app.post('/api/admin/2fa/disable', (req, res) => {
+  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord of code' });
+  const d = readJSON(ADMIN_FILE);
+  d.twoFactorEnabled = false;
+  d.twoFactorSecret  = null;
+  writeJSON(ADMIN_FILE, d);
+  res.json({ ok: true });
+});
+
+// Login check — geeft terug of 2FA vereist is voor dit wachtwoord
+app.post('/api/admin/login-check', (req, res) => {
+  const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'], 200);
+  if (!provided) return res.status(401).json({ ok: false });
+  const stored = getAdminPass();
+  const passOk = verifyPassword(provided, stored) || safeCompare(provided, stored);
+  if (!passOk) return res.status(401).json({ ok: false });
+  const d = readJSON(ADMIN_FILE);
+  res.json({ ok: true, requires2fa: !!(d.twoFactorEnabled && d.twoFactorSecret) });
 });
 
 // ─── CATCH-ALL / 404 ──────────────────────────────────────

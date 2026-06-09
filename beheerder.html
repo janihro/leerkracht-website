@@ -255,15 +255,35 @@
     <h1>Beheerderspaneel</h1>
     <p>Voer het beheerderswachtwoord in om door te gaan.</p>
     <form id="admin-login-form" novalidate>
-      <div class="form-group">
-        <label for="admin-pass-input">Wachtwoord</label>
-        <input type="password" id="admin-pass-input" placeholder="••••••••" required autocomplete="current-password" />
+      <!-- Stap 1: wachtwoord -->
+      <div id="login-step-pass">
+        <div class="form-group">
+          <label for="admin-pass-input">Wachtwoord</label>
+          <input type="password" id="admin-pass-input" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn-login" id="login-btn-pass">
+          <i class="fas fa-arrow-right"></i> Volgende
+        </button>
       </div>
-      <button type="submit" class="btn-login">
-        <i class="fas fa-lock-open"></i> Inloggen
-      </button>
+      <!-- Stap 2: 2FA code (getoond als 2FA actief is) -->
+      <div id="login-step-totp" style="display:none;">
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-light));display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#fff;margin:0 auto 12px;"><i class="fas fa-mobile-alt"></i></div>
+          <p style="font-size:.88rem;color:var(--text-muted);">Voer de 6-cijferige code in van je authenticator app.</p>
+        </div>
+        <div class="form-group">
+          <label for="admin-totp-input">Verificatiecode</label>
+          <input type="text" id="admin-totp-input" placeholder="123456" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" style="font-size:1.4rem;letter-spacing:.2em;text-align:center;" />
+        </div>
+        <button type="submit" class="btn-login" id="login-btn-totp">
+          <i class="fas fa-lock-open"></i> Inloggen
+        </button>
+        <button type="button" onclick="resetLoginSteps()" style="width:100%;margin-top:10px;padding:10px;border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:.85rem;">
+          <i class="fas fa-arrow-left"></i> Terug
+        </button>
+      </div>
       <div class="login-error" id="login-error">
-        <i class="fas fa-exclamation-circle"></i> Onjuist wachtwoord. Probeer opnieuw.
+        <i class="fas fa-exclamation-circle"></i> <span id="login-error-msg">Onjuist wachtwoord of code.</span>
       </div>
     </form>
     <p style="margin-top:24px;font-size:.78rem;color:var(--text-muted);">
@@ -316,6 +336,9 @@
       <div class="sidebar-label">Beveiliging</div>
       <button class="sidebar-link" onclick="showPanel('wachtwoord',this)">
         <i class="fas fa-key"></i> Wachtwoord wijzigen
+        </a>
+        <a class="sidebar-link" onclick="showPanel('2fa')">
+        <i class="fas fa-shield-alt"></i> Tweestapsverificatie
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -822,6 +845,72 @@
         </div>
       </div>
 
+      <!-- ═══════ 2FA BEVEILIGING ═══════ -->
+      <div class="panel" id="panel-2fa">
+        <div class="panel-header">
+          <h2><i class="fas fa-shield-alt" style="color:var(--primary);margin-right:8px;"></i>Tweestapsverificatie (2FA)</h2>
+          <p>Beveilig je beheerdersaccount met een extra code via Google Authenticator, Authy of Microsoft Authenticator — volledig gratis.</p>
+        </div>
+
+        <div class="alert alert-success" id="tfa-success" style="display:none;"><i class="fas fa-check-circle"></i> <span id="tfa-success-msg">Gelukt!</span></div>
+        <div class="alert alert-error"   id="tfa-error"   style="display:none;"><i class="fas fa-times-circle"></i> <span id="tfa-error-msg">Er is iets misgegaan.</span></div>
+
+        <div class="card" style="max-width:560px;" id="tfa-status-card">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+            <div id="tfa-status-icon" style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;background:rgba(224,58,58,.12);color:var(--red);">
+              <i class="fas fa-lock-open"></i>
+            </div>
+            <div>
+              <div style="font-weight:800;font-size:1rem;" id="tfa-status-text">Tweestapsverificatie is UIT</div>
+              <div style="font-size:.82rem;color:var(--text-muted);" id="tfa-status-sub">Je account is alleen beveiligd met een wachtwoord.</div>
+            </div>
+          </div>
+          <div id="tfa-btn-area">
+            <button class="btn btn-primary" onclick="startTfaSetup()"><i class="fas fa-shield-alt"></i> 2FA inschakelen</button>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:560px;display:none;" id="tfa-setup-card">
+          <h3 style="margin-bottom:6px;"><span style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;margin-right:8px;">1</span>Scan de QR code</h3>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:20px;">Open Google Authenticator (of Authy) en scan de onderstaande code.</p>
+          <div style="text-align:center;margin-bottom:20px;">
+            <img id="tfa-qr-img" src="" alt="QR Code" style="width:220px;height:220px;border:4px solid var(--border);border-radius:16px;" />
+          </div>
+          <details style="margin-bottom:20px;font-size:.82rem;">
+            <summary style="cursor:pointer;color:var(--primary);font-weight:700;">Kan je de QR niet scannen? Voer handmatig in</summary>
+            <div style="margin-top:10px;background:var(--bg);padding:12px;border-radius:8px;font-family:monospace;word-break:break-all;" id="tfa-secret-text"></div>
+          </details>
+          <h3 style="margin-bottom:6px;"><span style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;margin-right:8px;">2</span>Bevestig met een code</h3>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:14px;">Vul de 6-cijferige code in die de app nu toont.</p>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;">
+            <div class="form-group" style="margin:0;">
+              <label>Code uit authenticator app</label>
+              <input type="text" id="tfa-confirm-code" placeholder="123456" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="font-size:1.3rem;letter-spacing:.15em;text-align:center;" />
+            </div>
+            <button class="btn btn-primary" onclick="confirmTfaSetup()"><i class="fas fa-check"></i> Activeren</button>
+          </div>
+          <button class="btn btn-outline" style="margin-top:12px;width:100%;" onclick="cancelTfaSetup()"><i class="fas fa-times"></i> Annuleren</button>
+        </div>
+
+        <div class="card" style="max-width:560px;display:none;" id="tfa-disable-card">
+          <h3 style="margin-bottom:10px;">2FA uitschakelen</h3>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">Voer je wachtwoord én een geldige code in om 2FA uit te schakelen.</p>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Wachtwoord</label>
+            <input type="password" id="tfa-disable-pass" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Code uit authenticator app</label>
+            <input type="text" id="tfa-disable-code" placeholder="123456" maxlength="6" inputmode="numeric" style="font-size:1.2rem;letter-spacing:.12em;text-align:center;" />
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-danger" onclick="disableTfa()"><i class="fas fa-lock-open"></i> 2FA uitschakelen</button>
+            <button class="btn btn-outline" onclick="cancelTfaDisable()">Annuleren</button>
+          </div>
+        </div>
+
+      </div><!-- /panel-2fa -->
+
     </div><!-- /admin-content -->
   </main>
 </div><!-- /admin-shell -->
@@ -829,6 +918,14 @@
 <script>
 // ══════════════════ STATE ════════════════════════════════
 let adminPass = '';
+let adminTotp = ''; // current TOTP code (only needed during session init)
+
+// Helper: admin request headers
+function adminHeaders(extra) {
+  const h = { 'x-admin-password': adminPass };
+  if (adminTotp) h['x-admin-totp'] = adminTotp;
+  return Object.assign(h, extra || {});
+}
 const panels = {
   'overzicht': 'Overzicht',
   'instellingen': 'Website instellingen',
@@ -838,37 +935,105 @@ const panels = {
   'webshop': 'Webshop producten',
   'export': 'Exporteer data',
   'wachtwoord': 'Wachtwoord wijzigen',
+  '2fa': 'Tweestapsverificatie',
   'docenten': 'Docenten beheren',
 };
 
-// ══════════════════ LOGIN ════════════════════════════════
+// ══════════════════ LOGIN (met 2FA support) ═══════════════
+let _loginPass = ''; // tijdelijk opslaan tussen stap 1 en 2
+
+function resetLoginSteps() {
+  document.getElementById('login-step-pass').style.display = '';
+  document.getElementById('login-step-totp').style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('admin-pass-input').value = '';
+  document.getElementById('admin-totp-input').value = '';
+  _loginPass = '';
+}
+
 document.getElementById('admin-login-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const pass = document.getElementById('admin-pass-input').value.trim();
   const errEl = document.getElementById('login-error');
-  const btn = e.target.querySelector('button');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+  const errMsg = document.getElementById('login-error-msg');
   errEl.style.display = 'none';
 
-  try {
-    const res = await fetch('/api/admin/stats', { headers: { 'x-admin-password': pass } });
-    if (res.ok) {
-      adminPass = pass;
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('admin-shell').style.display = 'block';
-      initAdmin();
-    } else {
+  const totpStepVisible = document.getElementById('login-step-totp').style.display !== 'none';
+
+  if (!totpStepVisible) {
+    // ── STAP 1: wachtwoord controleren ──
+    const pass = document.getElementById('admin-pass-input').value.trim();
+    const btn  = document.getElementById('login-btn-pass');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+    try {
+      const r = await fetch('/api/admin/login-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminPassword: pass })
+      });
+      const data = await r.json();
+      if (!r.ok || !data.ok) {
+        errMsg.textContent = 'Onjuist wachtwoord. Probeer opnieuw.';
+        errEl.style.display = 'flex';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right"></i> Volgende';
+        return;
+      }
+      if (data.requires2fa) {
+        // Ga naar stap 2
+        _loginPass = pass;
+        document.getElementById('login-step-pass').style.display = 'none';
+        document.getElementById('login-step-totp').style.display = '';
+        document.getElementById('admin-totp-input').focus();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right"></i> Volgende';
+      } else {
+        // Geen 2FA — direct inloggen
+        await doLogin(pass, '');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right"></i> Volgende';
+      }
+    } catch {
+      errMsg.textContent = 'Verbindingsfout. Probeer opnieuw.';
       errEl.style.display = 'flex';
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-lock-open"></i> Inloggen';
+      btn.innerHTML = '<i class="fas fa-arrow-right"></i> Volgende';
     }
-  } catch {
-    errEl.style.display = 'flex';
+  } else {
+    // ── STAP 2: TOTP code ──
+    const totp = document.getElementById('admin-totp-input').value.trim();
+    const btn  = document.getElementById('login-btn-totp');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
+    try {
+      await doLogin(_loginPass, totp);
+    } catch {
+      errMsg.textContent = 'Verbindingsfout. Probeer opnieuw.';
+      errEl.style.display = 'flex';
+    }
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-lock-open"></i> Inloggen';
   }
 });
+
+async function doLogin(pass, totp) {
+  const errEl  = document.getElementById('login-error');
+  const errMsg = document.getElementById('login-error-msg');
+  const headers = { 'x-admin-password': pass };
+  if (totp) headers['x-admin-totp'] = totp;
+  const res = await fetch('/api/admin/stats', { headers });
+  if (res.ok) {
+    adminPass = pass;
+    adminTotp = totp;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-shell').style.display = 'block';
+    initAdmin();
+    load2faStatus();
+  } else {
+    errMsg.textContent = 'Onjuiste code. Probeer opnieuw.';
+    errEl.style.display = 'flex';
+  }
+}
 
 function logout() {
   adminPass = '';
@@ -910,6 +1075,117 @@ function toggleSidebar() {
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ══════════════════ 2FA ══════════════════════════════════
+let _tfaSecret = '';
+
+async function load2faStatus() {
+  try {
+    const r = await fetch('/api/admin/2fa/status', { headers: { 'x-admin-password': adminPass } });
+    if (!r.ok) return;
+    const d = await r.json();
+    const icon    = document.getElementById('tfa-status-icon');
+    const text    = document.getElementById('tfa-status-text');
+    const sub     = document.getElementById('tfa-status-sub');
+    const btnArea = document.getElementById('tfa-btn-area');
+    if (d.enabled) {
+      icon.style.background = 'rgba(7,183,138,.12)';
+      icon.style.color      = 'var(--green)';
+      icon.innerHTML        = '<i class="fas fa-lock"></i>';
+      text.textContent      = '✅ Tweestapsverificatie is AAN';
+      sub.textContent       = 'Je account is beveiligd met wachtwoord + authenticator app.';
+      btnArea.innerHTML     = '<button class="btn btn-danger" onclick="showTfaDisable()"><i class="fas fa-lock-open"></i> 2FA uitschakelen</button>';
+    } else {
+      icon.style.background = 'rgba(224,58,58,.12)';
+      icon.style.color      = 'var(--red)';
+      icon.innerHTML        = '<i class="fas fa-lock-open"></i>';
+      text.textContent      = 'Tweestapsverificatie is UIT';
+      sub.textContent       = 'Je account is alleen beveiligd met een wachtwoord.';
+      btnArea.innerHTML     = '<button class="btn btn-primary" onclick="startTfaSetup()"><i class="fas fa-shield-alt"></i> 2FA inschakelen</button>';
+    }
+  } catch(e) { console.warn('2FA status fout', e); }
+}
+
+async function startTfaSetup() {
+  document.getElementById('tfa-success').style.display = 'none';
+  document.getElementById('tfa-error').style.display   = 'none';
+  try {
+    const r = await fetch('/api/admin/2fa/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+      body: JSON.stringify({ adminPassword: adminPass })
+    });
+    const d = await r.json();
+    if (!r.ok) { showTfaError(d.error || 'Fout bij aanmaken.'); return; }
+    _tfaSecret = d.secret;
+    document.getElementById('tfa-qr-img').src      = d.qr;
+    document.getElementById('tfa-secret-text').textContent = d.secret;
+    document.getElementById('tfa-setup-card').style.display = '';
+    document.getElementById('tfa-confirm-code').value = '';
+    document.getElementById('tfa-confirm-code').focus();
+  } catch(e) { showTfaError('Verbindingsfout.'); }
+}
+
+async function confirmTfaSetup() {
+  const token = document.getElementById('tfa-confirm-code').value.trim();
+  if (!token) { showTfaError('Vul de code in.'); return; }
+  try {
+    const r = await fetch('/api/admin/2fa/enable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+      body: JSON.stringify({ adminPassword: adminPass, secret: _tfaSecret, token })
+    });
+    const d = await r.json();
+    if (!r.ok) { showTfaError(d.error || 'Ongeldige code.'); return; }
+    document.getElementById('tfa-setup-card').style.display = 'none';
+    adminTotp = token; // update session
+    showTfaSuccess('2FA is ingeschakeld! Bewaar je authenticator app goed.');
+    load2faStatus();
+  } catch(e) { showTfaError('Verbindingsfout.'); }
+}
+
+function cancelTfaSetup() {
+  document.getElementById('tfa-setup-card').style.display = 'none';
+  _tfaSecret = '';
+}
+
+function showTfaDisable() {
+  document.getElementById('tfa-disable-card').style.display = '';
+  document.getElementById('tfa-disable-pass').value = '';
+  document.getElementById('tfa-disable-code').value = '';
+}
+
+async function disableTfa() {
+  const pass  = document.getElementById('tfa-disable-pass').value.trim();
+  const token = document.getElementById('tfa-disable-code').value.trim();
+  if (!pass || !token) { showTfaError('Vul wachtwoord én code in.'); return; }
+  try {
+    const r = await fetch('/api/admin/2fa/disable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': pass, 'x-admin-totp': token },
+      body: JSON.stringify({ adminPassword: pass, adminTotp: token })
+    });
+    const d = await r.json();
+    if (!r.ok) { showTfaError(d.error || 'Onjuiste code of wachtwoord.'); return; }
+    document.getElementById('tfa-disable-card').style.display = 'none';
+    adminTotp = '';
+    showTfaSuccess('2FA is uitgeschakeld.');
+    load2faStatus();
+  } catch(e) { showTfaError('Verbindingsfout.'); }
+}
+
+function cancelTfaDisable() { document.getElementById('tfa-disable-card').style.display = 'none'; }
+
+function showTfaSuccess(msg) {
+  document.getElementById('tfa-success-msg').textContent = msg;
+  document.getElementById('tfa-success').style.display = 'flex';
+  document.getElementById('tfa-error').style.display   = 'none';
+}
+function showTfaError(msg) {
+  document.getElementById('tfa-error-msg').textContent = msg;
+  document.getElementById('tfa-error').style.display   = 'flex';
+  document.getElementById('tfa-success').style.display = 'none';
 }
 
 // ══════════════════ STATS ════════════════════════════════
