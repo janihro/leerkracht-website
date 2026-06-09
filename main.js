@@ -63,28 +63,29 @@
     }
 
     // ── Sociale media links ───────────────────────
-    if (s.instagram && s.instagram !== '#') {
-      document.querySelectorAll('.socials .fa-instagram, .socials-row .fa-instagram').forEach(i => {
-        const a = i.closest('a'); if (a) a.href = s.instagram;
+    // Gebruikt aria-label als selector → werkt op ALLE pagina's ongeacht CSS-klasse
+    function setSocial(label, url) {
+      if (!url || url === '#') return;
+      document.querySelectorAll(`a[aria-label="${label}"]`).forEach(a => {
+        a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
       });
     }
-    if (s.facebook && s.facebook !== '#') {
-      document.querySelectorAll('.socials .fa-facebook-f, .socials-row .fa-facebook-f').forEach(i => {
-        const a = i.closest('a'); if (a) a.href = s.facebook;
-      });
-    }
-    if (s.tiktok && s.tiktok !== '#') {
-      document.querySelectorAll('.socials .fa-tiktok, .socials-row .fa-tiktok').forEach(i => {
-        const a = i.closest('a'); if (a) a.href = s.tiktok;
-      });
-    }
+    setSocial('Instagram', s.instagram);
+    setSocial('Facebook',  s.facebook);
+    setSocial('TikTok',    s.tiktok);
+
     if (s.whatsapp) {
       let wa = s.whatsapp.replace(/[^0-9]/g, '');
       if (wa.startsWith('0')) wa = '31' + wa.slice(1); // 0681... → 31681...
-      document.querySelectorAll('.socials .fa-whatsapp, .socials-row .fa-whatsapp').forEach(i => {
-        const a = i.closest('a');
-        if (a) { a.href = `https://wa.me/${wa}`; a.target = '_blank'; a.rel = 'noopener'; }
+      const waUrl = `https://wa.me/${wa}`;
+      // Alle WhatsApp aria-label knoppen
+      document.querySelectorAll('a[aria-label="WhatsApp"], a[aria-label="WhatsApp ons"]').forEach(a => {
+        a.href = waUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
       });
+      // Vaste WhatsApp-knop onderaan
+      document.querySelectorAll('.wa-float').forEach(a => { a.href = waUrl; });
+      // Alle andere hardcoded wa.me links
+      document.querySelectorAll('a[href^="https://wa.me/"]').forEach(a => { a.href = waUrl; });
     }
 
     // ── Openingstijden op contact pagina ──────────
