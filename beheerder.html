@@ -1085,7 +1085,7 @@ async function doLogin(user, pass, totp) {
   if (res.ok) {
     adminUsername = user;
     adminPass     = pass;
-    adminTotp     = totp;
+    adminTotp     = ''; // TOTP niet bewaren — wachtwoord is voldoende na inloggen
     // Topbar bijwerken
     document.getElementById('topbar-username').textContent = user;
     document.getElementById('topbar-avatar').textContent   = user.charAt(0).toUpperCase();

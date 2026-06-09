@@ -154,20 +154,14 @@ function getAdminFromRequest(req) {
   return admin;
 }
 
-// Volledig geauthenticeerd (wachtwoord + 2FA indien actief)
+// Volledig geauthenticeerd — voor gewone API-aanroepen alleen wachtwoord nodig.
+// 2FA wordt alleen gecontroleerd bij het inloggen (login-check endpoint).
+// Dit is standaard sessie-gedrag: je bewijst 2FA eenmalig bij inloggen.
 function getAuthenticatedAdmin(req) {
-  const admin = getAdminFromRequest(req);
-  if (!admin) return null;
-  if (admin.twoFactorEnabled && admin.twoFactorSecret) {
-    const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
-    if (!token) return null;
-    const ok = speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token, window: 1 });
-    if (!ok) return null;
-  }
-  return admin;
+  return getAdminFromRequest(req); // wachtwoord is voldoende na inloggen
 }
 
-function adminAuth(req)             { return !!getAuthenticatedAdmin(req); }
+function adminAuth(req)             { return !!getAdminFromRequest(req); }
 function adminAuthPasswordOnly(req) { return !!getAdminFromRequest(req); }
 
 // Auth helpers
@@ -926,10 +920,17 @@ app.post('/api/admin/2fa/enable', (req, res) => {
   res.json({ ok: true });
 });
 
-// Schakel 2FA uit voor huidige beheerder (vereist wachtwoord + geldige TOTP)
+// Schakel 2FA uit voor huidige beheerder (vereist wachtwoord + geldige TOTP als extra check)
 app.post('/api/admin/2fa/disable', (req, res) => {
-  const admin = getAuthenticatedAdmin(req);
+  const admin = getAdminFromRequest(req);
   if (!admin) return res.status(401).json({ error: 'Ongeldig wachtwoord of code' });
+  // Expliciete TOTP-controle bij uitschakelen (veiligheidscheck)
+  if (admin.twoFactorEnabled && admin.twoFactorSecret) {
+    const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
+    if (!token) return res.status(400).json({ error: 'Voer je authenticator code in' });
+    const ok = speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token, window: 1 });
+    if (!ok) return res.status(401).json({ error: 'Ongeldige authenticator code' });
+  }
   const d = readJSON(ADMINS_FILE);
   const target = (d.admins || []).find(a => a.id === admin.id);
   if (!target) return res.status(404).json({ error: 'Beheerder niet gevonden' });
