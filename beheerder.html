@@ -253,10 +253,14 @@
   <div class="login-card">
     <div class="login-icon"><i class="fas fa-shield-alt"></i></div>
     <h1>Beheerderspaneel</h1>
-    <p>Voer het beheerderswachtwoord in om door te gaan.</p>
+    <p>Log in met je gebruikersnaam en wachtwoord.</p>
     <form id="admin-login-form" novalidate>
-      <!-- Stap 1: wachtwoord -->
+      <!-- Stap 1: gebruikersnaam + wachtwoord -->
       <div id="login-step-pass">
+        <div class="form-group">
+          <label for="admin-user-input">Gebruikersnaam</label>
+          <input type="text" id="admin-user-input" placeholder="beheerder" required autocomplete="username" />
+        </div>
         <div class="form-group">
           <label for="admin-pass-input">Wachtwoord</label>
           <input type="password" id="admin-pass-input" placeholder="••••••••" required autocomplete="current-password" />
@@ -336,9 +340,12 @@
       <div class="sidebar-label">Beveiliging</div>
       <button class="sidebar-link" onclick="showPanel('wachtwoord',this)">
         <i class="fas fa-key"></i> Wachtwoord wijzigen
-        </a>
-        <a class="sidebar-link" onclick="showPanel('2fa')">
+      </button>
+      <button class="sidebar-link" onclick="showPanel('2fa',this)">
         <i class="fas fa-shield-alt"></i> Tweestapsverificatie
+      </button>
+      <button class="sidebar-link" id="nav-beheerders" onclick="showPanel('beheerders',this)" style="display:none;">
+        <i class="fas fa-user-shield"></i> Beheerders
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -360,8 +367,8 @@
       <div class="topbar-title" id="topbar-title">Overzicht</div>
       <div class="topbar-actions">
         <div class="topbar-user">
-          <div class="topbar-user-avatar">B</div>
-          Beheerder
+          <div class="topbar-user-avatar" id="topbar-avatar">B</div>
+          <span id="topbar-username">Beheerder</span>
         </div>
         <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Uitloggen</button>
       </div>
@@ -911,85 +918,138 @@
 
       </div><!-- /panel-2fa -->
 
+      <!-- ── BEHEERDERS ────────────────────────────────── -->
+      <div class="panel" id="panel-beheerders">
+        <div class="panel-header">
+          <h2><i class="fas fa-user-shield" style="color:var(--primary);margin-right:8px;"></i>Beheerders</h2>
+          <p>Maak extra beheerdersaccounts aan. Elke beheerder heeft een eigen wachtwoord en 2FA.</p>
+        </div>
+
+        <div class="alert alert-success" id="adm-success" style="display:none;"><i class="fas fa-check-circle"></i> <span id="adm-success-msg">Gelukt!</span></div>
+        <div class="alert alert-error"   id="adm-error"   style="display:none;"><i class="fas fa-times-circle"></i> <span id="adm-error-msg">Er is iets misgegaan.</span></div>
+
+        <!-- Nieuwe beheerder aanmaken -->
+        <div class="card" style="max-width:560px;">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-user-plus"></i> Nieuwe beheerder aanmaken</div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Gebruikersnaam *</label>
+              <input type="text" id="adm-username" placeholder="bijv. angeline" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label>Weergavenaam</label>
+              <input type="text" id="adm-displayname" placeholder="bijv. Angeline Blijden" />
+            </div>
+            <div class="form-group span-2">
+              <label>Wachtwoord * (min. 6 tekens)</label>
+              <input type="password" id="adm-password" placeholder="••••••••" autocomplete="new-password" />
+            </div>
+          </div>
+          <div style="margin-top:18px;">
+            <button class="btn btn-primary" onclick="createAdmin()">
+              <i class="fas fa-user-plus"></i> Beheerder aanmaken
+            </button>
+          </div>
+        </div>
+
+        <!-- Beheerders lijst -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-list"></i> Alle beheerders</div>
+            <button class="btn btn-sm btn-primary" onclick="loadAdmins()"><i class="fas fa-sync"></i> Vernieuwen</button>
+          </div>
+          <div id="admins-list">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>
+          </div>
+        </div>
+      </div><!-- /panel-beheerders -->
+
     </div><!-- /admin-content -->
   </main>
 </div><!-- /admin-shell -->
 
 <script>
 // ══════════════════ STATE ════════════════════════════════
-let adminPass = '';
-let adminTotp = ''; // current TOTP code (only needed during session init)
+let adminPass     = '';
+let adminUsername = '';
+let adminTotp     = ''; // huidige TOTP-code (alleen nodig bij inloggen)
+let _isSuperAdmin = false;
 
-// Helper: admin request headers
+// Helper: admin request headers (altijd username meesturen)
 function adminHeaders(extra) {
-  const h = { 'x-admin-password': adminPass };
+  const h = { 'x-admin-password': adminPass, 'x-admin-username': adminUsername };
   if (adminTotp) h['x-admin-totp'] = adminTotp;
   return Object.assign(h, extra || {});
 }
 const panels = {
-  'overzicht': 'Overzicht',
+  'overzicht':    'Overzicht',
   'instellingen': 'Website instellingen',
-  'accounts': 'Portaal accounts',
-  'reviews': 'Reviews',
-  'galerij': 'Galerij beheren',
-  'webshop': 'Webshop producten',
-  'export': 'Exporteer data',
-  'wachtwoord': 'Wachtwoord wijzigen',
-  '2fa': 'Tweestapsverificatie',
-  'docenten': 'Docenten beheren',
+  'accounts':     'Portaal accounts',
+  'reviews':      'Reviews',
+  'galerij':      'Galerij beheren',
+  'webshop':      'Webshop producten',
+  'export':       'Exporteer data',
+  'wachtwoord':   'Wachtwoord wijzigen',
+  '2fa':          'Tweestapsverificatie',
+  'docenten':     'Docenten beheren',
+  'beheerders':   'Beheerders',
 };
 
 // ══════════════════ LOGIN (met 2FA support) ═══════════════
-let _loginPass = ''; // tijdelijk opslaan tussen stap 1 en 2
+let _loginPass = '';
+let _loginUser = '';
 
 function resetLoginSteps() {
   document.getElementById('login-step-pass').style.display = '';
   document.getElementById('login-step-totp').style.display = 'none';
   document.getElementById('login-error').style.display = 'none';
+  document.getElementById('admin-user-input').value = '';
   document.getElementById('admin-pass-input').value = '';
   document.getElementById('admin-totp-input').value = '';
-  _loginPass = '';
+  _loginPass = ''; _loginUser = '';
 }
 
 document.getElementById('admin-login-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const errEl = document.getElementById('login-error');
+  const errEl  = document.getElementById('login-error');
   const errMsg = document.getElementById('login-error-msg');
   errEl.style.display = 'none';
 
   const totpStepVisible = document.getElementById('login-step-totp').style.display !== 'none';
 
   if (!totpStepVisible) {
-    // ── STAP 1: wachtwoord controleren ──
+    // ── STAP 1: gebruikersnaam + wachtwoord ──
+    const user = document.getElementById('admin-user-input').value.trim();
     const pass = document.getElementById('admin-pass-input').value.trim();
-    const btn  = document.getElementById('login-btn-pass');
+    if (!user) { errMsg.textContent = 'Voer een gebruikersnaam in.'; errEl.style.display = 'flex'; return; }
+    const btn = document.getElementById('login-btn-pass');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
     try {
       const r = await fetch('/api/admin/login-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminPassword: pass })
+        body: JSON.stringify({ adminUsername: user, adminPassword: pass })
       });
       const data = await r.json();
       if (!r.ok || !data.ok) {
-        errMsg.textContent = 'Onjuist wachtwoord. Probeer opnieuw.';
+        errMsg.textContent = 'Onjuiste gebruikersnaam of wachtwoord.';
         errEl.style.display = 'flex';
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-arrow-right"></i> Volgende';
         return;
       }
       if (data.requires2fa) {
-        // Ga naar stap 2
-        _loginPass = pass;
+        _loginPass = pass; _loginUser = user;
         document.getElementById('login-step-pass').style.display = 'none';
         document.getElementById('login-step-totp').style.display = '';
         document.getElementById('admin-totp-input').focus();
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-arrow-right"></i> Volgende';
       } else {
-        // Geen 2FA — direct inloggen
-        await doLogin(pass, '');
+        await doLogin(user, pass, '');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-arrow-right"></i> Volgende';
       }
@@ -1006,7 +1066,7 @@ document.getElementById('admin-login-form').addEventListener('submit', async e =
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
     try {
-      await doLogin(_loginPass, totp);
+      await doLogin(_loginUser, _loginPass, totp);
     } catch {
       errMsg.textContent = 'Verbindingsfout. Probeer opnieuw.';
       errEl.style.display = 'flex';
@@ -1016,19 +1076,24 @@ document.getElementById('admin-login-form').addEventListener('submit', async e =
   }
 });
 
-async function doLogin(pass, totp) {
+async function doLogin(user, pass, totp) {
   const errEl  = document.getElementById('login-error');
   const errMsg = document.getElementById('login-error-msg');
-  const headers = { 'x-admin-password': pass };
+  const headers = { 'x-admin-username': user, 'x-admin-password': pass };
   if (totp) headers['x-admin-totp'] = totp;
   const res = await fetch('/api/admin/stats', { headers });
   if (res.ok) {
-    adminPass = pass;
-    adminTotp = totp;
+    adminUsername = user;
+    adminPass     = pass;
+    adminTotp     = totp;
+    // Topbar bijwerken
+    document.getElementById('topbar-username').textContent = user;
+    document.getElementById('topbar-avatar').textContent   = user.charAt(0).toUpperCase();
     document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-shell').style.display = 'block';
+    document.getElementById('admin-shell').style.display  = 'block';
     initAdmin();
     load2faStatus();
+    loadAdmins(); // checkt of beheerders-nav getoond moet worden
   } else {
     errMsg.textContent = 'Onjuiste code. Probeer opnieuw.';
     errEl.style.display = 'flex';
@@ -1036,10 +1101,10 @@ async function doLogin(pass, totp) {
 }
 
 function logout() {
-  adminPass = '';
-  document.getElementById('admin-shell').style.display = 'none';
+  adminPass = ''; adminUsername = ''; adminTotp = ''; _isSuperAdmin = false;
+  document.getElementById('admin-shell').style.display  = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('admin-pass-input').value = '';
+  resetLoginSteps();
 }
 
 // ══════════════════ INIT ═════════════════════════════════
@@ -1082,7 +1147,7 @@ let _tfaSecret = '';
 
 async function load2faStatus() {
   try {
-    const r = await fetch('/api/admin/2fa/status', { headers: { 'x-admin-password': adminPass } });
+    const r = await fetch('/api/admin/2fa/status', { headers: adminHeaders() });
     if (!r.ok) return;
     const d = await r.json();
     const icon    = document.getElementById('tfa-status-icon');
@@ -1113,7 +1178,7 @@ async function startTfaSetup() {
   try {
     const r = await fetch('/api/admin/2fa/setup', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+      headers: adminHeaders({'Content-Type':'application/json'}),
       body: JSON.stringify({ adminPassword: adminPass })
     });
     const d = await r.json();
@@ -1133,7 +1198,7 @@ async function confirmTfaSetup() {
   try {
     const r = await fetch('/api/admin/2fa/enable', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },
+      headers: adminHeaders({'Content-Type':'application/json'}),
       body: JSON.stringify({ adminPassword: adminPass, secret: _tfaSecret, token })
     });
     const d = await r.json();
@@ -1163,7 +1228,7 @@ async function disableTfa() {
   try {
     const r = await fetch('/api/admin/2fa/disable', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-password': pass, 'x-admin-totp': token },
+      headers: { 'Content-Type': 'application/json', 'x-admin-username': adminUsername, 'x-admin-password': pass, 'x-admin-totp': token },
       body: JSON.stringify({ adminPassword: pass, adminTotp: token })
     });
     const d = await r.json();
@@ -1191,7 +1256,7 @@ function showTfaError(msg) {
 // ══════════════════ STATS ════════════════════════════════
 async function loadStats() {
   try {
-    const res = await fetch('/api/admin/stats', { headers: { 'x-admin-password': adminPass } });
+    const res = await fetch('/api/admin/stats', { headers: adminHeaders() });
     const d = await res.json();
     document.getElementById('stat-total').textContent = d.totalRegistrations;
     document.getElementById('stat-new').textContent = d.newRegistrations + ' nieuw';
@@ -1232,7 +1297,7 @@ async function loadStats() {
 // ══════════════════ SETTINGS ═════════════════════════════
 async function loadSettings() {
   try {
-    const res = await fetch('/api/admin/settings', { headers: { 'x-admin-password': adminPass } });
+    const res = await fetch('/api/admin/settings', { headers: adminHeaders() });
     const d = await res.json();
     const fields = ['siteName','slogan','email','telefoon','whatsapp','adres','openingstijden','instagram','facebook','tiktok'];
     fields.forEach(f => {
@@ -1255,7 +1320,7 @@ async function saveSettings(e) {
   });
 
   try {
-    const res = await fetch('/api/admin/settings', { method:'PUT', headers:{'Content-Type':'application/json','x-admin-password':adminPass}, body: JSON.stringify(body) });
+    const res = await fetch('/api/admin/settings', { method:'PUT', headers:adminHeaders({'Content-Type':'application/json'}), body: JSON.stringify(body) });
     if (res.ok) { succEl.classList.add('show'); setTimeout(()=>succEl.classList.remove('show'),3500); }
     else { document.getElementById('settings-error-msg').textContent = 'Opslaan mislukt.'; errEl.classList.add('show'); }
   } catch { document.getElementById('settings-error-msg').textContent = 'Netwerkfout.'; errEl.classList.add('show'); }
@@ -1264,7 +1329,7 @@ async function saveSettings(e) {
 // ══════════════════ ACCOUNTS ═════════════════════════════
 async function loadAccounts() {
   try {
-    const res = await fetch('/api/admin/accounts', { headers: { 'x-admin-password': adminPass } });
+    const res = await fetch('/api/admin/accounts', { headers: adminHeaders() });
     const accounts = await res.json();
     const list = document.getElementById('accounts-list');
     if (!accounts.length) {
@@ -1313,7 +1378,7 @@ async function createAccount(e) {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aanmaken...';
 
   try {
-    const res = await fetch('/api/admin/accounts', { method:'POST', headers:{'Content-Type':'application/json','x-admin-password':adminPass}, body: JSON.stringify(body) });
+    const res = await fetch('/api/admin/accounts', { method:'POST', headers:adminHeaders({'Content-Type':'application/json'}), body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) {
       msgEl.textContent = `Account voor ${data.kindNaam} aangemaakt!`;
@@ -1333,7 +1398,7 @@ async function createAccount(e) {
 async function deleteAccount(id, name) {
   if (!confirm(`Account van "${name}" definitief verwijderen?`)) return;
   try {
-    await fetch('/api/admin/accounts/' + id, { method:'DELETE', headers:{'Content-Type':'application/json','x-admin-password':adminPass} });
+    await fetch('/api/admin/accounts/' + id, { method:'DELETE', headers:adminHeaders({'Content-Type':'application/json'}) });
     loadAccounts();
   } catch(err) { console.error(err); }
 }
@@ -1433,7 +1498,7 @@ async function uploadGalleryImage(e) {
   try {
     const res = await fetch('/api/gallery', {
       method: 'POST',
-      headers: { 'x-admin-password': adminPass },
+      headers: adminHeaders(),
       body: fd
     });
     const data = await res.json();
@@ -1479,7 +1544,7 @@ async function loadGalleryAdmin() {
 async function deleteGalleryItem(id) {
   if (!confirm('Deze foto definitief verwijderen van de galerij?')) return;
   try {
-    await fetch('/api/gallery/' + id, { method:'DELETE', headers:{'Content-Type':'application/json','x-admin-password':adminPass} });
+    await fetch('/api/gallery/' + id, { method:'DELETE', headers:adminHeaders({'Content-Type':'application/json'}) });
     document.getElementById('gitem-' + id)?.remove();
   } catch(err) { console.error(err); }
 }
@@ -1491,7 +1556,7 @@ async function exportCSV(type) {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass }
+      headers: adminHeaders({'Content-Type':'application/json'})
     });
     if (!res.ok) { alert('Export mislukt. Controleer je wachtwoord.'); return; }
     const blob = await res.blob();
@@ -1524,7 +1589,8 @@ async function changePassword(e) {
 
   try {
     const res = await fetch('/api/admin/change-password', {
-      method: 'POST', headers: {'Content-Type':'application/json','x-admin-password':current},
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-admin-username': adminUsername, 'x-admin-password': current },
       body: JSON.stringify({ newPassword: newPass })
     });
     const data = await res.json();
@@ -1562,7 +1628,7 @@ let editingProductId = null;
 
 async function loadProductsAdmin() {
   try {
-    const res = await fetch('/api/products?all=1', { headers: { 'x-admin-password': adminPass } });
+    const res = await fetch('/api/products?all=1', { headers: adminHeaders() });
     const products = await res.json();
     const list = document.getElementById('products-admin-list');
 
@@ -1647,7 +1713,7 @@ async function saveProduct(e) {
   try {
     const url = editingProductId ? `/api/products/${editingProductId}` : '/api/products';
     const method = editingProductId ? 'PUT' : 'POST';
-    const res = await fetch(url, { method, headers:{'Content-Type':'application/json','x-admin-password':adminPass}, body: JSON.stringify(body) });
+    const res = await fetch(url, { method, headers:adminHeaders({'Content-Type':'application/json'}), body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) {
       msgEl.textContent = editingProductId ? `"${data.naam}" bijgewerkt!` : `"${data.naam}" toegevoegd!`;
@@ -1697,7 +1763,7 @@ function cancelEdit() {
 async function toggleProduct(id, actief) {
   try {
     await fetch(`/api/products/${id}`, {
-      method:'PUT', headers:{'Content-Type':'application/json','x-admin-password':adminPass},
+      method:'PUT', headers:adminHeaders({'Content-Type':'application/json'}),
       body: JSON.stringify({ actief })
     });
   } catch(err) { console.error(err); }
@@ -1707,7 +1773,7 @@ async function deleteProduct(id, naam) {
   if (!confirm(`Product "${naam}" definitief verwijderen?`)) return;
   try {
     await fetch(`/api/products/${id}`, {
-      method:'DELETE', headers:{'Content-Type':'application/json','x-admin-password':adminPass}
+      method:'DELETE', headers:adminHeaders({'Content-Type':'application/json'})
     });
     loadProductsAdmin();
   } catch(err) { console.error(err); }
@@ -1744,7 +1810,7 @@ async function loadTeachers() {
   if (!list) return;
   list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
   try {
-    const res = await fetch('/api/admin/teachers', { headers: { 'x-admin-password': adminPass } });
+    const res = await fetch('/api/admin/teachers', { headers: adminHeaders() });
     if (!res.ok) throw new Error();
     const data = await res.json();
     const teachers = Array.isArray(data) ? data : (data.teachers || []);
@@ -1881,7 +1947,7 @@ async function deleteTeacher(id, name) {
   if (!confirm(`Docent "${name}" verwijderen?`)) return;
   const res = await fetch(`/api/admin/teachers/${id}`, {
     method: 'DELETE',
-    headers: { 'x-admin-password': adminPass }
+    headers: adminHeaders()
   });
   if (res.ok) {
     _teachersCache = _teachersCache.filter(t => t.id !== id);
@@ -1898,6 +1964,131 @@ function showDtMsg(msg, type) {
   el.style.background = type === 'success' ? 'rgba(6,214,160,.12)' : 'rgba(192,57,43,.1)';
   el.style.color = type === 'success' ? '#059669' : '#c0392b';
   if (type === 'success') setTimeout(() => el.style.display = 'none', 3500);
+}
+
+// ══════════════════ BEHEERDERS ═══════════════════════════
+async function loadAdmins() {
+  try {
+    const res = await fetch('/api/admin/admins', { headers: adminHeaders() });
+    if (!res.ok) return;
+    const admins = await res.json();
+    // Toon nav-knop alleen voor superadmins
+    const isSuperAdmin = admins.find(a => a.username === adminUsername && a.isSuperAdmin);
+    _isSuperAdmin = !!isSuperAdmin;
+    document.getElementById('nav-beheerders').style.display = _isSuperAdmin ? '' : 'none';
+
+    const list = document.getElementById('admins-list');
+    if (!list) return;
+    if (!admins.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-user-shield"></i><p>Geen beheerders gevonden</p></div>';
+      return;
+    }
+    list.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Gebruikersnaam</th><th>Weergavenaam</th><th>Rol</th><th>2FA</th><th>Aangemaakt</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${admins.map(a => `<tr id="adm-row-${a.id}">
+              <td><strong>${esc(a.username)}</strong> ${a.username === adminUsername ? '<span class="badge badge-new">jij</span>' : ''}</td>
+              <td>${esc(a.displayName || a.username)}</td>
+              <td>${a.isSuperAdmin
+                ? '<span class="badge badge-orange"><i class="fas fa-crown"></i> Hoofdbeheerder</span>'
+                : '<span class="badge badge-gray">Beheerder</span>'
+              }</td>
+              <td>${a.twoFactorEnabled
+                ? '<span class="badge badge-green"><i class="fas fa-lock"></i> Aan</span>'
+                : '<span class="badge badge-red"><i class="fas fa-lock-open"></i> Uit</span>'
+              }</td>
+              <td style="font-size:.78rem;color:var(--text-muted)">${fmtDate(a.createdAt)}</td>
+              <td>
+                <div style="display:flex;gap:6px;">
+                  ${_isSuperAdmin && a.twoFactorEnabled ? `
+                    <button class="btn btn-sm" style="border:2px solid var(--border);background:none;color:var(--text-muted);padding:6px 12px;font-size:.8rem;font-weight:800;"
+                      title="2FA resetten" onclick="resetAdminTfa('${a.id}','${esc(a.username)}')">
+                      <i class="fas fa-redo"></i> Reset 2FA
+                    </button>` : ''}
+                  ${_isSuperAdmin && !a.isSuperAdmin ? `
+                    <button class="btn btn-icon btn-danger" title="Verwijderen" onclick="deleteAdmin('${a.id}','${esc(a.username)}')">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>` : ''}
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(err) { console.error(err); }
+}
+
+async function createAdmin() {
+  const username    = document.getElementById('adm-username').value.trim();
+  const displayName = document.getElementById('adm-displayname').value.trim();
+  const password    = document.getElementById('adm-password').value;
+  const succEl = document.getElementById('adm-success');
+  const errEl  = document.getElementById('adm-error');
+  succEl.style.display = 'none'; errEl.style.display = 'none';
+
+  if (!username) { document.getElementById('adm-error-msg').textContent = 'Voer een gebruikersnaam in.'; errEl.style.display = 'flex'; return; }
+  if (!password) { document.getElementById('adm-error-msg').textContent = 'Voer een wachtwoord in.'; errEl.style.display = 'flex'; return; }
+
+  try {
+    const res = await fetch('/api/admin/admins', {
+      method: 'POST',
+      headers: adminHeaders({'Content-Type':'application/json'}),
+      body: JSON.stringify({ username, displayName, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('adm-success-msg').textContent = `Beheerder "${data.username}" aangemaakt!`;
+      succEl.style.display = 'flex';
+      setTimeout(() => succEl.style.display = 'none', 3500);
+      document.getElementById('adm-username').value    = '';
+      document.getElementById('adm-displayname').value = '';
+      document.getElementById('adm-password').value    = '';
+      loadAdmins();
+    } else {
+      document.getElementById('adm-error-msg').textContent = data.error || 'Aanmaken mislukt.';
+      errEl.style.display = 'flex';
+    }
+  } catch { document.getElementById('adm-error-msg').textContent = 'Netwerkfout.'; errEl.style.display = 'flex'; }
+}
+
+async function resetAdminTfa(id, username) {
+  if (!confirm(`2FA resetten voor "${username}"? Ze moeten 2FA daarna opnieuw instellen.`)) return;
+  try {
+    const res = await fetch(`/api/admin/admins/${id}/reset-2fa`, {
+      method: 'POST',
+      headers: adminHeaders({'Content-Type':'application/json'})
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('adm-success-msg').textContent = `2FA van "${username}" gereset.`;
+      document.getElementById('adm-success').style.display = 'flex';
+      setTimeout(() => document.getElementById('adm-success').style.display = 'none', 3500);
+      loadAdmins();
+    } else {
+      document.getElementById('adm-error-msg').textContent = data.error || 'Reset mislukt.';
+      document.getElementById('adm-error').style.display = 'flex';
+    }
+  } catch { document.getElementById('adm-error-msg').textContent = 'Netwerkfout.'; document.getElementById('adm-error').style.display = 'flex'; }
+}
+
+async function deleteAdmin(id, username) {
+  if (!confirm(`Beheerder "${username}" definitief verwijderen?`)) return;
+  try {
+    const res = await fetch(`/api/admin/admins/${id}`, {
+      method: 'DELETE',
+      headers: adminHeaders({'Content-Type':'application/json'})
+    });
+    if (res.ok) {
+      loadAdmins();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Verwijderen mislukt.');
+    }
+  } catch { alert('Netwerkfout.'); }
 }
 </script>
 </body>

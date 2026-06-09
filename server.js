@@ -27,6 +27,7 @@ const GALLERY_FILE       = path.join(DATA_DIR, 'gallery.json');
 const PRODUCTS_FILE      = path.join(DATA_DIR, 'products.json');
 const AGENDA_FILE        = path.join(DATA_DIR, 'agenda.json');
 const TEACHERS_FILE      = path.join(DATA_DIR, 'teachers.json');
+const ADMINS_FILE        = path.join(DATA_DIR, 'admins.json');
 
 const ALL_PERMISSIONS = ['vragen', 'agenda', 'materiaal', 'inschrijvingen', 'galerij'];
 
@@ -54,6 +55,7 @@ if (!fs.existsSync(PRODUCTS_FILE))      fs.writeFileSync(PRODUCTS_FILE,      JSO
 }());
 if (!fs.existsSync(AGENDA_FILE))        fs.writeFileSync(AGENDA_FILE,        JSON.stringify({ items: [] }, null, 2));
 if (!fs.existsSync(TEACHERS_FILE))     fs.writeFileSync(TEACHERS_FILE,     JSON.stringify({ teachers: [] }, null, 2));
+if (!fs.existsSync(ADMINS_FILE))       fs.writeFileSync(ADMINS_FILE,       JSON.stringify({ admins: [] }, null, 2));
 if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
   siteName: 'LeerKracht', slogan: 'Nos Orguyo, Nos Futuro',
   email: 'info@leerkracht.nl', telefoon: '06 — XX XX XX XX', whatsapp: '',
@@ -130,13 +132,43 @@ function sanitize(val, maxLen = 1000) {
   return String(val).replace(/\0/g, '').trim().slice(0, maxLen);
 }
 
-// Beheerder wachtwoord ophalen
-function getAdminPass() {
-  try {
-    const d = readJSON(ADMIN_FILE);
-    return d.password || process.env.ADMIN_PASSWORD || TEACHER_PASS;
-  } catch { return process.env.ADMIN_PASSWORD || TEACHER_PASS; }
+// ─── MULTI-ADMIN AUTH ─────────────────────────────────────
+// Zoek admin op basis van username + wachtwoord uit request headers/body.
+// Geeft admin-object terug of null.
+function getAdminFromRequest(req) {
+  const username = sanitize(req.body?.adminUsername || req.headers['x-admin-username'], 100);
+  const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword, 200);
+  if (!provided) return null;
+  const d = readJSON(ADMINS_FILE);
+  const admins = d.admins || [];
+  let admin;
+  if (username) {
+    admin = admins.find(a => a.username === username);
+  } else if (admins.length === 1) {
+    admin = admins[0]; // backward compat: één admin, geen username nodig
+  } else {
+    return null;
+  }
+  if (!admin) return null;
+  if (!verifyPassword(provided, admin.password) && !safeCompare(provided, admin.password)) return null;
+  return admin;
 }
+
+// Volledig geauthenticeerd (wachtwoord + 2FA indien actief)
+function getAuthenticatedAdmin(req) {
+  const admin = getAdminFromRequest(req);
+  if (!admin) return null;
+  if (admin.twoFactorEnabled && admin.twoFactorSecret) {
+    const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
+    if (!token) return null;
+    const ok = speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token, window: 1 });
+    if (!ok) return null;
+  }
+  return admin;
+}
+
+function adminAuth(req)             { return !!getAuthenticatedAdmin(req); }
+function adminAuthPasswordOnly(req) { return !!getAdminFromRequest(req); }
 
 // Auth helpers
 function teacherAuth(password) { return safeCompare(password, TEACHER_PASS); }
@@ -163,33 +195,6 @@ function getTeacher(req) {
 function hasPermission(teacher, perm) {
   if (!teacher) return false;
   return Array.isArray(teacher.permissions) && teacher.permissions.includes(perm);
-}
-function adminAuth(req) {
-  const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword, 200);
-  if (!provided) return false;
-  const stored = getAdminPass();
-  const passOk = verifyPassword(provided, stored) || safeCompare(provided, stored);
-  if (!passOk) return false;
-  // Check 2FA if enabled
-  const adminData = readJSON(ADMIN_FILE);
-  if (adminData.twoFactorEnabled && adminData.twoFactorSecret) {
-    const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
-    if (!token) return false;
-    return speakeasy.totp.verify({
-      secret: adminData.twoFactorSecret,
-      encoding: 'base32',
-      token,
-      window: 1, // allow 30s drift
-    });
-  }
-  return true;
-}
-// Alleen wachtwoord check (voor 2FA setup zelf)
-function adminAuthPasswordOnly(req) {
-  const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'], 200);
-  if (!provided) return false;
-  const stored = getAdminPass();
-  return verifyPassword(provided, stored) || safeCompare(provided, stored);
 }
 
 // ─── MULTER FILE UPLOAD ───────────────────────────────────
@@ -519,10 +524,11 @@ app.get('/api/settings', (req, res) => res.json(readJSON(SETTINGS_FILE)));
 function requireAdmin(req, res) {
   const ip = getClientIp(req);
   if (!checkRateLimit(`admin:${ip}`, 20, 60000)) {
-    res.status(429).json({ error: 'Te veel verzoeken.' }); return false;
+    res.status(429).json({ error: 'Te veel verzoeken.' }); return null;
   }
-  if (!adminAuth(req)) { res.status(401).json({ error: 'Ongeldig wachtwoord' }); return false; }
-  return true;
+  const admin = getAuthenticatedAdmin(req);
+  if (!admin) { res.status(401).json({ error: 'Ongeldig wachtwoord of code' }); return null; }
+  return admin; // truthy — bestaande `if (!requireAdmin(...)) return;` werkt nog steeds
 }
 
 app.get('/api/admin/stats', (req, res) => {
@@ -591,12 +597,15 @@ app.delete('/api/admin/accounts/:id', (req, res) => {
 });
 
 app.post('/api/admin/change-password', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
   const newPassword = sanitize(req.body.newPassword, 200);
   if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Minimaal 6 tekens vereist' });
-  const admin = fs.existsSync(ADMIN_FILE) ? readJSON(ADMIN_FILE) : {};
-  admin.password = hashPassword(newPassword);
-  writeJSON(ADMIN_FILE, admin);
+  const d = readJSON(ADMINS_FILE);
+  const target = (d.admins || []).find(a => a.id === admin.id);
+  if (!target) return res.status(404).json({ error: 'Beheerder niet gevonden' });
+  target.password = hashPassword(newPassword);
+  writeJSON(ADMINS_FILE, d);
   res.json({ success: true });
 });
 
@@ -878,19 +887,20 @@ app.delete('/api/admin/teachers/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// ─── 2FA ──────────────────────────────────────────────────
+// ─── 2FA (per beheerder) ──────────────────────────────────
 
-// Controleer 2FA status (alleen wachtwoord nodig — nog geen 2FA check)
+// Status van 2FA voor huidige beheerder
 app.get('/api/admin/2fa/status', (req, res) => {
-  if (!adminAuthPasswordOnly(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
-  const d = readJSON(ADMIN_FILE);
-  res.json({ enabled: !!(d.twoFactorEnabled && d.twoFactorSecret) });
+  const admin = getAdminFromRequest(req);
+  if (!admin) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  res.json({ enabled: !!(admin.twoFactorEnabled && admin.twoFactorSecret) });
 });
 
-// Genereer nieuw TOTP-secret + QR code (alleen wachtwoord nodig)
+// Genereer nieuw TOTP-secret + QR code voor huidige beheerder
 app.post('/api/admin/2fa/setup', async (req, res) => {
-  if (!adminAuthPasswordOnly(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
-  const secret = speakeasy.generateSecret({ name: 'NONF Beheer', length: 20 });
+  const admin = getAdminFromRequest(req);
+  if (!admin) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const secret = speakeasy.generateSecret({ name: `NONF Beheer (${admin.username})`, length: 20 });
   try {
     const qrDataUrl = await QRCode.toDataURL(secret.otpauth_url);
     res.json({ secret: secret.base32, qr: qrDataUrl });
@@ -899,39 +909,108 @@ app.post('/api/admin/2fa/setup', async (req, res) => {
   }
 });
 
-// Activeer 2FA (controleer code + sla secret op)
+// Activeer 2FA voor huidige beheerder
 app.post('/api/admin/2fa/enable', (req, res) => {
-  if (!adminAuthPasswordOnly(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
+  const admin = getAdminFromRequest(req);
+  if (!admin) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
   const { secret, token } = req.body;
   if (!secret || !token) return res.status(400).json({ error: 'Secret en token verplicht' });
   const ok = speakeasy.totp.verify({ secret, encoding: 'base32', token: String(token), window: 1 });
   if (!ok) return res.status(400).json({ error: 'Ongeldige code. Probeer opnieuw.' });
-  const d = readJSON(ADMIN_FILE);
-  d.twoFactorSecret  = secret;
-  d.twoFactorEnabled = true;
-  writeJSON(ADMIN_FILE, d);
+  const d = readJSON(ADMINS_FILE);
+  const target = (d.admins || []).find(a => a.id === admin.id);
+  if (!target) return res.status(404).json({ error: 'Beheerder niet gevonden' });
+  target.twoFactorSecret  = secret;
+  target.twoFactorEnabled = true;
+  writeJSON(ADMINS_FILE, d);
   res.json({ ok: true });
 });
 
-// Schakel 2FA uit (vereist wachtwoord + actieve TOTP code)
+// Schakel 2FA uit voor huidige beheerder (vereist wachtwoord + geldige TOTP)
 app.post('/api/admin/2fa/disable', (req, res) => {
-  if (!adminAuth(req)) return res.status(401).json({ error: 'Ongeldig wachtwoord of code' });
-  const d = readJSON(ADMIN_FILE);
-  d.twoFactorEnabled = false;
-  d.twoFactorSecret  = null;
-  writeJSON(ADMIN_FILE, d);
+  const admin = getAuthenticatedAdmin(req);
+  if (!admin) return res.status(401).json({ error: 'Ongeldig wachtwoord of code' });
+  const d = readJSON(ADMINS_FILE);
+  const target = (d.admins || []).find(a => a.id === admin.id);
+  if (!target) return res.status(404).json({ error: 'Beheerder niet gevonden' });
+  target.twoFactorEnabled = false;
+  target.twoFactorSecret  = null;
+  writeJSON(ADMINS_FILE, d);
   res.json({ ok: true });
 });
 
-// Login check — geeft terug of 2FA vereist is voor dit wachtwoord
+// Login check — geeft terug of 2FA vereist is (stap 1 van login)
 app.post('/api/admin/login-check', (req, res) => {
-  const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'], 200);
-  if (!provided) return res.status(401).json({ ok: false });
-  const stored = getAdminPass();
-  const passOk = verifyPassword(provided, stored) || safeCompare(provided, stored);
-  if (!passOk) return res.status(401).json({ ok: false });
-  const d = readJSON(ADMIN_FILE);
-  res.json({ ok: true, requires2fa: !!(d.twoFactorEnabled && d.twoFactorSecret) });
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`logincheck:${ip}`, 15, 60000)) return res.status(429).json({ ok: false, error: 'Te veel pogingen.' });
+  const admin = getAdminFromRequest(req);
+  if (!admin) {
+    crypto.pbkdf2Sync('dummy', 'dummy', 1000, 32, 'sha256'); // timing-safe
+    return res.status(401).json({ ok: false });
+  }
+  res.json({ ok: true, requires2fa: !!(admin.twoFactorEnabled && admin.twoFactorSecret) });
+});
+
+// ─── BEHEERDERS BEHEER ────────────────────────────────────
+
+// Lijst alle beheerders (elke beheerder mag dit zien)
+app.get('/api/admin/admins', (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const d = readJSON(ADMINS_FILE);
+  const safe = (d.admins || []).map(({ password: _, twoFactorSecret: __, ...a }) => a);
+  res.json(safe);
+});
+
+// Nieuwe beheerder aanmaken (alleen hoofdbeheerder)
+app.post('/api/admin/admins', (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  if (!admin.isSuperAdmin) return res.status(403).json({ error: 'Alleen de hoofdbeheerder kan nieuwe beheerders aanmaken' });
+  const username    = sanitize(req.body.username, 100);
+  const password    = sanitize(req.body.password, 200);
+  const displayName = sanitize(req.body.displayName, 100);
+  if (!username || !password) return res.status(400).json({ error: 'Gebruikersnaam en wachtwoord zijn verplicht' });
+  if (password.length < 6) return res.status(400).json({ error: 'Wachtwoord te kort (min. 6 tekens)' });
+  if (!/^[a-zA-Z0-9_\-.]+$/.test(username)) return res.status(400).json({ error: 'Gebruikersnaam mag alleen letters, cijfers, -, _ en . bevatten' });
+  const d = readJSON(ADMINS_FILE);
+  if (!d.admins) d.admins = [];
+  if (d.admins.find(a => a.username === username)) return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
+  const newAdmin = { id: generateId(), username, displayName: displayName || username, password: hashPassword(password), isSuperAdmin: false, twoFactorSecret: null, twoFactorEnabled: false, createdAt: new Date().toISOString() };
+  d.admins.push(newAdmin);
+  writeJSON(ADMINS_FILE, d);
+  const { password: _, twoFactorSecret: __, ...safe } = newAdmin;
+  res.status(201).json(safe);
+});
+
+// Beheerder verwijderen (alleen hoofdbeheerder, kan zichzelf of hoofdbeheerder niet verwijderen)
+app.delete('/api/admin/admins/:id', (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  if (!admin.isSuperAdmin) return res.status(403).json({ error: 'Alleen de hoofdbeheerder kan beheerders verwijderen' });
+  const d = readJSON(ADMINS_FILE);
+  const target = (d.admins || []).find(a => a.id === req.params.id);
+  if (!target) return res.status(404).json({ error: 'Niet gevonden' });
+  if (target.id === admin.id) return res.status(400).json({ error: 'Je kunt je eigen account niet verwijderen' });
+  if (target.isSuperAdmin) return res.status(400).json({ error: 'Hoofdbeheerder kan niet worden verwijderd' });
+  d.admins = d.admins.filter(a => a.id !== req.params.id);
+  writeJSON(ADMINS_FILE, d);
+  res.json({ success: true });
+});
+
+// Reset 2FA van een andere beheerder (alleen hoofdbeheerder)
+app.post('/api/admin/admins/:id/reset-2fa', (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  if (!admin.isSuperAdmin && admin.id !== req.params.id)
+    return res.status(403).json({ error: 'Alleen de hoofdbeheerder kan 2FA van anderen resetten' });
+  const d = readJSON(ADMINS_FILE);
+  const target = (d.admins || []).find(a => a.id === req.params.id);
+  if (!target) return res.status(404).json({ error: 'Niet gevonden' });
+  target.twoFactorEnabled = false;
+  target.twoFactorSecret  = null;
+  writeJSON(ADMINS_FILE, d);
+  res.json({ ok: true });
 });
 
 // ─── CATCH-ALL / 404 ──────────────────────────────────────
@@ -940,6 +1019,36 @@ app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
+// ─── MIGRATIE: enkel admin → multi-admin ──────────────────
+// Eenmalig: lees het wachtwoord uit admin.json (of env) en maak een
+// eerste superadmin in admins.json als die nog leeg is.
+function migrateToMultiAdmin() {
+  try {
+    const d = readJSON(ADMINS_FILE);
+    if (d.admins && d.admins.length > 0) return; // al gemigreerd
+    const old = fs.existsSync(ADMIN_FILE) ? readJSON(ADMIN_FILE) : {};
+    // Gebruik bestaand gehasht wachtwoord, of hash het env/default wachtwoord
+    let pass = old.password;
+    if (!pass) {
+      const raw = process.env.ADMIN_PASSWORD || TEACHER_PASS;
+      pass = hashPassword(raw);
+    }
+    const first = {
+      id: generateId(),
+      username: 'beheerder',
+      displayName: 'Hoofdbeheerder',
+      password: pass,
+      isSuperAdmin: true,
+      twoFactorSecret:  old.twoFactorSecret  || null,
+      twoFactorEnabled: !!(old.twoFactorEnabled && old.twoFactorSecret),
+      createdAt: new Date().toISOString(),
+    };
+    writeJSON(ADMINS_FILE, { admins: [first] });
+    console.log('✅ Admin migratie voltooid — gebruikersnaam: beheerder');
+  } catch (e) { console.error('Admin migratie fout:', e); }
+}
+
 // ─── START ────────────────────────────────────────────────
 migratePasswords();
+migrateToMultiAdmin();
 app.listen(PORT, () => console.log(`LeerKracht draait op poort ${PORT}`));
