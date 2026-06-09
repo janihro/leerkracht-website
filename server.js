@@ -57,9 +57,9 @@ if (!fs.existsSync(AGENDA_FILE))        fs.writeFileSync(AGENDA_FILE,        JSO
 if (!fs.existsSync(TEACHERS_FILE))     fs.writeFileSync(TEACHERS_FILE,     JSON.stringify({ teachers: [] }, null, 2));
 if (!fs.existsSync(ADMINS_FILE))       fs.writeFileSync(ADMINS_FILE,       JSON.stringify({ admins: [] }, null, 2));
 if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
-  siteName: 'LeerKracht', slogan: 'Nos Orguyo, Nos Futuro',
-  email: 'info@leerkracht.nl', telefoon: '06 — XX XX XX XX', whatsapp: '',
-  adres: '[Straatnaam], [Stad]', openingstijden: 'Ma–vr: 9:00–19:00 · Za: 10:00–14:00',
+  siteName: 'NONF', slogan: 'Nos Orguyo, Nos Futuro',
+  email: 'info@nosorguyonosfuturo.nl', telefoon: '0681 52 99 64', whatsapp: '31681529964',
+  adres: 'Almere Poort & Amsterdam Zuidoost', openingstijden: 'Ma–vr: 9:00–19:00 · Za: 10:00–14:00',
   instagram: '#', facebook: '#', tiktok: '#',
 }, null, 2));
 

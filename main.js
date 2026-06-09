@@ -79,9 +79,11 @@
       });
     }
     if (s.whatsapp) {
+      let wa = s.whatsapp.replace(/[^0-9]/g, '');
+      if (wa.startsWith('0')) wa = '31' + wa.slice(1); // 0681... → 31681...
       document.querySelectorAll('.socials .fa-whatsapp, .socials-row .fa-whatsapp').forEach(i => {
         const a = i.closest('a');
-        if (a) a.href = `https://wa.me/${s.whatsapp.replace(/[^0-9]/g,'')}`;
+        if (a) { a.href = `https://wa.me/${wa}`; a.target = '_blank'; a.rel = 'noopener'; }
       });
     }
 
