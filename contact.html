@@ -88,7 +88,7 @@
 <!-- CONTACT SECTIE -->
 <section style="padding:80px 20px;background:#f8f9ff;">
   <div class="container">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;">
+    <div class="contact-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;">
 
       <!-- Contactinfo -->
       <div data-animate>
@@ -159,7 +159,12 @@
       </div>
 
     </div>
-    <style>@media(max-width:768px){.contact-grid{grid-template-columns:1fr!important;}}</style>
+    <style>
+      @media(max-width:768px){
+        .contact-grid { grid-template-columns:1fr!important; gap:32px!important; }
+        .contact-grid > div:last-child > div { padding:28px 20px!important; }
+      }
+    </style>
   </div>
 </section>
 
@@ -171,7 +176,7 @@
       <h2 style="font-family:'Playfair Display',serif;font-size:clamp(1.7rem,4vw,2.4rem);">Onze locaties</h2>
       <p style="color:#666;max-width:500px;margin:12px auto 0;line-height:1.7;">Nieuwe lesreeksen starten na de zomer. Schrijf je alvast in!</p>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+    <div class="loc-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
       <div style="background:#f8f9ff;border-radius:24px;padding:36px;border:2px solid rgba(26,78,138,.1);" data-animate data-delay="100">
         <div style="width:48px;height:48px;border-radius:14px;background:#1A4E8A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:20px;"><i class="fas fa-map-marker-alt"></i></div>
         <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:8px;color:#1A4E8A;">Almere Poort</h3>
@@ -185,7 +190,7 @@
         <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(244,169,40,.15);color:#b57b00;padding:6px 14px;border-radius:99px;font-size:.78rem;font-weight:800;"><i class="fas fa-clock"></i> Na de zomer — wordt vervolgd</span>
       </div>
     </div>
-    <style>@media(max-width:640px){.loc-grid{grid-template-columns:1fr!important;}}</style>
+    <style>@media(max-width:640px){.loc-grid{grid-template-columns:1fr!important;gap:16px!important;}}</style>
   </div>
 </section>
 

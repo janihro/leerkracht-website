@@ -88,7 +88,7 @@
 <!-- ANGELINE'S VERHAAL -->
 <section style="padding:80px 20px;background:#fff;">
   <div class="container">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;" data-animate>
+    <div id="over-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;" data-animate>
       <div>
         <div style="width:100%;aspect-ratio:1;max-width:420px;border-radius:32px;overflow:hidden;box-shadow:0 20px 60px rgba(26,78,138,.2);position:relative;">
           <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=800&fit=crop&q=80" alt="Angeline Blijden — NONF" style="width:100%;height:100%;object-fit:cover;" loading="lazy" />
@@ -111,8 +111,9 @@
     </div>
     <style>
       @media (max-width: 768px) {
-        #over-grid { grid-template-columns: 1fr !important; }
+        #over-grid { grid-template-columns: 1fr !important; gap: 36px !important; }
         #over-grid > div:first-child { display: flex; justify-content: center; }
+        #over-grid > div:first-child > div { max-width: 280px !important; }
       }
     </style>
   </div>
@@ -125,7 +126,7 @@
       <div style="display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 16px;border-radius:99px;background:rgba(26,78,138,.1);color:#1A4E8A;margin-bottom:14px;">Onze richting</div>
       <h2 style="font-family:'Playfair Display',serif;font-size:clamp(1.7rem,4vw,2.4rem);">Missie &amp; Visie</h2>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+    <div class="mv-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
       <div style="background:#fff;border-radius:24px;padding:40px;box-shadow:0 8px 40px rgba(0,0,0,.06);" data-animate data-delay="100">
         <div style="display:inline-block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:4px 12px;border-radius:99px;background:rgba(27,182,173,.15);color:#1BB6AD;margin-bottom:16px;">Missie</div>
         <h3 style="font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:14px;color:#1A4E8A;">Waar wij voor staan</h3>

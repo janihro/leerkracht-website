@@ -1468,7 +1468,7 @@ textarea { resize: vertical; min-height: 120px; }
   .dashboard-layout { grid-template-columns: 1fr; }
   .les-grid { grid-template-columns: 1fr; }
   .aanbod-item { grid-template-columns: 1fr; }
-  .aanbod-price-block { text-align: left; }
+  .aanbod-price-block { text-align: left; min-width: unset; }
 }
 
 @media (max-width: 640px) {
@@ -1567,4 +1567,19 @@ textarea { resize: vertical; min-height: 120px; }
   /* AANBOD PAGINA */
   .aanbod-item { padding: 22px 18px; gap: 16px; }
   .aanbod-item-icon { width: 52px; height: 52px; font-size: 1.2rem; }
+}
+
+/* ===========================
+   EXTRA SMALL SCREENS (≤ 380px)
+=========================== */
+@media (max-width: 380px) {
+  /* Webshop: één kolom op heel kleine schermen */
+  .shop-grid { grid-template-columns: 1fr; }
+
+  /* Logo tekst verbergen zodat hamburger ruimte heeft */
+  .logo span { font-size: 0.82rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Stat blokken netjes op 320px */
+  .stats-inner { grid-template-columns: 1fr 1fr; }
+  .stat-block .num { font-size: 1.7rem; }
 }
