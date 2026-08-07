@@ -267,15 +267,17 @@
       }
       .table-wrap tr:last-child { margin-bottom: 0; }
       .table-wrap td {
-        display: flex; align-items: center; justify-content: space-between; gap: 12px;
-        padding: 9px 0; border-bottom: 1px solid #f0eef8; text-align: right;
+        display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+        padding: 9px 0; border-bottom: 1px solid #f0eef8; text-align: left; max-width: 100%;
       }
       .table-wrap td:last-child { border-bottom: none; }
       .table-wrap td:empty { display: none; }
+      .table-wrap td > * { max-width: 100%; }
       .table-wrap td::before {
         content: attr(data-label); font-weight: 800; font-size: .68rem; text-transform: uppercase;
-        letter-spacing: .06em; color: var(--text-muted); text-align: left; flex-shrink: 0;
+        letter-spacing: .06em; color: var(--text-muted);
       }
+      .table-wrap td[data-label=""]::before { display: none; }
     }
   </style>
 </head>
