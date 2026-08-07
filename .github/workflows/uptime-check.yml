@@ -1,0 +1,21 @@
+name: Uptime check
+
+# Controleert elke 10 minuten of de live site nog reageert.
+# Faalt deze job, dan stuurt GitHub automatisch een mail naar de
+# repository-eigenaar (afhankelijk van je notificatie-instellingen op
+# github.com/settings/notifications -> "Actions").
+# Geen extern account of dienst nodig.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {} # handmatig te starten via de Actions-tab
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check /api/settings op productie
+        run: |
+          curl --fail --silent --show-error --max-time 15 --retry 2 --retry-delay 5 \
+            https://leerkracht-website-production.up.railway.app/api/settings > /dev/null
