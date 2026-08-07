@@ -176,8 +176,12 @@
       .docent-panel { max-width: 100%; }
 
       /* Section tabs */
-      .section-tabs { gap: 4px; padding: 4px; }
-      .section-tab { font-size: .8rem; padding: 10px 8px; gap: 5px; }
+      .section-tabs { gap: 4px; padding: 4px; flex-wrap: wrap; }
+      .section-tab {
+        font-size: .8rem; padding: 10px 6px; gap: 5px;
+        flex: 1 1 calc(50% - 4px); min-width: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
       .section-tab i { font-size: .85rem; }
 
       /* Panel header */
