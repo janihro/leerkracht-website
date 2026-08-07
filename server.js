@@ -16,52 +16,12 @@ const DATA_DIR    = process.env.DATA_DIR    || path.join(__dirname, 'data');
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 [DATA_DIR, UPLOADS_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
-const QUESTIONS_FILE     = path.join(DATA_DIR, 'questions.json');
-const FILES_META         = path.join(DATA_DIR, 'files.json');
-const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
-const REVIEWS_FILE       = path.join(DATA_DIR, 'reviews.json');
-const SETTINGS_FILE      = path.join(DATA_DIR, 'settings.json');
-const ACCOUNTS_FILE      = path.join(DATA_DIR, 'accounts.json');
-const ADMIN_FILE         = path.join(DATA_DIR, 'admin.json');
-const GALLERY_FILE       = path.join(DATA_DIR, 'gallery.json');
-const PRODUCTS_FILE      = path.join(DATA_DIR, 'products.json');
-const AGENDA_FILE        = path.join(DATA_DIR, 'agenda.json');
-const TEACHERS_FILE      = path.join(DATA_DIR, 'teachers.json');
-const ADMINS_FILE        = path.join(DATA_DIR, 'admins.json');
+// ─── DATABASE (SQLite) ────────────────────────────────────
+// Bestaande JSON-bestanden (indien aanwezig) worden eenmalig gemigreerd.
+const { migrate } = require('./migrate-json-to-sqlite');
+const { repo }     = migrate(DATA_DIR);
 
 const ALL_PERMISSIONS = ['vragen', 'agenda', 'materiaal', 'inschrijvingen', 'galerij'];
-
-// ─── INITIALISEER DATA FILES ──────────────────────────────
-if (!fs.existsSync(QUESTIONS_FILE))     fs.writeFileSync(QUESTIONS_FILE,     JSON.stringify({ questions: [] }, null, 2));
-if (!fs.existsSync(FILES_META))         fs.writeFileSync(FILES_META,         JSON.stringify({ files: [] }, null, 2));
-if (!fs.existsSync(REGISTRATIONS_FILE)) fs.writeFileSync(REGISTRATIONS_FILE, JSON.stringify({ registrations: [] }, null, 2));
-if (!fs.existsSync(REVIEWS_FILE))       fs.writeFileSync(REVIEWS_FILE,       JSON.stringify({ reviews: [] }, null, 2));
-if (!fs.existsSync(ACCOUNTS_FILE))      fs.writeFileSync(ACCOUNTS_FILE,      JSON.stringify({ accounts: [] }, null, 2));
-if (!fs.existsSync(GALLERY_FILE))       fs.writeFileSync(GALLERY_FILE,       JSON.stringify({ items: [] }, null, 2));
-if (!fs.existsSync(PRODUCTS_FILE))      fs.writeFileSync(PRODUCTS_FILE,      JSON.stringify({ products: [] }, null, 2));
-// Seed standaard NONF producten als de lijst leeg is
-(function seedProducts() {
-  const d = readJSON(PRODUCTS_FILE);
-  if (!d.products || d.products.length > 0) return;
-  d.products = [
-    { id: 'p-seed-1', naam: 'Werkboek Papiamentu Basis (0–3 jr)', beschrijving: 'Leer de eerste woorden, kleuren en cijfers in Papiamentu. Kleurrijk werkboek voor de allerkleinsten.', prijs: 14.95, categorie: 'werkboeken', icon: 'fa-book', actief: true, volgorde: 1, createdAt: new Date().toISOString() },
-    { id: 'p-seed-2', naam: 'Werkboek Papiamentu Middenbouw (4–7 jr)', beschrijving: 'Zinnen, verhalen en oefeningen in Papiamentu voor kinderen van 4 tot 7 jaar.', prijs: 17.95, categorie: 'werkboeken', icon: 'fa-book-open', actief: true, volgorde: 2, createdAt: new Date().toISOString() },
-    { id: 'p-seed-3', naam: 'Werkboek Papiamentu Gevorderd (8–12 jr)', beschrijving: 'Grammatica, cultuur en uitdrukkingen. Voor kinderen die al basis Papiamentu kennen.', prijs: 19.95, categorie: 'werkboeken', icon: 'fa-graduation-cap', actief: true, volgorde: 3, createdAt: new Date().toISOString() },
-    { id: 'p-seed-4', naam: 'Flashcards Papiamentu (50 kaartjes)', beschrijving: '50 woord-/afbeeldingskaartjes om thuis mee te oefenen. Ideaal als aanvulling op de lessen.', prijs: 9.95, categorie: 'leermateriaal', icon: 'fa-layer-group', actief: true, volgorde: 4, createdAt: new Date().toISOString() },
-    { id: 'p-seed-5', naam: 'NONF T-shirt (kinderen)', beschrijving: '"Nos Orguyo, Nos Futuro" — Draag de trots van de ABC-eilanden. Maten: 104 t/m 152.', prijs: 19.95, categorie: 'merchandise', icon: 'fa-tshirt', actief: true, volgorde: 5, createdAt: new Date().toISOString() },
-    { id: 'p-seed-6', naam: 'NONF Tote Bag', beschrijving: 'Stoffen draagtas met NONF logo. Duurzaam, herbruikbaar en stijlvol.', prijs: 12.95, categorie: 'merchandise', icon: 'fa-shopping-bag', actief: true, volgorde: 6, createdAt: new Date().toISOString() },
-  ];
-  writeJSON(PRODUCTS_FILE, d);
-}());
-if (!fs.existsSync(AGENDA_FILE))        fs.writeFileSync(AGENDA_FILE,        JSON.stringify({ items: [] }, null, 2));
-if (!fs.existsSync(TEACHERS_FILE))     fs.writeFileSync(TEACHERS_FILE,     JSON.stringify({ teachers: [] }, null, 2));
-if (!fs.existsSync(ADMINS_FILE))       fs.writeFileSync(ADMINS_FILE,       JSON.stringify({ admins: [] }, null, 2));
-if (!fs.existsSync(SETTINGS_FILE))      fs.writeFileSync(SETTINGS_FILE,      JSON.stringify({
-  siteName: 'NONF', slogan: 'Nos Orguyo, Nos Futuro',
-  email: 'info@nosorguyonosfuturo.nl', telefoon: '0681 52 99 64', whatsapp: '31681529964',
-  adres: 'Almere Poort & Amsterdam Zuidoost', openingstijden: 'Ma–vr: 9:00–19:00 · Za: 10:00–14:00',
-  instagram: '#', facebook: '#', tiktok: '#',
-}, null, 2));
 
 // ─── WACHTWOORD HASHING (PBKDF2-SHA512) ──────────────────
 // Gebruikt Node.js ingebouwde crypto — geen extra packages
@@ -92,18 +52,14 @@ function safeCompare(a, b) {
 }
 
 // ─── WACHTWOORD MIGRATIE ──────────────────────────────────
-// Bij opstart: hash alle nog plaintext wachtwoorden in accounts.json
+// Bij opstart: hash alle nog plaintext wachtwoorden in de accounts-tabel
 function migratePasswords() {
   try {
-    const data = readJSON(ACCOUNTS_FILE);
-    let changed = false;
-    (data.accounts || []).forEach(acc => {
+    repo.accounts.all().forEach(acc => {
       if (acc.password && !acc.password.startsWith('pbkdf2:')) {
-        acc.password = hashPassword(acc.password);
-        changed = true;
+        repo.accounts.setPasswordRaw(acc.id, hashPassword(acc.password));
       }
     });
-    if (changed) writeJSON(ACCOUNTS_FILE, data);
   } catch { /* stil falen */ }
 }
 
@@ -121,8 +77,6 @@ function checkRateLimit(key, maxAttempts, windowMs) {
 setInterval(() => { const now = Date.now(); rlMap.forEach((v,k) => { if (now > v.reset + 60000) rlMap.delete(k); }); }, 600000);
 
 // ─── HELPERS ──────────────────────────────────────────────
-function readJSON(file)       { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; } }
-function writeJSON(file, data){ fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
 function generateId()         { return crypto.randomBytes(8).toString('hex'); }
 function getClientIp(req)     { return (req.headers['x-forwarded-for']||'').split(',')[0].trim() || req.socket.remoteAddress || 'unknown'; }
 
@@ -139,8 +93,7 @@ function getAdminFromRequest(req) {
   const username = sanitize(req.body?.adminUsername || req.headers['x-admin-username'], 100);
   const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword, 200);
   if (!provided) return null;
-  const d = readJSON(ADMINS_FILE);
-  const admins = d.admins || [];
+  const admins = repo.admins.all();
   let admin;
   if (username) {
     admin = admins.find(a => a.username === username);
@@ -172,8 +125,7 @@ function getTeacher(req) {
   const username = sanitize(req.headers['x-teacher-username'] || req.body?.teacherUsername, 200);
   const password = sanitize(req.headers['x-teacher-password'] || req.body?.teacherPassword, 200);
   if (!password) return null;
-  const data = readJSON(TEACHERS_FILE);
-  const teachers = data.teachers || [];
+  const teachers = repo.teachers.all();
   if (teachers.length > 0) {
     if (!username) return null;
     const t = teachers.find(t2 => t2.username === username && t2.active !== false);
@@ -257,6 +209,8 @@ app.use((req, res, next) => {
 // 2. Blokkeer toegang tot gevoelige server-bestanden
 const BLOCKED_PATHS = [
   /^\/server\.js$/i,
+  /^\/db\.js$/i,
+  /^\/migrate-json-to-sqlite\.js$/i,
   /^\/package(-lock)?\.json$/i,
   /^\/node_modules\//i,
   /^\/data\//i,
@@ -303,12 +257,8 @@ app.post('/api/verify-password', (req, res) => {
 
 // ─── Q&A ──────────────────────────────────────────────────
 app.get('/api/questions', (req, res) => {
-  const data      = readJSON(QUESTIONS_FILE);
-  const email     = sanitize(req.query.email, 200);
-  const questions = email
-    ? (data.questions || []).filter(q => q.askedBy === email)
-    : (data.questions || []);
-  res.json(questions.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)));
+  const email = sanitize(req.query.email, 200);
+  res.json(email ? repo.questions.byEmail(email) : repo.questions.all());
 });
 
 app.post('/api/questions', (req, res) => {
@@ -320,11 +270,8 @@ app.post('/api/questions', (req, res) => {
   const askedBy     = sanitize(req.body.askedBy, 200);
   const childName   = sanitize(req.body.childName, 100);
   if (!lessonId || !question || !askedBy) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
-  const data = readJSON(QUESTIONS_FILE);
-  if (!data.questions) data.questions = [];
   const q = { id: generateId(), lessonId, lessonTitle: lessonTitle||lessonId, question, askedBy, childName: childName||'Onbekend', timestamp: new Date().toISOString(), answer: null, answeredAt: null };
-  data.questions.push(q);
-  writeJSON(QUESTIONS_FILE, data);
+  repo.questions.insert(q);
   res.status(201).json(q);
 });
 
@@ -333,31 +280,23 @@ app.post('/api/questions/:id/answer', (req, res) => {
   if (!teacher || !hasPermission(teacher, 'vragen')) return res.status(401).json({ error: 'Geen toegang' });
   const { answer } = req.body;
   if (!sanitize(answer, 5000)) return res.status(400).json({ error: 'Antwoord mag niet leeg zijn' });
-  const data = readJSON(QUESTIONS_FILE);
-  const q = (data.questions||[]).find(q => q.id === req.params.id);
+  const q = repo.questions.find(req.params.id);
   if (!q) return res.status(404).json({ error: 'Niet gevonden' });
-  q.answer = sanitize(answer, 5000);
-  q.answeredAt = new Date().toISOString();
-  writeJSON(QUESTIONS_FILE, data);
-  res.json(q);
+  const updated = repo.questions.answer(req.params.id, sanitize(answer, 5000), new Date().toISOString());
+  res.json(updated);
 });
 
 app.delete('/api/questions/:id', (req, res) => {
   const teacher = getTeacher(req);
   if (!teacher || !hasPermission(teacher, 'vragen')) return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(QUESTIONS_FILE);
-  data.questions = (data.questions||[]).filter(q => q.id !== req.params.id);
-  writeJSON(QUESTIONS_FILE, data);
+  repo.questions.remove(req.params.id);
   res.json({ success: true });
 });
 
 // ─── FILES ────────────────────────────────────────────────
 app.get('/api/files', (req, res) => {
-  const data  = readJSON(FILES_META);
-  let files   = (data.files||[]).sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-  const vak   = sanitize(req.query.vak, 100);
-  if (vak) files = files.filter(f => f.vak === vak);
-  res.json(files);
+  const vak = sanitize(req.query.vak, 100);
+  res.json(repo.files.all(vak || undefined));
 });
 
 app.post('/api/files', (req, res) => {
@@ -369,11 +308,8 @@ app.post('/api/files', (req, res) => {
     const title       = sanitize(req.body.title, 200);
     const description = sanitize(req.body.description, 500);
     const vak         = sanitize(req.body.vak, 100);
-    const data        = readJSON(FILES_META);
-    if (!data.files) data.files = [];
     const meta = { id: generateId(), title: title||req.file.originalname, description, vak: vak||'Algemeen', originalName: req.file.originalname, storedName: req.file.filename, mimetype: req.file.mimetype, size: req.file.size, url: '/uploads/'+req.file.filename, uploadedAt: new Date().toISOString() };
-    data.files.push(meta);
-    writeJSON(FILES_META, data);
+    repo.files.insert(meta);
     res.status(201).json(meta);
   });
 });
@@ -381,20 +317,17 @@ app.post('/api/files', (req, res) => {
 app.delete('/api/files/:id', (req, res) => {
   const teacher = getTeacher(req);
   if (!teacher || !hasPermission(teacher, 'materiaal')) return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(FILES_META);
-  const file = (data.files||[]).find(f => f.id === req.params.id);
+  const file = repo.files.find(req.params.id);
   if (!file) return res.status(404).json({ error: 'Niet gevonden' });
   const fp = path.join(UPLOADS_DIR, file.storedName);
   if (fs.existsSync(fp)) fs.unlinkSync(fp);
-  data.files = data.files.filter(f => f.id !== req.params.id);
-  writeJSON(FILES_META, data);
+  repo.files.remove(req.params.id);
   res.json({ success: true });
 });
 
 // ─── REVIEWS ──────────────────────────────────────────────
 app.get('/api/reviews', (req, res) => {
-  const data = readJSON(REVIEWS_FILE);
-  res.json((data.reviews||[]).sort((a,b) => new Date(b.submittedAt)-new Date(a.submittedAt)));
+  res.json(repo.reviews.all());
 });
 
 app.post('/api/reviews', (req, res) => {
@@ -405,19 +338,14 @@ app.post('/api/reviews', (req, res) => {
   const rating = Math.min(5, Math.max(1, parseInt(req.body.rating)||5));
   const text   = sanitize(req.body.text, 1000);
   if (!name || !text) return res.status(400).json({ error: 'Naam en tekst zijn verplicht' });
-  const data = readJSON(REVIEWS_FILE);
-  if (!data.reviews) data.reviews = [];
   const review = { id: generateId(), name, role, rating, text, submittedAt: new Date().toISOString() };
-  data.reviews.push(review);
-  writeJSON(REVIEWS_FILE, data);
+  repo.reviews.insert(review);
   res.status(201).json(review);
 });
 
 app.delete('/api/reviews/:id', (req, res) => {
   if (!adminAuth(req) && !teacherAuth(sanitize(req.body.teacherPassword, 200))) return res.status(401).json({ error: 'Ongeldig wachtwoord' });
-  const data = readJSON(REVIEWS_FILE);
-  data.reviews = (data.reviews||[]).filter(r => r.id !== req.params.id);
-  writeJSON(REVIEWS_FILE, data);
+  repo.reviews.remove(req.params.id);
   res.json({ success: true });
 });
 
@@ -425,8 +353,7 @@ app.delete('/api/reviews/:id', (req, res) => {
 app.get('/api/registrations', (req, res) => {
   const teacher = getTeacher(req);
   if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'inschrijvingen'))) return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(REGISTRATIONS_FILE);
-  res.json((data.registrations||[]).sort((a,b) => new Date(b.submittedAt)-new Date(a.submittedAt)));
+  res.json(repo.registrations.all());
 });
 
 app.post('/api/registrations', (req, res) => {
@@ -443,11 +370,8 @@ app.post('/api/registrations', (req, res) => {
   if (!voornaam || !email || !kindNaam) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
   // Basis e-mail validatie
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Ongeldig e-mailadres' });
-  const data = readJSON(REGISTRATIONS_FILE);
-  if (!data.registrations) data.registrations = [];
   const reg = { id: generateId(), voornaam, achternaam, email, telefoon, kindNaam, leeftijd, vak, bericht, status: 'nieuw', submittedAt: new Date().toISOString() };
-  data.registrations.push(reg);
-  writeJSON(REGISTRATIONS_FILE, data);
+  repo.registrations.insert(reg);
   res.status(201).json(reg);
 });
 
@@ -457,20 +381,15 @@ app.patch('/api/registrations/:id', (req, res) => {
   const allowed = ['nieuw','contact opgenomen','ingeschreven','afgewezen'];
   const status  = sanitize(req.body.status, 50);
   if (!allowed.includes(status)) return res.status(400).json({ error: 'Ongeldige status' });
-  const data = readJSON(REGISTRATIONS_FILE);
-  const reg  = (data.registrations||[]).find(r => r.id === req.params.id);
+  const reg = repo.registrations.find(req.params.id);
   if (!reg) return res.status(404).json({ error: 'Niet gevonden' });
-  reg.status = status;
-  writeJSON(REGISTRATIONS_FILE, data);
-  res.json(reg);
+  res.json(repo.registrations.setStatus(req.params.id, status));
 });
 
 app.delete('/api/registrations/:id', (req, res) => {
   const teacher = getTeacher(req);
   if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'inschrijvingen'))) return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(REGISTRATIONS_FILE);
-  data.registrations = (data.registrations||[]).filter(r => r.id !== req.params.id);
-  writeJSON(REGISTRATIONS_FILE, data);
+  repo.registrations.remove(req.params.id);
   res.json({ success: true });
 });
 
@@ -483,8 +402,7 @@ app.post('/api/verify-parent', (req, res) => {
   const email    = sanitize(req.body.email, 200);
   const password = sanitize(req.body.password, 200);
   if (!email || !password) return res.status(400).json({ ok: false });
-  const data    = readJSON(ACCOUNTS_FILE);
-  const account = (data.accounts||[]).find(a => a.email === email);
+  const account = repo.accounts.findByEmail(email);
   if (account && verifyPassword(password, account.password)) {
     res.json({ ok: true, kindNaam: account.kindNaam, name: account.name, mustChangePassword: !!account.mustChangePassword });
   } else {
@@ -502,17 +420,14 @@ app.post('/api/parent/change-password', (req, res) => {
   const newPassword     = sanitize(req.body.newPassword, 200);
   if (!email || !currentPassword || !newPassword) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
   if (newPassword.length < 6) return res.status(400).json({ error: 'Wachtwoord moet minimaal 6 tekens zijn' });
-  const data    = readJSON(ACCOUNTS_FILE);
-  const account = (data.accounts||[]).find(a => a.email === email);
+  const account = repo.accounts.findByEmail(email);
   if (!account || !verifyPassword(currentPassword, account.password)) return res.status(401).json({ error: 'Huidig wachtwoord klopt niet' });
-  account.password          = hashPassword(newPassword);
-  account.mustChangePassword = false;
-  writeJSON(ACCOUNTS_FILE, data);
+  repo.accounts.updatePassword(email, hashPassword(newPassword));
   res.json({ ok: true });
 });
 
 // ─── PUBLIC SETTINGS ──────────────────────────────────────
-app.get('/api/settings', (req, res) => res.json(readJSON(SETTINGS_FILE)));
+app.get('/api/settings', (req, res) => res.json(repo.settings.get()));
 
 // ─── ADMIN API ────────────────────────────────────────────
 function requireAdmin(req, res) {
@@ -527,11 +442,9 @@ function requireAdmin(req, res) {
 
 app.get('/api/admin/stats', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const registrations = readJSON(REGISTRATIONS_FILE).registrations || [];
-  const questions     = readJSON(QUESTIONS_FILE).questions         || [];
-  const reviews       = readJSON(REVIEWS_FILE).reviews             || [];
-  const files         = readJSON(FILES_META).files                 || [];
-  const accounts      = readJSON(ACCOUNTS_FILE).accounts           || [];
+  const registrations = repo.registrations.all();
+  const questions     = repo.questions.all();
+  const reviews       = repo.reviews.all();
   res.json({
     totalRegistrations: registrations.length,
     newRegistrations:   registrations.filter(r => r.status === 'nieuw').length,
@@ -539,29 +452,27 @@ app.get('/api/admin/stats', (req, res) => {
     totalQuestions:     questions.length,
     totalReviews:       reviews.length,
     avgRating:          reviews.length ? (reviews.reduce((s,r)=>s+r.rating,0)/reviews.length).toFixed(1) : '—',
-    totalFiles:         files.length,
-    totalAccounts:      accounts.length,
+    totalFiles:         repo.files.count(),
+    totalAccounts:      repo.accounts.count(),
     recentRegistrations: registrations.slice(-5).reverse(),
   });
 });
 
 app.get('/api/admin/settings', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  res.json(readJSON(SETTINGS_FILE));
+  res.json(repo.settings.get());
 });
 app.put('/api/admin/settings', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const allowed = ['siteName','slogan','email','telefoon','whatsapp','adres','openingstijden','instagram','facebook','tiktok'];
-  const current = readJSON(SETTINGS_FILE);
-  allowed.forEach(k => { if (req.body[k] !== undefined) current[k] = sanitize(req.body[k], 500); });
-  writeJSON(SETTINGS_FILE, current);
-  res.json(current);
+  const patch = {};
+  allowed.forEach(k => { if (req.body[k] !== undefined) patch[k] = sanitize(req.body[k], 500); });
+  res.json(repo.settings.update(patch));
 });
 
 app.get('/api/admin/accounts', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const data = readJSON(ACCOUNTS_FILE);
-  const safe = (data.accounts||[]).map(({ password: _, ...a }) => a);
+  const safe = repo.accounts.all().map(({ password: _, ...a }) => a);
   res.json(safe);
 });
 app.post('/api/admin/accounts', (req, res) => {
@@ -573,20 +484,15 @@ app.post('/api/admin/accounts', (req, res) => {
   if (!email || !password || !kindNaam) return res.status(400).json({ error: 'E-mail, wachtwoord en naam kind zijn verplicht' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Ongeldig e-mailadres' });
   if (password.length < 4) return res.status(400).json({ error: 'Wachtwoord te kort (min. 4 tekens)' });
-  const data = readJSON(ACCOUNTS_FILE);
-  if (!data.accounts) data.accounts = [];
-  if (data.accounts.find(a => a.email === email)) return res.status(409).json({ error: 'E-mailadres al in gebruik' });
+  if (repo.accounts.findByEmail(email)) return res.status(409).json({ error: 'E-mailadres al in gebruik' });
   const account = { id: generateId(), email, password: hashPassword(password), kindNaam, name, mustChangePassword: true, createdAt: new Date().toISOString() };
-  data.accounts.push(account);
-  writeJSON(ACCOUNTS_FILE, data);
+  repo.accounts.insert(account);
   const { password: _, ...safe } = account;
   res.status(201).json(safe);
 });
 app.delete('/api/admin/accounts/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const data = readJSON(ACCOUNTS_FILE);
-  data.accounts = (data.accounts||[]).filter(a => a.id !== req.params.id);
-  writeJSON(ACCOUNTS_FILE, data);
+  repo.accounts.remove(req.params.id);
   res.json({ success: true });
 });
 
@@ -595,18 +501,16 @@ app.post('/api/admin/change-password', (req, res) => {
   if (!admin) return;
   const newPassword = sanitize(req.body.newPassword, 200);
   if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Minimaal 6 tekens vereist' });
-  const d = readJSON(ADMINS_FILE);
-  const target = (d.admins || []).find(a => a.id === admin.id);
+  const target = repo.admins.find(admin.id);
   if (!target) return res.status(404).json({ error: 'Beheerder niet gevonden' });
-  target.password = hashPassword(newPassword);
-  writeJSON(ADMINS_FILE, d);
+  repo.admins.updatePassword(admin.id, hashPassword(newPassword));
   res.json({ success: true });
 });
 
 // CSV exports — wachtwoord in body (niet in URL)
 app.post('/api/admin/export-csv', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const rows   = readJSON(REGISTRATIONS_FILE).registrations || [];
+  const rows   = repo.registrations.all();
   const header = ['ID','Voornaam','Achternaam','Email','Telefoon','Kind naam','Leeftijd','Vak','Status','Bericht','Datum'];
   const csv    = [header, ...rows.map(r => [
     r.id, r.voornaam, r.achternaam, r.email, r.telefoon,
@@ -621,7 +525,7 @@ app.post('/api/admin/export-csv', (req, res) => {
 
 app.post('/api/admin/export-reviews-csv', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const rows   = readJSON(REVIEWS_FILE).reviews || [];
+  const rows   = repo.reviews.all();
   const header = ['ID','Naam','Rol','Sterren','Tekst','Datum'];
   const csv    = [header, ...rows.map(r => [
     r.id, r.name, r.role||'', r.rating, r.text,
@@ -632,10 +536,20 @@ app.post('/api/admin/export-reviews-csv', (req, res) => {
   res.send('﻿' + csv);
 });
 
+// Volledige databank-backup — beheerder kan de ruwe SQLite-file downloaden
+app.get('/api/admin/backup', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const dbPath = path.join(DATA_DIR, 'nonf.sqlite');
+  if (!fs.existsSync(dbPath)) return res.status(404).json({ error: 'Geen database gevonden' });
+  const stamp = new Date().toISOString().slice(0,10);
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', `attachment; filename="nonf-backup-${stamp}.sqlite"`);
+  res.sendFile(dbPath);
+});
+
 // ─── GALLERY ──────────────────────────────────────────────
 app.get('/api/gallery', (req, res) => {
-  const data = readJSON(GALLERY_FILE);
-  res.json((data.items||[]).sort((a,b) => new Date(b.uploadedAt)-new Date(a.uploadedAt)));
+  res.json(repo.gallery.all());
 });
 app.post('/api/gallery', (req, res) => {
   const teacher = getTeacher(req);
@@ -646,11 +560,8 @@ app.post('/api/gallery', (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Geen afbeelding ontvangen' });
     const title       = sanitize(req.body.title, 200);
     const description = sanitize(req.body.description, 500);
-    const data        = readJSON(GALLERY_FILE);
-    if (!data.items) data.items = [];
     const item = { id: generateId(), title: title||req.file.originalname, description, storedName: req.file.filename, url: '/uploads/'+req.file.filename, uploadedAt: new Date().toISOString() };
-    data.items.push(item);
-    writeJSON(GALLERY_FILE, data);
+    repo.gallery.insert(item);
     res.status(201).json(item);
   });
 });
@@ -658,32 +569,28 @@ app.patch('/api/gallery/:id', (req, res) => {
   const teacher = getTeacher(req);
   if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'galerij')))
     return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(GALLERY_FILE);
-  const item = (data.items||[]).find(i => i.id === req.params.id);
+  const item = repo.gallery.find(req.params.id);
   if (!item) return res.status(404).json({ error: 'Niet gevonden' });
-  if (req.body.title !== undefined)       item.title       = sanitize(req.body.title, 200);
-  if (req.body.description !== undefined) item.description = sanitize(req.body.description, 500);
-  writeJSON(GALLERY_FILE, data);
-  res.json(item);
+  const patch = {};
+  if (req.body.title !== undefined)       patch.title       = sanitize(req.body.title, 200);
+  if (req.body.description !== undefined) patch.description = sanitize(req.body.description, 500);
+  res.json(repo.gallery.update(req.params.id, patch));
 });
 app.delete('/api/gallery/:id', (req, res) => {
   const teacher = getTeacher(req);
   if (!adminAuth(req) && (!teacher || !hasPermission(teacher, 'galerij')))
     return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(GALLERY_FILE);
-  const item = (data.items||[]).find(i => i.id === req.params.id);
+  const item = repo.gallery.find(req.params.id);
   if (!item) return res.status(404).json({ error: 'Niet gevonden' });
   const fp = path.join(UPLOADS_DIR, item.storedName);
   if (fs.existsSync(fp)) fs.unlinkSync(fp);
-  data.items = data.items.filter(i => i.id !== req.params.id);
-  writeJSON(GALLERY_FILE, data);
+  repo.gallery.remove(req.params.id);
   res.json({ success: true });
 });
 
 // ─── PRODUCTS ─────────────────────────────────────────────
 app.get('/api/products', (req, res) => {
-  const data = readJSON(PRODUCTS_FILE);
-  let list   = (data.products||[]).sort((a,b) => (a.volgorde||0)-(b.volgorde||0) || new Date(a.createdAt)-new Date(b.createdAt));
+  let list = repo.products.all();
   if (!(req.query.all === '1' && adminAuth(req))) list = list.filter(p => p.actief !== false);
   res.json(list);
 });
@@ -700,36 +607,30 @@ app.post('/api/products', (req, res) => {
   const volgorde    = parseInt(req.body.volgorde) || 0;
   const actief      = req.body.actief !== false;
   if (!naam) return res.status(400).json({ error: 'Naam is verplicht' });
-  const data    = readJSON(PRODUCTS_FILE);
-  if (!data.products) data.products = [];
   const product = { id: generateId(), naam, beschrijving, prijs, badge, badgeKleur, categorie: categorie||'Overig', icon: icon||'fa-tag', afbeelding: afbeelding||null, actief, volgorde, createdAt: new Date().toISOString() };
-  data.products.push(product);
-  writeJSON(PRODUCTS_FILE, data);
+  repo.products.insert(product);
   res.status(201).json(product);
 });
 app.put('/api/products/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const data = readJSON(PRODUCTS_FILE);
-  const p    = (data.products||[]).find(p => p.id === req.params.id);
+  const p = repo.products.find(req.params.id);
   if (!p) return res.status(404).json({ error: 'Niet gevonden' });
-  if (req.body.naam        !== undefined) p.naam        = sanitize(req.body.naam, 200);
-  if (req.body.beschrijving!== undefined) p.beschrijving= sanitize(req.body.beschrijving, 1000);
-  if (req.body.prijs       !== undefined) p.prijs       = parseFloat(req.body.prijs)||0;
-  if (req.body.badge       !== undefined) p.badge       = sanitize(req.body.badge, 50);
-  if (req.body.badgeKleur  !== undefined) p.badgeKleur  = sanitize(req.body.badgeKleur, 20);
-  if (req.body.categorie   !== undefined) p.categorie   = sanitize(req.body.categorie, 100);
-  if (req.body.icon        !== undefined) p.icon        = sanitize(req.body.icon, 50);
-  if (req.body.afbeelding  !== undefined) p.afbeelding  = sanitize(req.body.afbeelding, 300)||null;
-  if (req.body.actief      !== undefined) p.actief      = !!req.body.actief;
-  if (req.body.volgorde    !== undefined) p.volgorde    = parseInt(req.body.volgorde)||0;
-  writeJSON(PRODUCTS_FILE, data);
-  res.json(p);
+  const patch = {};
+  if (req.body.naam        !== undefined) patch.naam        = sanitize(req.body.naam, 200);
+  if (req.body.beschrijving!== undefined) patch.beschrijving= sanitize(req.body.beschrijving, 1000);
+  if (req.body.prijs       !== undefined) patch.prijs       = parseFloat(req.body.prijs)||0;
+  if (req.body.badge       !== undefined) patch.badge       = sanitize(req.body.badge, 50);
+  if (req.body.badgeKleur  !== undefined) patch.badgeKleur  = sanitize(req.body.badgeKleur, 20);
+  if (req.body.categorie   !== undefined) patch.categorie   = sanitize(req.body.categorie, 100);
+  if (req.body.icon        !== undefined) patch.icon        = sanitize(req.body.icon, 50);
+  if (req.body.afbeelding  !== undefined) patch.afbeelding  = sanitize(req.body.afbeelding, 300)||null;
+  if (req.body.actief      !== undefined) patch.actief      = !!req.body.actief;
+  if (req.body.volgorde    !== undefined) patch.volgorde    = parseInt(req.body.volgorde)||0;
+  res.json(repo.products.update(req.params.id, patch));
 });
 app.delete('/api/products/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const data = readJSON(PRODUCTS_FILE);
-  data.products = (data.products||[]).filter(p => p.id !== req.params.id);
-  writeJSON(PRODUCTS_FILE, data);
+  repo.products.remove(req.params.id);
   res.json({ success: true });
 });
 
@@ -737,16 +638,14 @@ app.delete('/api/products/:id', (req, res) => {
 app.get('/api/agenda/accounts', (req, res) => {
   const teacher = getTeacher(req);
   if (!teacher && !adminAuth(req)) return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(ACCOUNTS_FILE);
-  const safe = (data.accounts || []).map(({ password: _, mustChangePassword: __, ...a }) => a);
+  const safe = repo.accounts.all().map(({ password: _, mustChangePassword: __, ...a }) => a);
   res.json(safe);
 });
 
 // ─── AGENDA ───────────────────────────────────────────────
 // GET — ouders zien alleen hun items; docent/admin ziet alles
 app.get('/api/agenda', (req, res) => {
-  const data  = readJSON(AGENDA_FILE);
-  let items   = (data.items || []).sort((a, b) => {
+  let items = repo.agenda.all().sort((a, b) => {
     const da = new Date(`${a.datum}T${a.tijd||'00:00'}`);
     const db = new Date(`${b.datum}T${b.tijd||'00:00'}`);
     return da - db;
@@ -784,11 +683,8 @@ app.post('/api/agenda', (req, res) => {
   const gebruikers  = Array.isArray(req.body.gebruikers) ? req.body.gebruikers.map(e => sanitize(e, 200)) : [];
   const kleur       = sanitize(req.body.kleur, 20) || 'primary';
   if (!titel || !datum) return res.status(400).json({ error: 'Titel en datum zijn verplicht' });
-  const data = readJSON(AGENDA_FILE);
-  if (!data.items) data.items = [];
   const item = { id: generateId(), titel, beschrijving, datum, tijd, eindtijd, type, zichtbaar, gebruikers, kleur, createdAt: new Date().toISOString() };
-  data.items.push(item);
-  writeJSON(AGENDA_FILE, data);
+  repo.agenda.insert(item);
   res.status(201).json(item);
 });
 
@@ -797,20 +693,19 @@ app.put('/api/agenda/:id', (req, res) => {
   const teacher = getTeacher(req);
   if ((!teacher || !hasPermission(teacher, 'agenda')) && !adminAuth(req))
     return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(AGENDA_FILE);
-  const item = (data.items || []).find(i => i.id === req.params.id);
+  const item = repo.agenda.find(req.params.id);
   if (!item) return res.status(404).json({ error: 'Niet gevonden' });
-  if (req.body.titel        !== undefined) item.titel        = sanitize(req.body.titel, 200);
-  if (req.body.beschrijving !== undefined) item.beschrijving = sanitize(req.body.beschrijving, 1000);
-  if (req.body.datum        !== undefined) item.datum        = sanitize(req.body.datum, 20);
-  if (req.body.tijd         !== undefined) item.tijd         = sanitize(req.body.tijd, 10);
-  if (req.body.eindtijd     !== undefined) item.eindtijd     = sanitize(req.body.eindtijd, 10);
-  if (req.body.type         !== undefined) item.type         = sanitize(req.body.type, 30);
-  if (req.body.zichtbaar    !== undefined) item.zichtbaar    = req.body.zichtbaar === 'specifiek' ? 'specifiek' : 'iedereen';
-  if (req.body.gebruikers   !== undefined) item.gebruikers   = Array.isArray(req.body.gebruikers) ? req.body.gebruikers.map(e => sanitize(e, 200)) : [];
-  if (req.body.kleur        !== undefined) item.kleur        = sanitize(req.body.kleur, 20);
-  writeJSON(AGENDA_FILE, data);
-  res.json(item);
+  const patch = {};
+  if (req.body.titel        !== undefined) patch.titel        = sanitize(req.body.titel, 200);
+  if (req.body.beschrijving !== undefined) patch.beschrijving = sanitize(req.body.beschrijving, 1000);
+  if (req.body.datum        !== undefined) patch.datum        = sanitize(req.body.datum, 20);
+  if (req.body.tijd         !== undefined) patch.tijd         = sanitize(req.body.tijd, 10);
+  if (req.body.eindtijd     !== undefined) patch.eindtijd     = sanitize(req.body.eindtijd, 10);
+  if (req.body.type         !== undefined) patch.type         = sanitize(req.body.type, 30);
+  if (req.body.zichtbaar    !== undefined) patch.zichtbaar    = req.body.zichtbaar === 'specifiek' ? 'specifiek' : 'iedereen';
+  if (req.body.gebruikers   !== undefined) patch.gebruikers   = Array.isArray(req.body.gebruikers) ? req.body.gebruikers.map(e => sanitize(e, 200)) : [];
+  if (req.body.kleur        !== undefined) patch.kleur        = sanitize(req.body.kleur, 20);
+  res.json(repo.agenda.update(req.params.id, patch));
 });
 
 // DELETE — agenda-item verwijderen (docent)
@@ -818,17 +713,14 @@ app.delete('/api/agenda/:id', (req, res) => {
   const teacher = getTeacher(req);
   if ((!teacher || !hasPermission(teacher, 'agenda')) && !adminAuth(req))
     return res.status(401).json({ error: 'Geen toegang' });
-  const data = readJSON(AGENDA_FILE);
-  data.items = (data.items || []).filter(i => i.id !== req.params.id);
-  writeJSON(AGENDA_FILE, data);
+  repo.agenda.remove(req.params.id);
   res.json({ success: true });
 });
 
 // ─── DOCENTEN BEHEER (admin) ──────────────────────────────
 app.get('/api/admin/teachers', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const data = readJSON(TEACHERS_FILE);
-  const safe = (data.teachers || []).map(({ password: _, ...t }) => t);
+  const safe = repo.teachers.all().map(({ password: _, ...t }) => t);
   res.json({ teachers: safe });
 });
 
@@ -841,43 +733,39 @@ app.post('/api/admin/teachers', (req, res) => {
     ? req.body.permissions.filter(p => ALL_PERMISSIONS.includes(p))
     : ['vragen','agenda','materiaal','inschrijvingen'];
   if (!name || !username || !password) return res.status(400).json({ error: 'Naam, gebruikersnaam en wachtwoord zijn verplicht' });
-  const data = readJSON(TEACHERS_FILE);
-  if (!data.teachers) data.teachers = [];
-  if (data.teachers.find(t => t.username === username))
+  if (repo.teachers.findByUsername(username))
     return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
   const teacher = { id: generateId(), name, username, password: hashPassword(password), permissions, active: true, createdAt: new Date().toISOString() };
-  data.teachers.push(teacher);
-  writeJSON(TEACHERS_FILE, data);
+  repo.teachers.insert(teacher);
   const { password: _, ...safe } = teacher;
   res.status(201).json(safe);
 });
 
 app.put('/api/admin/teachers/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const data    = readJSON(TEACHERS_FILE);
-  const teacher = (data.teachers || []).find(t => t.id === req.params.id);
+  const teacher = repo.teachers.find(req.params.id);
   if (!teacher) return res.status(404).json({ error: 'Niet gevonden' });
-  if (req.body.name     !== undefined) teacher.name     = sanitize(req.body.name, 100);
+  const patch = {};
+  if (req.body.name     !== undefined) patch.name     = sanitize(req.body.name, 100);
   if (req.body.username !== undefined) {
     const u = sanitize(req.body.username, 100);
-    if (data.teachers.find(t => t.username === u && t.id !== req.params.id))
+    const existing = repo.teachers.findByUsername(u);
+    if (existing && existing.id !== req.params.id)
       return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
-    teacher.username = u;
+    patch.username = u;
   }
-  if (req.body.password) teacher.password = hashPassword(sanitize(req.body.password, 200));
+  if (req.body.password) patch.password = hashPassword(sanitize(req.body.password, 200));
   if (Array.isArray(req.body.permissions))
-    teacher.permissions = req.body.permissions.filter(p => ALL_PERMISSIONS.includes(p));
-  if (req.body.active !== undefined) teacher.active = !!req.body.active;
-  writeJSON(TEACHERS_FILE, data);
-  const { password: _, ...safe } = teacher;
+    patch.permissions = req.body.permissions.filter(p => ALL_PERMISSIONS.includes(p));
+  if (req.body.active !== undefined) patch.active = !!req.body.active;
+  const updated = repo.teachers.update(req.params.id, patch);
+  const { password: _, ...safe } = updated;
   res.json(safe);
 });
 
 app.delete('/api/admin/teachers/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const data = readJSON(TEACHERS_FILE);
-  data.teachers = (data.teachers || []).filter(t => t.id !== req.params.id);
-  writeJSON(TEACHERS_FILE, data);
+  repo.teachers.remove(req.params.id);
   res.json({ success: true });
 });
 
@@ -911,12 +799,9 @@ app.post('/api/admin/2fa/enable', (req, res) => {
   if (!secret || !token) return res.status(400).json({ error: 'Secret en token verplicht' });
   const ok = speakeasy.totp.verify({ secret, encoding: 'base32', token: String(token), window: 1 });
   if (!ok) return res.status(400).json({ error: 'Ongeldige code. Probeer opnieuw.' });
-  const d = readJSON(ADMINS_FILE);
-  const target = (d.admins || []).find(a => a.id === admin.id);
+  const target = repo.admins.find(admin.id);
   if (!target) return res.status(404).json({ error: 'Beheerder niet gevonden' });
-  target.twoFactorSecret  = secret;
-  target.twoFactorEnabled = true;
-  writeJSON(ADMINS_FILE, d);
+  repo.admins.setTwoFactor(admin.id, secret, true);
   res.json({ ok: true });
 });
 
@@ -931,12 +816,9 @@ app.post('/api/admin/2fa/disable', (req, res) => {
     const ok = speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token, window: 1 });
     if (!ok) return res.status(401).json({ error: 'Ongeldige authenticator code' });
   }
-  const d = readJSON(ADMINS_FILE);
-  const target = (d.admins || []).find(a => a.id === admin.id);
+  const target = repo.admins.find(admin.id);
   if (!target) return res.status(404).json({ error: 'Beheerder niet gevonden' });
-  target.twoFactorEnabled = false;
-  target.twoFactorSecret  = null;
-  writeJSON(ADMINS_FILE, d);
+  repo.admins.setTwoFactor(admin.id, null, false);
   res.json({ ok: true });
 });
 
@@ -958,8 +840,7 @@ app.post('/api/admin/login-check', (req, res) => {
 app.get('/api/admin/admins', (req, res) => {
   const admin = requireAdmin(req, res);
   if (!admin) return;
-  const d = readJSON(ADMINS_FILE);
-  const safe = (d.admins || []).map(({ password: _, twoFactorSecret: __, ...a }) => a);
+  const safe = repo.admins.all().map(({ password: _, twoFactorSecret: __, ...a }) => a);
   res.json(safe);
 });
 
@@ -974,12 +855,9 @@ app.post('/api/admin/admins', (req, res) => {
   if (!username || !password) return res.status(400).json({ error: 'Gebruikersnaam en wachtwoord zijn verplicht' });
   if (password.length < 6) return res.status(400).json({ error: 'Wachtwoord te kort (min. 6 tekens)' });
   if (!/^[a-zA-Z0-9_\-.]+$/.test(username)) return res.status(400).json({ error: 'Gebruikersnaam mag alleen letters, cijfers, -, _ en . bevatten' });
-  const d = readJSON(ADMINS_FILE);
-  if (!d.admins) d.admins = [];
-  if (d.admins.find(a => a.username === username)) return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
+  if (repo.admins.findByUsername(username)) return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
   const newAdmin = { id: generateId(), username, displayName: displayName || username, password: hashPassword(password), isSuperAdmin: false, twoFactorSecret: null, twoFactorEnabled: false, createdAt: new Date().toISOString() };
-  d.admins.push(newAdmin);
-  writeJSON(ADMINS_FILE, d);
+  repo.admins.insert(newAdmin);
   const { password: _, twoFactorSecret: __, ...safe } = newAdmin;
   res.status(201).json(safe);
 });
@@ -989,13 +867,11 @@ app.delete('/api/admin/admins/:id', (req, res) => {
   const admin = requireAdmin(req, res);
   if (!admin) return;
   if (!admin.isSuperAdmin) return res.status(403).json({ error: 'Alleen de hoofdbeheerder kan beheerders verwijderen' });
-  const d = readJSON(ADMINS_FILE);
-  const target = (d.admins || []).find(a => a.id === req.params.id);
+  const target = repo.admins.find(req.params.id);
   if (!target) return res.status(404).json({ error: 'Niet gevonden' });
   if (target.id === admin.id) return res.status(400).json({ error: 'Je kunt je eigen account niet verwijderen' });
   if (target.isSuperAdmin) return res.status(400).json({ error: 'Hoofdbeheerder kan niet worden verwijderd' });
-  d.admins = d.admins.filter(a => a.id !== req.params.id);
-  writeJSON(ADMINS_FILE, d);
+  repo.admins.remove(req.params.id);
   res.json({ success: true });
 });
 
@@ -1005,12 +881,9 @@ app.post('/api/admin/admins/:id/reset-2fa', (req, res) => {
   if (!admin) return;
   if (!admin.isSuperAdmin && admin.id !== req.params.id)
     return res.status(403).json({ error: 'Alleen de hoofdbeheerder kan 2FA van anderen resetten' });
-  const d = readJSON(ADMINS_FILE);
-  const target = (d.admins || []).find(a => a.id === req.params.id);
+  const target = repo.admins.find(req.params.id);
   if (!target) return res.status(404).json({ error: 'Niet gevonden' });
-  target.twoFactorEnabled = false;
-  target.twoFactorSecret  = null;
-  writeJSON(ADMINS_FILE, d);
+  repo.admins.setTwoFactor(req.params.id, null, false);
   res.json({ ok: true });
 });
 
@@ -1021,31 +894,24 @@ app.use((req, res) => {
 });
 
 // ─── MIGRATIE: enkel admin → multi-admin ──────────────────
-// Eenmalig: lees het wachtwoord uit admin.json (of env) en maak een
-// eerste superadmin in admins.json als die nog leeg is.
+// Eenmalig: als er nog geen beheerders zijn (bv. eerste boot zonder oude
+// JSON-data), maak dan een eerste superadmin aan op basis van env/default.
 function migrateToMultiAdmin() {
   try {
-    const d = readJSON(ADMINS_FILE);
-    if (d.admins && d.admins.length > 0) return; // al gemigreerd
-    const old = fs.existsSync(ADMIN_FILE) ? readJSON(ADMIN_FILE) : {};
-    // Gebruik bestaand gehasht wachtwoord, of hash het env/default wachtwoord
-    let pass = old.password;
-    if (!pass) {
-      const raw = process.env.ADMIN_PASSWORD || TEACHER_PASS;
-      pass = hashPassword(raw);
-    }
+    if (repo.admins.count() > 0) return; // al gemigreerd / al beheerders aanwezig
+    const raw  = process.env.ADMIN_PASSWORD || TEACHER_PASS;
     const first = {
       id: generateId(),
       username: 'beheerder',
       displayName: 'Hoofdbeheerder',
-      password: pass,
+      password: hashPassword(raw),
       isSuperAdmin: true,
-      twoFactorSecret:  old.twoFactorSecret  || null,
-      twoFactorEnabled: !!(old.twoFactorEnabled && old.twoFactorSecret),
+      twoFactorSecret: null,
+      twoFactorEnabled: false,
       createdAt: new Date().toISOString(),
     };
-    writeJSON(ADMINS_FILE, { admins: [first] });
-    console.log('✅ Admin migratie voltooid — gebruikersnaam: beheerder');
+    repo.admins.insert(first);
+    console.log('✅ Eerste beheerder aangemaakt — gebruikersnaam: beheerder');
   } catch (e) { console.error('Admin migratie fout:', e); }
 }
 
