@@ -1121,6 +1121,9 @@ async function doLogin(user, pass, totp) {
     adminUsername = user;
     adminPass     = pass;
     adminTotp     = ''; // TOTP niet bewaren — wachtwoord is voldoende na inloggen
+    // Sessie bewaren zodat een pagina-herlaad niet opnieuw om 2FA vraagt
+    // (verloopt automatisch zodra het browsertabblad wordt gesloten)
+    sessionStorage.setItem('admin_session', JSON.stringify({ u: user, p: pass }));
     // Topbar bijwerken
     document.getElementById('topbar-username').textContent = user;
     document.getElementById('topbar-avatar').textContent   = user.charAt(0).toUpperCase();
@@ -1137,10 +1140,36 @@ async function doLogin(user, pass, totp) {
 
 function logout() {
   adminPass = ''; adminUsername = ''; adminTotp = ''; _isSuperAdmin = false;
+  sessionStorage.removeItem('admin_session');
   document.getElementById('admin-shell').style.display  = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   resetLoginSteps();
 }
+
+// Herstel een actieve sessie na een pagina-herlaad, zonder opnieuw
+// wachtwoord + 2FA te vragen (2FA is al bevestigd bij het origineel inloggen).
+async function tryRestoreSession() {
+  const saved = sessionStorage.getItem('admin_session');
+  if (!saved) return;
+  let creds;
+  try { creds = JSON.parse(saved); } catch { sessionStorage.removeItem('admin_session'); return; }
+  try {
+    const res = await fetch('/api/admin/stats', {
+      headers: { 'x-admin-username': creds.u, 'x-admin-password': creds.p }
+    });
+    if (!res.ok) { sessionStorage.removeItem('admin_session'); return; }
+    adminUsername = creds.u;
+    adminPass     = creds.p;
+    document.getElementById('topbar-username').textContent = creds.u;
+    document.getElementById('topbar-avatar').textContent   = creds.u.charAt(0).toUpperCase();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-shell').style.display  = 'block';
+    initAdmin();
+    load2faStatus();
+    loadAdmins();
+  } catch { /* geen verbinding — gewoon login-scherm laten staan */ }
+}
+document.addEventListener('DOMContentLoaded', tryRestoreSession);
 
 // ══════════════════ INIT ═════════════════════════════════
 function initAdmin() {
