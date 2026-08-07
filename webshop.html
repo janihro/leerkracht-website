@@ -304,12 +304,10 @@ function renderProducts(cat) {
       </div>`;
   }).join('');
 
-  // Re-trigger animations
-  document.querySelectorAll('[data-animate]').forEach(el => {
-    el.classList.remove('animated');
-    void el.offsetWidth;
-    el.classList.add('animated');
-  });
+  // Nieuw ingevoegde kaarten zijn nooit door de scroll-observer gezien
+  // (die draait eenmalig bij het laden van de pagina) — zet ze direct op
+  // zichtbaar i.p.v. te wachten op een scroll-trigger die nooit komt.
+  grid.querySelectorAll('[data-animate]').forEach(el => el.classList.add('visible'));
 }
 
 // ── CART ─────────────────────────────────────────────────
