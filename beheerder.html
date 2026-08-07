@@ -243,6 +243,39 @@
     @media (max-width: 560px) {
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .login-card { padding: 32px 20px; }
+
+      /* Compactere topbar zodat lange paneltitels niet meer wrappen */
+      .admin-topbar { gap: 8px; }
+      .topbar-title { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+      .topbar-actions { gap: 8px; flex-shrink: 0; }
+      #topbar-username { display: none; }
+      .btn-logout { padding: 8px 10px; }
+    }
+    @media (max-width: 400px) {
+      .btn-logout-text { display: none; }
+    }
+
+    /* RESPONSIVE TABLES — stapel rijen als kaarten op kleine schermen */
+    @media (max-width: 700px) {
+      .table-wrap table, .table-wrap thead, .table-wrap tbody, .table-wrap th, .table-wrap td, .table-wrap tr {
+        display: block;
+      }
+      .table-wrap thead { display: none; }
+      .table-wrap tr {
+        border: 2px solid var(--border); border-radius: var(--radius-sm);
+        padding: 10px 14px; margin-bottom: 12px; background: var(--white);
+      }
+      .table-wrap tr:last-child { margin-bottom: 0; }
+      .table-wrap td {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 9px 0; border-bottom: 1px solid #f0eef8; text-align: right;
+      }
+      .table-wrap td:last-child { border-bottom: none; }
+      .table-wrap td:empty { display: none; }
+      .table-wrap td::before {
+        content: attr(data-label); font-weight: 800; font-size: .68rem; text-transform: uppercase;
+        letter-spacing: .06em; color: var(--text-muted); text-align: left; flex-shrink: 0;
+      }
     }
   </style>
 </head>
@@ -370,7 +403,7 @@
           <div class="topbar-user-avatar" id="topbar-avatar">B</div>
           <span id="topbar-username">Beheerder</span>
         </div>
-        <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Uitloggen</button>
+        <button class="btn-logout" onclick="logout()" title="Uitloggen"><i class="fas fa-sign-out-alt"></i> <span class="btn-logout-text">Uitloggen</span></button>
       </div>
     </header>
 
@@ -1281,12 +1314,12 @@ async function loadStats() {
           </tr></thead>
           <tbody>
             ${d.recentRegistrations.map(r => `<tr>
-              <td><strong>${r.voornaam} ${r.achternaam||''}</strong><br/><small style="color:var(--text-muted)">${r.email}</small></td>
-              <td>${r.kindNaam}</td>
-              <td>${r.leeftijd||'—'}</td>
-              <td>${r.vak}</td>
-              <td>${statusBadge(r.status)}</td>
-              <td style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${fmtDate(r.submittedAt)}</td>
+              <td data-label="Naam"><strong>${r.voornaam} ${r.achternaam||''}</strong><br/><small style="color:var(--text-muted)">${r.email}</small></td>
+              <td data-label="Kind">${r.kindNaam}</td>
+              <td data-label="Leeftijd">${r.leeftijd||'—'}</td>
+              <td data-label="Vak">${r.vak}</td>
+              <td data-label="Status">${statusBadge(r.status)}</td>
+              <td data-label="Datum" style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${fmtDate(r.submittedAt)}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1342,11 +1375,11 @@ async function loadAccounts() {
           <thead><tr><th>E-mail</th><th>Naam ouder</th><th>Kind</th><th>Aangemaakt</th><th></th></tr></thead>
           <tbody>
             ${accounts.map(a => `<tr>
-              <td>${a.email}</td>
-              <td>${a.name||'—'}</td>
-              <td><strong>${a.kindNaam}</strong></td>
-              <td style="font-size:.78rem;color:var(--text-muted)">${fmtDate(a.createdAt)}</td>
-              <td>
+              <td data-label="E-mail">${a.email}</td>
+              <td data-label="Naam ouder">${a.name||'—'}</td>
+              <td data-label="Kind"><strong>${a.kindNaam}</strong></td>
+              <td data-label="Aangemaakt" style="font-size:.78rem;color:var(--text-muted)">${fmtDate(a.createdAt)}</td>
+              <td data-label="">
                 <button class="btn btn-icon" title="Account verwijderen" onclick="deleteAccount('${a.id}','${a.kindNaam}')">
                   <i class="fas fa-trash-alt"></i>
                 </button>
@@ -1645,7 +1678,7 @@ async function loadProductsAdmin() {
           </tr></thead>
           <tbody>
             ${products.map(p => `<tr id="prod-row-${p.id}">
-              <td>
+              <td data-label="Product">
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div style="width:36px;height:36px;border-radius:8px;background:rgba(91,79,207,.1);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0;">
                     <i class="fas ${p.icon||'fa-tag'}"></i>
@@ -1656,10 +1689,10 @@ async function loadProductsAdmin() {
                   </div>
                 </div>
               </td>
-              <td><span class="badge badge-gray">${esc(p.categorie||'')}</span></td>
-              <td style="font-weight:800;">€${parseFloat(p.prijs||0).toFixed(2).replace('.',',')}</td>
-              <td>${p.badge ? `<span class="badge" style="background:${p.badgeKleur||'rgba(91,79,207,.12)'};color:${p.badgeKleur?'#fff':'var(--primary)'};">${esc(p.badge)}</span>` : '<span style="color:var(--text-muted);font-size:.8rem;">—</span>'}</td>
-              <td>
+              <td data-label="Categorie"><span class="badge badge-gray">${esc(p.categorie||'')}</span></td>
+              <td data-label="Prijs" style="font-weight:800;">€${parseFloat(p.prijs||0).toFixed(2).replace('.',',')}</td>
+              <td data-label="Badge">${p.badge ? `<span class="badge" style="background:${p.badgeKleur||'rgba(91,79,207,.12)'};color:${p.badgeKleur?'#fff':'var(--primary)'};">${esc(p.badge)}</span>` : '<span style="color:var(--text-muted);font-size:.8rem;">—</span>'}</td>
+              <td data-label="Status">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
                   <input type="checkbox" ${p.actief!==false?'checked':''} onchange="toggleProduct('${p.id}',this.checked)"
                     style="accent-color:var(--primary);width:16px;height:16px;" />
@@ -1668,7 +1701,7 @@ async function loadProductsAdmin() {
                   </span>
                 </label>
               </td>
-              <td>
+              <td data-label="">
                 <div style="display:flex;gap:6px;">
                   <button class="btn btn-icon" title="Bewerken" onclick="editProduct(${JSON.stringify(p).replace(/"/g,'&quot;')})">
                     <i class="fas fa-pen"></i>
@@ -1819,7 +1852,7 @@ async function loadTeachers() {
       list.innerHTML = '<div class="empty-state"><i class="fas fa-chalkboard-teacher"></i><br>Nog geen docenten aangemaakt.</div>';
       return;
     }
-    list.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+    list.innerHTML = `<div class="table-wrap"><table style="width:100%;border-collapse:collapse;">
       <thead>
         <tr style="border-bottom:2px solid var(--border);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);">
           <th style="padding:10px 12px;text-align:left;">Naam</th>
@@ -1832,23 +1865,23 @@ async function loadTeachers() {
       <tbody>
         ${teachers.map(t => `
         <tr style="border-bottom:1px solid var(--border);" id="tr-teacher-${esc(t.id)}">
-          <td style="padding:12px;">${esc(t.name)}</td>
-          <td style="padding:12px;font-family:monospace;">${esc(t.username)}</td>
-          <td style="padding:12px;">${(t.permissions||[]).map(p =>
+          <td data-label="Naam" style="padding:12px;">${esc(t.name)}</td>
+          <td data-label="Gebruikersnaam" style="padding:12px;font-family:monospace;">${esc(t.username)}</td>
+          <td data-label="Rechten" style="padding:12px;">${(t.permissions||[]).map(p =>
             `<span style="background:rgba(91,79,207,.1);color:var(--primary);border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:700;margin-right:4px;">${esc(PERM_LABELS[p]||p)}</span>`
           ).join('')||'<span style="color:var(--text-muted);font-size:.82rem;">Geen rechten</span>'}</td>
-          <td style="padding:12px;">
+          <td data-label="Status" style="padding:12px;">
             <span style="background:${t.active!==false?'rgba(6,214,160,.12)':'rgba(192,57,43,.1)'};color:${t.active!==false?'#059669':'#c0392b'};border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:700;">
               ${t.active!==false ? 'Actief' : 'Inactief'}
             </span>
           </td>
-          <td style="padding:12px;text-align:right;">
+          <td data-label="" style="padding:12px;text-align:right;">
             <button class="btn btn-outline btn-sm" onclick="editTeacher('${esc(t.id)}')"><i class="fas fa-pen"></i></button>
             <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="deleteTeacher('${esc(t.id)}', '${esc(t.name)}')"><i class="fas fa-trash"></i></button>
           </td>
         </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table></div>`;
   } catch {
     list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> Kon docenten niet laden.</div>';
   }
@@ -1991,18 +2024,18 @@ async function loadAdmins() {
           </tr></thead>
           <tbody>
             ${admins.map(a => `<tr id="adm-row-${a.id}">
-              <td><strong>${esc(a.username)}</strong> ${a.username === adminUsername ? '<span class="badge badge-new">jij</span>' : ''}</td>
-              <td>${esc(a.displayName || a.username)}</td>
-              <td>${a.isSuperAdmin
+              <td data-label="Gebruikersnaam"><strong>${esc(a.username)}</strong> ${a.username === adminUsername ? '<span class="badge badge-new">jij</span>' : ''}</td>
+              <td data-label="Weergavenaam">${esc(a.displayName || a.username)}</td>
+              <td data-label="Rol">${a.isSuperAdmin
                 ? '<span class="badge badge-orange"><i class="fas fa-crown"></i> Hoofdbeheerder</span>'
                 : '<span class="badge badge-gray">Beheerder</span>'
               }</td>
-              <td>${a.twoFactorEnabled
+              <td data-label="2FA">${a.twoFactorEnabled
                 ? '<span class="badge badge-green"><i class="fas fa-lock"></i> Aan</span>'
                 : '<span class="badge badge-red"><i class="fas fa-lock-open"></i> Uit</span>'
               }</td>
-              <td style="font-size:.78rem;color:var(--text-muted)">${fmtDate(a.createdAt)}</td>
-              <td>
+              <td data-label="Aangemaakt" style="font-size:.78rem;color:var(--text-muted)">${fmtDate(a.createdAt)}</td>
+              <td data-label="">
                 <div style="display:flex;gap:6px;">
                   ${_isSuperAdmin && a.twoFactorEnabled ? `
                     <button class="btn btn-sm" style="border:2px solid var(--border);background:none;color:var(--text-muted);padding:6px 12px;font-size:.8rem;font-weight:800;"
