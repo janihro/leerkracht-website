@@ -802,6 +802,13 @@
               <i class="fas fa-download"></i> Download reviews.csv
             </button>
           </div>
+          <div class="export-card">
+            <h3><i class="fas fa-database" style="color:var(--green)"></i> Volledige backup</h3>
+            <p>Download een snapshot van de complete database — te gebruiken om terug te zetten als er iets misgaat.</p>
+            <button class="btn btn-primary" onclick="downloadBackup()">
+              <i class="fas fa-download"></i> Download backup
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1632,6 +1639,22 @@ async function exportCSV(type) {
     a.remove();
     URL.revokeObjectURL(a.href);
   } catch { alert('Exporteren mislukt. Probeer opnieuw.'); }
+}
+
+async function downloadBackup() {
+  try {
+    const res = await fetch('/api/admin/backup', { headers: adminHeaders() });
+    if (!res.ok) { alert('Backup downloaden mislukt. Controleer je wachtwoord.'); return; }
+    const blob = await res.blob();
+    const stamp = new Date().toISOString().slice(0,10);
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `nonf-backup-${stamp}.sqlite`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  } catch { alert('Backup downloaden mislukt. Probeer opnieuw.'); }
 }
 
 // ══════════════════ PASSWORD ═════════════════════════════
