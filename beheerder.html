@@ -1961,7 +1961,7 @@ async function saveTeacher() {
     const method = editId ? 'PUT' : 'POST';
     const res = await fetch(url, {
       method,
-      headers: { 'Content-Type':'application/json', 'x-admin-password': adminPass },
+      headers: adminHeaders({ 'Content-Type':'application/json' }),
       body: JSON.stringify(body)
     });
     const data = await res.json();
