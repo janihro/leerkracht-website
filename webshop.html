@@ -145,46 +145,18 @@
   <div class="container" data-animate>
     <div class="section-label center">Webshop</div>
     <h1 class="section-title">Leermateriaal &amp; producten</h1>
-    <p>Werkboeken, oefensets en digitale downloads om thuis mee te oefenen.</p>
+    <p>Wordt vervolgd — binnenkort vind je hier onze werkboeken, oefensets en NONF-merchandise.</p>
   </div>
 </div>
 
 <section class="section section-tinted">
-  <div class="container">
-    <div class="filter-bar" id="filter-bar" data-animate>
-      <button class="filter-btn active" data-cat="alles">Alles</button>
-    </div>
-    <div class="shop-grid" id="shop-grid" data-animate>
-      <!-- geladen via JS -->
-    </div>
+  <div class="container" style="text-align:center;padding:60px 20px;" data-animate>
+    <i class="fas fa-store-slash" style="font-size:3rem;color:var(--text-muted);opacity:.4;display:block;margin-bottom:20px;"></i>
+    <h2 style="font-family:var(--font-display,'Playfair Display',serif);font-size:1.6rem;margin-bottom:12px;">Onze webshop is in de maak</h2>
+    <p style="color:var(--text-muted);max-width:480px;margin:0 auto 28px;line-height:1.7;">We werken achter de schermen aan ons aanbod van werkboeken, oefensets en NONF-merchandise. Wordt vervolgd!</p>
+    <a href="contact.html" class="btn btn-primary"><i class="fas fa-envelope"></i> Neem contact op</a>
   </div>
 </section>
-
-<!-- Cart bubble -->
-<div class="cart-bubble" id="cart-bubble" onclick="openCart()">
-  <i class="fas fa-shopping-cart"></i> Mandje
-  <span class="cart-count" id="cart-count-bubble">0</span>
-</div>
-
-<!-- Cart modal -->
-<div class="cart-modal-bg" id="cart-modal-bg" onclick="if(event.target===this)closeCart()">
-  <div class="cart-modal">
-    <div class="cart-modal-header">
-      <div class="cart-modal-title">Winkelmandje</div>
-      <button class="cart-close-btn" onclick="closeCart()"><i class="fas fa-times"></i></button>
-    </div>
-    <div id="cart-items-list"></div>
-    <div id="cart-footer" style="display:none;">
-      <div class="cart-total"><span>Totaal</span><span id="cart-total-price">€0,00</span></div>
-      <button class="cart-checkout-btn" onclick="checkout()">
-        <i class="fas fa-credit-card"></i> Afrekenen
-      </button>
-      <p style="font-size:.74rem;color:var(--text-muted);text-align:center;margin-top:10px;">
-        Betaalintegratie volgt — je bestelling wordt geregistreerd.
-      </p>
-    </div>
-  </div>
-</div>
 
 <footer>
   <div class="container footer-grid">
@@ -216,8 +188,8 @@
       <ul class="footer-contact">
         <li><i class="fas fa-envelope"></i> info@nosorguyonosfuturo.nl</li>
         <li><i class="fas fa-phone"></i> 0681 52 99 64</li>
-        <li><i class="fas fa-map-marker-alt"></i> Almere Poort</li>
-        <li><i class="fas fa-map-marker-alt"></i> Amsterdam Zuidoost</li>
+        <li><i class="fas fa-map-marker-alt"></i> Adriaen Blockstraat 9, Almere</li>
+        <li><i class="fas fa-map-marker-alt"></i> Bijlmerdreef 182 B/C, Amsterdam</li>
       </ul>
     </div>
     <div>
@@ -397,8 +369,8 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-syncBubble();
-loadProducts();
+// Webshop staat onder constructie — product/mandje-JS bewust niet gestart
+// (elementen bestaan niet meer in de pagina, zie sectie hierboven).
 </script>
 
 <!-- WhatsApp vaste knop -->
