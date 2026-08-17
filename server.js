@@ -206,7 +206,48 @@ app.use((req, res, next) => {
   next();
 });
 
-// 2. Blokkeer toegang tot gevoelige server-bestanden
+// 2. ONDERHOUDSMODUS — site tijdelijk onbereikbaar voor de buitenwereld.
+//    Het beheerderspaneel (en de API die het gebruikt) blijft bereikbaar
+//    zodat de eigenaar dit later zelf weer online kan zetten.
+//    Zet op false (en commit + push) om de site weer publiek te maken.
+const MAINTENANCE_MODE = true;
+const MAINTENANCE_ALLOW = [
+  /^\/beheer-nonf-2026$/i,
+  /^\/logo\.jpeg$/i,
+  /^\/api\//i,
+];
+const MAINTENANCE_HTML = `<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Even niet bereikbaar — Nos Orguyo, Nos Futuro</title>
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#1A4E8A 0%,#0f3366 60%,#1BB6AD 100%);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:#fff; text-align:center; padding:20px; }
+  .box { max-width:480px; }
+  .emoji { font-size:3.5rem; margin-bottom:16px; }
+  h1 { font-size:1.6rem; margin-bottom:12px; }
+  p { opacity:.85; line-height:1.7; font-size:1rem; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="emoji">🌺</div>
+    <h1>Even niet bereikbaar</h1>
+    <p>Nos Orguyo, Nos Futuro is momenteel tijdelijk offline. Kom later nog eens terug.</p>
+  </div>
+</body>
+</html>`;
+app.use((req, res, next) => {
+  if (!MAINTENANCE_MODE) return next();
+  if (MAINTENANCE_ALLOW.some(re => re.test(req.path))) return next();
+  res.status(503).send(MAINTENANCE_HTML);
+});
+
+// 3. Blokkeer toegang tot gevoelige server-bestanden
 const BLOCKED_PATHS = [
   /^\/server\.js$/i,
   /^\/db\.js$/i,
@@ -225,15 +266,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// 3. Body parser met grootte limiet
+// 4. Body parser met grootte limiet
 app.use(express.json({ limit: '1mb' }));
 
-// 4. Geheime beheerder URL (vóór static middleware)
+// 5. Geheime beheerder URL (vóór static middleware)
 app.get('/beheer-nonf-2026', (req, res) => {
   res.sendFile(path.join(__dirname, 'beheerder.html'));
 });
 
-// 5. Statische bestanden
+// 6. Statische bestanden
 app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
