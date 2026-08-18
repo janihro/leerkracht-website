@@ -210,7 +210,7 @@ app.use((req, res, next) => {
 //    Het beheerderspaneel (en de API die het gebruikt) blijft bereikbaar
 //    zodat de eigenaar dit later zelf weer online kan zetten.
 //    Zet op false (en commit + push) om de site weer publiek te maken.
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 const MAINTENANCE_ALLOW = [
   /^\/beheer-nonf-2026$/i,
   /^\/logo\.jpeg$/i,
