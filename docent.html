@@ -738,6 +738,9 @@
         showPanel();
         if (teacherPerms.includes('vragen'))        loadQuestions();
         if (teacherPerms.includes('materiaal'))     loadFiles();
+        if (teacherPerms.includes('agenda'))        { loadAgenda(); loadAccountsForPicker(); }
+        if (teacherPerms.includes('galerij'))       loadGalleryDocent();
+        if (teacherPerms.includes('notities'))      { loadNotities(); loadAccountsForNotePicker(); }
       } else {
         errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Onjuist wachtwoord';
         errEl.style.display = 'block';
@@ -768,6 +771,9 @@
     showPanel();
     if (teacherPerms.includes('vragen'))    loadQuestions();
     if (teacherPerms.includes('materiaal')) loadFiles();
+    if (teacherPerms.includes('agenda'))    { loadAgenda(); loadAccountsForPicker(); }
+    if (teacherPerms.includes('galerij'))   loadGalleryDocent();
+    if (teacherPerms.includes('notities'))  { loadNotities(); loadAccountsForNotePicker(); }
   }
 
   // Section tabs
