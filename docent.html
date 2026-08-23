@@ -286,6 +286,9 @@
       <button class="section-tab" id="tab-galerij" data-perm="galerij" onclick="showSection('galerij',this)" style="display:none;">
         <i class="fas fa-images"></i> Galerij
       </button>
+      <button class="section-tab" id="tab-notities" data-perm="notities" onclick="showSection('notities',this)">
+        <i class="fas fa-sticky-note"></i> Notities
+      </button>
     </div>
 
     <!-- ── VRAGEN SECTIE ── -->
@@ -585,6 +588,52 @@
       </div>
     </div><!-- end section-galerij -->
 
+    <!-- ── NOTITIES SECTIE ── -->
+    <div class="section-panel" id="section-notities">
+      <div class="docent-panel-header">
+        <div>
+          <h2><i class="fas fa-sticky-note" style="color:var(--primary);margin-right:10px;"></i>Notities</h2>
+          <p>Schrijf voortgangsnotities per leerling — ouders zien deze direct in hun portaal.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadNotities()"><i class="fas fa-sync-alt"></i> Vernieuwen</button>
+      </div>
+
+      <div class="upload-card">
+        <h3><i class="fas fa-plus-circle"></i> Nieuwe notitie toevoegen</h3>
+        <div class="upload-form-grid">
+          <div class="full">
+            <label>Leerling</label>
+            <select id="note-account">
+              <option value="">— Kies een leerling —</option>
+            </select>
+          </div>
+          <div>
+            <label>Titel</label>
+            <input type="text" id="note-titel" placeholder="Bijv. Rekenen week 3" />
+          </div>
+          <div>
+            <label>Vak (optioneel)</label>
+            <input type="text" id="note-vak" placeholder="Bijv. Taal, Rekenen" />
+          </div>
+          <div class="full">
+            <label>Notitie</label>
+            <textarea id="note-tekst" placeholder="Wat wil je met de ouder delen?"></textarea>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="note-save-btn" onclick="saveNotitie()">
+          <i class="fas fa-save"></i> Notitie opslaan
+        </button>
+        <div id="note-msg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:.84rem;font-weight:700;"></div>
+      </div>
+
+      <div class="docent-panel-header" style="margin-bottom:16px;margin-top:8px;">
+        <div><h2><i class="fas fa-list" style="color:var(--primary);margin-right:10px;"></i>Alle notities</h2></div>
+      </div>
+      <div id="notities-list">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>
+      </div>
+    </div><!-- end section-notities -->
+
   </div>
 </div>
 
@@ -730,6 +779,7 @@
     if (name === 'inschrijvingen') loadRegistrations();
     if (name === 'agenda')         { loadAgenda(); loadAccountsForPicker(); }
     if (name === 'galerij')        loadGalleryDocent();
+    if (name === 'notities')       { loadNotities(); loadAccountsForNotePicker(); }
   }
 
   // Filter
@@ -1357,6 +1407,117 @@
         document.getElementById('ag-' + id)?.remove();
         allAgendaItems = allAgendaItems.filter(i => i.id !== id);
         if (!allAgendaItems.length) renderAgendaList();
+      }
+    } catch {}
+  }
+
+  // ══════════════════ NOTITIES ══════════════════════════════
+  let allNotities = [];
+
+  async function loadAccountsForNotePicker() {
+    if (!allAccounts.length) await loadAccountsForPicker();
+    const sel = document.getElementById('note-account');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Kies een leerling —</option>' +
+      allAccounts.map(a => `<option value="${esc(a.id)}">${esc(a.kindNaam)} (${esc(a.email)})</option>`).join('');
+  }
+
+  async function loadNotities() {
+    const list = document.getElementById('notities-list');
+    if (!list) return;
+    list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
+    try {
+      const res = await fetch('/api/notities', {
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser }
+      });
+      if (res.status === 401) { handle401(); return; }
+      allNotities = await res.json();
+      renderNotities();
+    } catch {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> Kon notities niet laden.</div>';
+    }
+  }
+
+  function renderNotities() {
+    const list = document.getElementById('notities-list');
+    if (!allNotities.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-sticky-note"></i><br>Nog geen notities.</div>';
+      return;
+    }
+    list.innerHTML = allNotities.map(n => {
+      const account = allAccounts.find(a => a.id === n.accountId);
+      const kindNaam = account ? account.kindNaam : 'Onbekende leerling';
+      return `
+        <div class="file-item" id="note-${n.id}" style="border-left:4px solid var(--primary);margin-bottom:12px;">
+          <div style="width:52px;height:52px;border-radius:12px;background:rgba(91,79,207,.1);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;color:var(--primary);">
+            <i class="fas fa-sticky-note"></i>
+          </div>
+          <div class="file-body">
+            <h4>${esc(n.titel)} <span style="font-weight:700;color:var(--text-muted);font-size:.8rem;">— ${esc(kindNaam)}</span></h4>
+            <p>
+              <span style="font-size:.72rem;background:rgba(91,79,207,.1);color:var(--primary);padding:2px 9px;border-radius:99px;font-weight:800;">${esc(n.vak)}</span>
+              &nbsp;·&nbsp;<span style="font-size:.75rem;color:var(--text-muted);">${formatDate(n.createdAt)} · ${esc(n.teacherName)}</span>
+            </p>
+            <p style="margin-top:4px;font-size:.85rem;color:var(--text-muted);">${esc(n.tekst)}</p>
+          </div>
+          <div class="file-actions">
+            <button class="btn-delete" onclick="deleteNotitie('${n.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function saveNotitie() {
+    const accountId = document.getElementById('note-account').value;
+    const titel     = document.getElementById('note-titel').value.trim();
+    const vak       = document.getElementById('note-vak').value.trim();
+    const tekst     = document.getElementById('note-tekst').value.trim();
+    const msgEl     = document.getElementById('note-msg');
+
+    if (!accountId) { showNoteMsg('Kies eerst een leerling.', 'error'); return; }
+    if (!titel)     { showNoteMsg('Vul een titel in.', 'error'); return; }
+    if (!tekst)     { showNoteMsg('Vul een notitie in.', 'error'); return; }
+
+    try {
+      const res = await fetch('/api/notities', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser },
+        body: JSON.stringify({ accountId, titel, vak, tekst })
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (!res.ok) { showNoteMsg(data.error || 'Opslaan mislukt.', 'error'); return; }
+      showNoteMsg('✓ Notitie opgeslagen!', 'success');
+      document.getElementById('note-titel').value = '';
+      document.getElementById('note-vak').value = '';
+      document.getElementById('note-tekst').value = '';
+      loadNotities();
+    } catch {
+      showNoteMsg('Er is iets misgegaan.', 'error');
+    }
+  }
+
+  function showNoteMsg(msg, type) {
+    const el = document.getElementById('note-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.background = type === 'success' ? 'rgba(6,214,160,.12)' : 'rgba(192,57,43,.1)';
+    el.style.color = type === 'success' ? '#059669' : '#c0392b';
+    if (type === 'success') setTimeout(() => el.style.display = 'none', 3500);
+  }
+
+  async function deleteNotitie(id) {
+    if (!confirm('Deze notitie verwijderen?')) return;
+    try {
+      const res = await fetch(`/api/notities/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser }
+      });
+      if (res.status === 401) { handle401(); return; }
+      if (res.ok) {
+        document.getElementById('note-' + id)?.remove();
+        allNotities = allNotities.filter(n => n.id !== id);
+        if (!allNotities.length) renderNotities();
       }
     } catch {}
   }

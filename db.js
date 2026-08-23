@@ -50,6 +50,10 @@ const SCHEMA = `
     id TEXT PRIMARY KEY, username TEXT UNIQUE, displayName TEXT, password TEXT,
     isSuperAdmin INTEGER, twoFactorSecret TEXT, twoFactorEnabled INTEGER, createdAt TEXT
   );
+  CREATE TABLE IF NOT EXISTS notities (
+    id TEXT PRIMARY KEY, accountId TEXT, titel TEXT, vak TEXT, tekst TEXT,
+    teacherName TEXT, createdAt TEXT
+  );
 `;
 
 function generateId() { return crypto.randomBytes(8).toString('hex'); }
@@ -145,6 +149,7 @@ function buildRepo(db) {
     all() { return db.prepare('SELECT * FROM accounts ORDER BY createdAt DESC').all().map(mapAccount); },
     count() { return db.prepare('SELECT COUNT(*) AS n FROM accounts').get().n; },
     findByEmail(email) { return mapAccount(db.prepare('SELECT * FROM accounts WHERE email = ?').get(email)); },
+    find(id) { return mapAccount(db.prepare('SELECT * FROM accounts WHERE id = ?').get(id)); },
     insert(a) {
       db.prepare(`INSERT INTO accounts (id,email,password,kindNaam,name,mustChangePassword,createdAt)
         VALUES (?,?,?,?,?,?,?)`).run(a.id, a.email, a.password, a.kindNaam, a.name, a.mustChangePassword ? 1 : 0, a.createdAt);
@@ -307,7 +312,19 @@ function buildRepo(db) {
   };
   settings.ensureDefaults();
 
-  return { questions, files, registrations, reviews, accounts, gallery, products, agenda, teachers, admins, settings };
+  const notities = {
+    all() { return db.prepare('SELECT * FROM notities ORDER BY createdAt DESC').all(); },
+    allForAccount(accountId) { return db.prepare('SELECT * FROM notities WHERE accountId = ? ORDER BY createdAt DESC').all(accountId); },
+    find(id) { return db.prepare('SELECT * FROM notities WHERE id = ?').get(id); },
+    insert(n) {
+      db.prepare(`INSERT INTO notities (id,accountId,titel,vak,tekst,teacherName,createdAt) VALUES (?,?,?,?,?,?,?)`)
+        .run(n.id, n.accountId, n.titel, n.vak, n.tekst, n.teacherName, n.createdAt);
+      return n;
+    },
+    remove(id) { db.prepare('DELETE FROM notities WHERE id = ?').run(id); },
+  };
+
+  return { questions, files, registrations, reviews, accounts, gallery, products, agenda, teachers, admins, settings, notities };
 }
 
 // Seed standaard NONF-producten — alleen aanroepen als de tabel na een

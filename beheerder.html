@@ -843,6 +843,7 @@
               <label class="perm-check"><input type="checkbox" value="materiaal" class="dt-perm" /> <i class="fas fa-folder-open"></i> Materiaal</label>
               <label class="perm-check"><input type="checkbox" value="inschrijvingen" class="dt-perm" /> <i class="fas fa-clipboard-list"></i> Inschrijvingen</label>
               <label class="perm-check"><input type="checkbox" value="galerij" class="dt-perm" /> <i class="fas fa-images"></i> Galerij</label>
+              <label class="perm-check"><input type="checkbox" value="notities" class="dt-perm" /> <i class="fas fa-sticky-note"></i> Notities</label>
             </div>
           </div>
           <div id="dt-msg" style="display:none;padding:10px 14px;border-radius:8px;font-size:.84rem;font-weight:700;margin-bottom:14px;"></div>
@@ -1888,8 +1889,8 @@ function esc(s) {
 }
 
 // ══════════════════ DOCENTEN ══════════════════════════════
-const ALL_PERMS = ['vragen','agenda','materiaal','inschrijvingen','galerij'];
-const PERM_LABELS = { vragen:'Vragen', agenda:'Agenda', materiaal:'Materiaal', inschrijvingen:'Inschrijvingen', galerij:'Galerij' };
+const ALL_PERMS = ['vragen','agenda','materiaal','inschrijvingen','galerij','notities'];
+const PERM_LABELS = { vragen:'Vragen', agenda:'Agenda', materiaal:'Materiaal', inschrijvingen:'Inschrijvingen', galerij:'Galerij', notities:'Notities' };
 let _teachersCache = [];
 
 async function loadTeachers() {

@@ -170,19 +170,8 @@
       <!-- NOTITIES -->
       <section id="notities" data-animate>
         <div class="dash-section-title"><i class="fas fa-sticky-note"></i> Notities van de begeleider</div>
-        <div class="prog-card">
-          <div class="notitie-item">
-            <strong>7 juni 2026 — Rekenen</strong>
-            <p>Emma heeft vandaag goed haar best gedaan met breuken optellen. Ze begrijpt het principe, maar heeft nog oefening nodig met ongelijknamige breuken.</p>
-          </div>
-          <div class="notitie-item">
-            <strong>5 juni 2026 — Taal</strong>
-            <p>Begrijpend lezen gaat erg goed! Emma scoorde 8/10 op de oefentekst.</p>
-          </div>
-          <div class="notitie-item">
-            <strong>3 juni 2026 — Leervaardigheden</strong>
-            <p>We hebben geoefend met een weektaakplanner. Emma is enthousiast!</p>
-          </div>
+        <div class="prog-card" id="notities-container">
+          <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:.88rem;">Laden...</div>
         </div>
       </section>
 
@@ -426,8 +415,31 @@
       </div>`;
   }
 
+  // Notities van de begeleider
+  async function loadNotities() {
+    const container = document.getElementById('notities-container');
+    if (!container) return;
+    try {
+      const res = await fetch('/api/notities?email=' + encodeURIComponent(userEmail));
+      if (!res.ok) throw new Error();
+      const notities = await res.json();
+      if (!notities.length) {
+        container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:.88rem;"><i class="fas fa-sticky-note" style="font-size:1.8rem;opacity:.25;display:block;margin-bottom:10px;"></i>Nog geen notities geplaatst.</div>';
+        return;
+      }
+      container.innerHTML = notities.map(n => `
+        <div class="notitie-item">
+          <strong>${formatDate(n.createdAt)} — ${n.vak}</strong>
+          <p>${n.tekst}</p>
+        </div>`).join('');
+    } catch {
+      container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:.84rem;">Notities konden niet worden geladen.</div>';
+    }
+  }
+
   // Laad bij opstarten
   loadAgenda();
+  loadNotities();
 
   // Sidebar scroll highlight
   document.addEventListener('scroll', () => {

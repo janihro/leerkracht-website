@@ -21,7 +21,7 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 const { migrate } = require('./migrate-json-to-sqlite');
 const { repo }     = migrate(DATA_DIR);
 
-const ALL_PERMISSIONS = ['vragen', 'agenda', 'materiaal', 'inschrijvingen', 'galerij'];
+const ALL_PERMISSIONS = ['vragen', 'agenda', 'materiaal', 'inschrijvingen', 'galerij', 'notities'];
 
 // ─── WACHTWOORD HASHING (PBKDF2-SHA512) ──────────────────
 // Gebruikt Node.js ingebouwde crypto — geen extra packages
@@ -755,6 +755,50 @@ app.delete('/api/agenda/:id', (req, res) => {
   if ((!teacher || !hasPermission(teacher, 'agenda')) && !adminAuth(req))
     return res.status(401).json({ error: 'Geen toegang' });
   repo.agenda.remove(req.params.id);
+  res.json({ success: true });
+});
+
+// ─── NOTITIES ─────────────────────────────────────────────
+// GET — met ?email=... zien ouders alleen de notities van hun eigen
+// account; docent/admin (zonder email) ziet alle notities.
+app.get('/api/notities', (req, res) => {
+  const email = sanitize(req.query.email, 200);
+  if (email) {
+    const account = repo.accounts.findByEmail(email);
+    return res.json(account ? repo.notities.allForAccount(account.id) : []);
+  }
+  const teacher = getTeacher(req);
+  if ((!teacher || !hasPermission(teacher, 'notities')) && !adminAuth(req))
+    return res.status(401).json({ error: 'Geen toegang' });
+  res.json(repo.notities.all());
+});
+
+// POST — nieuwe notitie aanmaken (docent met rechten, of admin)
+app.post('/api/notities', (req, res) => {
+  const teacher = getTeacher(req);
+  if ((!teacher || !hasPermission(teacher, 'notities')) && !adminAuth(req))
+    return res.status(401).json({ error: 'Geen toegang' });
+  const accountId = sanitize(req.body.accountId, 100);
+  const titel      = sanitize(req.body.titel, 200);
+  const vak        = sanitize(req.body.vak, 100);
+  const tekst      = sanitize(req.body.tekst, 2000);
+  if (!accountId || !titel || !tekst) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
+  const account = repo.accounts.find(accountId);
+  if (!account) return res.status(404).json({ error: 'Portaalaccount niet gevonden' });
+  const note = {
+    id: generateId(), accountId, titel, vak: vak || 'Algemeen', tekst,
+    teacherName: teacher ? teacher.name : 'Beheerder', createdAt: new Date().toISOString(),
+  };
+  repo.notities.insert(note);
+  res.status(201).json(note);
+});
+
+// DELETE — notitie verwijderen (docent met rechten, of admin)
+app.delete('/api/notities/:id', (req, res) => {
+  const teacher = getTeacher(req);
+  if ((!teacher || !hasPermission(teacher, 'notities')) && !adminAuth(req))
+    return res.status(401).json({ error: 'Geen toegang' });
+  repo.notities.remove(req.params.id);
   res.json({ success: true });
 });
 
