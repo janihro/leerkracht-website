@@ -213,7 +213,7 @@ app.use((req, res, next) => {
 //    Zet op false (en commit + push) om de site weer publiek te maken.
 const MAINTENANCE_MODE = false;
 const MAINTENANCE_ALLOW = [
-  /^\/beheer-nonf-2026$/i,
+  /^\/beheer$/i,
   /^\/logo\.jpeg$/i,
   /^\/api\//i,
 ];
@@ -271,7 +271,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '1mb' }));
 
 // 5. Geheime beheerder URL (vóór static middleware)
-app.get('/beheer-nonf-2026', (req, res) => {
+app.get('/beheer', (req, res) => {
   res.sendFile(path.join(__dirname, 'beheerder.html'));
 });
 
