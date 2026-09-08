@@ -9,6 +9,7 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     port: Number(process.env.SMTP_PORT) || 587,
     secure: false, // STARTTLS op poort 587
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    family: 4, // Railway heeft geen uitgaande IPv6-route naar mail.mijndomein.nl
   });
 }
 
@@ -25,6 +26,7 @@ async function sendMail({ to, subject, html }) {
   }
   try {
     await transporter.sendMail({ from: process.env.SMTP_USER, to, subject, html });
+    console.log(`[mail] Verstuurd naar ${to}: ${subject}`);
   } catch (err) {
     console.error(`[mail] Versturen naar ${to} mislukt:`, err.message);
   }
