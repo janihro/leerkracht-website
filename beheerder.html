@@ -188,6 +188,8 @@
     .btn-danger { background: none; border: 2px solid var(--border); color: var(--text-muted); }
     .btn-danger:hover { border-color: var(--red); color: var(--red); background: rgba(224,58,58,.06); }
     .btn-sm { padding: 6px 14px; font-size: .8rem; }
+    .reg-status-select { font-size: .82rem; padding: 7px 10px; border-radius: var(--radius-sm); border: 2px solid var(--border); font-family: var(--font-body); font-weight: 700; cursor: pointer; background: var(--white); }
+    .reg-status-select:focus { border-color: var(--primary); outline: none; }
     .btn-icon { width: 34px; height: 34px; padding: 0; justify-content: center; border: 2px solid var(--border); background: none; color: var(--text-muted); border-radius: 8px; }
     .btn-icon:hover { border-color: var(--red); color: var(--red); background: rgba(224,58,58,.06); }
 
@@ -349,6 +351,9 @@
       <button class="sidebar-link active" onclick="showPanel('overzicht',this)">
         <i class="fas fa-tachometer-alt"></i> Overzicht
         <span class="sidebar-badge" id="badge-new">0</span>
+      </button>
+      <button class="sidebar-link" onclick="showPanel('inschrijvingen',this)">
+        <i class="fas fa-clipboard-list"></i> Inschrijvingen
       </button>
       <button class="sidebar-link" onclick="showPanel('instellingen',this)">
         <i class="fas fa-cog"></i> Website instellingen
@@ -584,6 +589,24 @@
           </div>
           <div id="accounts-list">
             <div class="empty-state"><i class="fas fa-users"></i><p>Nog geen accounts aangemaakt</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── INSCHRIJVINGEN ───────────────────────────────── -->
+      <div class="panel" id="panel-inschrijvingen">
+        <div class="panel-header">
+          <h2>Inschrijvingen</h2>
+          <p>Bekijk, wijzig de status van, of verwijder inschrijvingen.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-clipboard-list"></i> Alle inschrijvingen</div>
+            <button class="btn btn-sm btn-primary" onclick="loadInschrijvingen()"><i class="fas fa-sync"></i> Vernieuwen</button>
+          </div>
+          <div id="inschrijvingen-list">
+            <div class="empty-state"><i class="fas fa-inbox"></i><p>Nog geen inschrijvingen</p></div>
           </div>
         </div>
       </div>
@@ -1028,7 +1051,8 @@ function adminHeaders(extra) {
   return Object.assign(h, extra || {});
 }
 const panels = {
-  'overzicht':    'Overzicht',
+  'overzicht':      'Overzicht',
+  'inschrijvingen': 'Inschrijvingen',
   'instellingen': 'Website instellingen',
   'accounts':     'Portaal accounts',
   'reviews':      'Reviews',
@@ -1199,6 +1223,7 @@ function showPanel(name, btn) {
   document.getElementById('topbar-title').textContent = panels[name] || name;
   closeSidebar();
   if (name === 'overzicht') loadStats();
+  if (name === 'inschrijvingen') loadInschrijvingen();
   if (name === 'accounts') loadAccounts();
   if (name === 'reviews') loadReviews();
   if (name === 'galerij') loadGalleryAdmin();
@@ -1364,6 +1389,67 @@ async function loadStats() {
           </tbody>
         </table>
       </div>`;
+  } catch(err) { console.error(err); }
+}
+
+// ══════════════════ INSCHRIJVINGEN ═══════════════════════
+async function loadInschrijvingen() {
+  try {
+    const res = await fetch('/api/registrations', { headers: adminHeaders() });
+    const regs = await res.json();
+    const list = document.getElementById('inschrijvingen-list');
+    if (!Array.isArray(regs) || !regs.length) {
+      list.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Nog geen inschrijvingen</p></div>';
+      return;
+    }
+    regs.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    list.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Naam</th><th>Kind</th><th>Leeftijd</th><th>Vak</th><th>Status</th><th>Datum</th><th>Acties</th>
+          </tr></thead>
+          <tbody>
+            ${regs.map(r => `<tr id="reg-row-${r.id}">
+              <td data-label="Naam"><strong>${esc(r.voornaam)} ${esc(r.achternaam||'')}</strong><br/><small style="color:var(--text-muted)">${esc(r.email)}</small>${r.telefoon ? `<br/><small style="color:var(--text-muted)">${esc(r.telefoon)}</small>` : ''}</td>
+              <td data-label="Kind">${esc(r.kindNaam)}</td>
+              <td data-label="Leeftijd">${esc(r.leeftijd)||'—'}</td>
+              <td data-label="Vak">${esc(r.vak)||'—'}</td>
+              <td data-label="Status">
+                <select class="reg-status-select" onchange="updateInschrijvingStatus('${r.id}', this.value)">
+                  <option value="nieuw" ${r.status==='nieuw'?'selected':''}>Nieuw</option>
+                  <option value="contact opgenomen" ${r.status==='contact opgenomen'?'selected':''}>Contact opgenomen</option>
+                  <option value="ingeschreven" ${r.status==='ingeschreven'?'selected':''}>Ingeschreven</option>
+                  <option value="afgewezen" ${r.status==='afgewezen'?'selected':''}>Afgewezen</option>
+                </select>
+              </td>
+              <td data-label="Datum" style="white-space:nowrap;font-size:.78rem;color:var(--text-muted)">${fmtDate(r.submittedAt)}</td>
+              <td data-label="Acties">
+                <a href="mailto:${esc(r.email)}?subject=Aanvraag%20Nos%20Orguyo%2C%20Nos%20Futuro%20-%20${encodeURIComponent(r.kindNaam)}" class="btn btn-sm btn-outline" title="E-mail sturen"><i class="fas fa-envelope"></i></a>
+                <button class="btn btn-sm btn-danger" onclick="deleteInschrijving('${r.id}')" title="Verwijderen"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(err) { console.error(err); }
+}
+
+async function updateInschrijvingStatus(id, status) {
+  try {
+    await fetch(`/api/registrations/${id}`, {
+      method: 'PATCH',
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ status }),
+    });
+  } catch(err) { console.error(err); }
+}
+
+async function deleteInschrijving(id) {
+  if (!confirm('Deze inschrijving definitief verwijderen?')) return;
+  try {
+    const res = await fetch(`/api/registrations/${id}`, { method: 'DELETE', headers: adminHeaders() });
+    if (res.ok) document.getElementById('reg-row-' + id)?.remove();
   } catch(err) { console.error(err); }
 }
 
