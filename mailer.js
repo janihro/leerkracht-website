@@ -1,16 +1,36 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns').promises;
 
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || 'info@nosorguyonosfuturo.nl';
+const SMTP_HOST     = process.env.SMTP_HOST || 'mail.mijndomein.nl';
+const SMTP_PORT     = Number(process.env.SMTP_PORT) || 587;
 
-let transporter = null;
-if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'mail.mijndomein.nl',
-    port: Number(process.env.SMTP_PORT) || 587,
+let cachedTransporter = null;
+
+// Railway heeft geen uitgaande IPv6-route naar mail.mijndomein.nl, en de socket-optie
+// `family: 4` wordt door nodemailer niet doorgegeven aan de onderliggende connectie.
+// Daarom lossen we het IPv4-adres hier zelf op en verbinden we daar direct mee,
+// met `tls.servername` zodat de certificaatcontrole nog wel op de echte hostnaam draait.
+async function getTransporter() {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+  if (cachedTransporter) return cachedTransporter;
+
+  let host = SMTP_HOST;
+  try {
+    const addresses = await dns.resolve4(SMTP_HOST);
+    if (addresses[0]) host = addresses[0];
+  } catch (err) {
+    console.error(`[mail] IPv4-lookup voor ${SMTP_HOST} mislukt, val terug op hostnaam:`, err.message);
+  }
+
+  cachedTransporter = nodemailer.createTransport({
+    host,
+    port: SMTP_PORT,
     secure: false, // STARTTLS op poort 587
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    family: 4, // Railway heeft geen uitgaande IPv6-route naar mail.mijndomein.nl
+    tls: { servername: SMTP_HOST },
   });
+  return cachedTransporter;
 }
 
 function escapeHtml(str) {
@@ -20,6 +40,7 @@ function escapeHtml(str) {
 }
 
 async function sendMail({ to, subject, html }) {
+  const transporter = await getTransporter();
   if (!transporter) {
     console.log(`[mail] SMTP niet geconfigureerd (SMTP_USER/SMTP_PASS ontbreken) — e-mail naar ${to} overgeslagen: ${subject}`);
     return;
