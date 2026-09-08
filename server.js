@@ -5,6 +5,7 @@ const multer    = require('multer');
 const crypto    = require('crypto'); // ingebouwd in Node.js
 const speakeasy = require('speakeasy');
 const QRCode    = require('qrcode');
+const { sendRegistrationEmails } = require('./mailer');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -413,6 +414,7 @@ app.post('/api/registrations', (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Ongeldig e-mailadres' });
   const reg = { id: generateId(), voornaam, achternaam, email, telefoon, kindNaam, leeftijd, vak, bericht, status: 'nieuw', submittedAt: new Date().toISOString() };
   repo.registrations.insert(reg);
+  sendRegistrationEmails(reg);
   res.status(201).json(reg);
 });
 
