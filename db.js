@@ -54,6 +54,12 @@ const SCHEMA = `
     id TEXT PRIMARY KEY, accountId TEXT, titel TEXT, vak TEXT, tekst TEXT,
     teacherName TEXT, createdAt TEXT
   );
+  CREATE TABLE IF NOT EXISTS admin_sessions (
+    token TEXT PRIMARY KEY, adminId TEXT, createdAt TEXT, expiresAt TEXT
+  );
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id TEXT PRIMARY KEY, timestamp TEXT, type TEXT, message TEXT, actor TEXT
+  );
 `;
 
 function generateId() { return crypto.randomBytes(8).toString('hex'); }
@@ -336,7 +342,35 @@ function buildRepo(db) {
     remove(id) { db.prepare('DELETE FROM notities WHERE id = ?').run(id); },
   };
 
-  return { questions, files, registrations, reviews, accounts, gallery, products, agenda, teachers, admins, settings, notities };
+  const adminSessions = {
+    insert(s) {
+      db.prepare('INSERT INTO admin_sessions (token,adminId,createdAt,expiresAt) VALUES (?,?,?,?)')
+        .run(s.token, s.adminId, s.createdAt, s.expiresAt);
+      return s;
+    },
+    // Geeft het adminId terug als het token bestaat en nog geldig is, anders null.
+    validate(token) {
+      const row = db.prepare('SELECT * FROM admin_sessions WHERE token = ?').get(token);
+      if (!row) return null;
+      if (new Date(row.expiresAt) < new Date()) {
+        db.prepare('DELETE FROM admin_sessions WHERE token = ?').run(token);
+        return null;
+      }
+      return row.adminId;
+    },
+    revoke(token) { db.prepare('DELETE FROM admin_sessions WHERE token = ?').run(token); },
+  };
+
+  const activityLog = {
+    all(limit = 200) { return db.prepare('SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT ?').all(limit); },
+    insert(entry) {
+      db.prepare('INSERT INTO activity_log (id,timestamp,type,message,actor) VALUES (?,?,?,?,?)')
+        .run(entry.id, entry.timestamp, entry.type, entry.message, entry.actor);
+      return entry;
+    },
+  };
+
+  return { questions, files, registrations, reviews, accounts, gallery, products, agenda, teachers, admins, settings, notities, adminSessions, activityLog };
 }
 
 // Seed standaard NONF-producten — alleen aanroepen als de tabel na een

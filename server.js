@@ -82,6 +82,13 @@ setInterval(() => { const now = Date.now(); rlMap.forEach((v,k) => { if (now > v
 function generateId()         { return crypto.randomBytes(8).toString('hex'); }
 function getClientIp(req)     { return (req.headers['x-forwarded-for']||'').split(',')[0].trim() || req.socket.remoteAddress || 'unknown'; }
 
+// Activiteitenlog — zichtbaar voor de hoofdbeheerder in het beheerpaneel.
+function logActivity(type, message, actor) {
+  try {
+    repo.activityLog.insert({ id: generateId(), timestamp: new Date().toISOString(), type, message, actor: actor || 'systeem' });
+  } catch (e) { console.error('Activiteitenlog fout:', e); }
+}
+
 // Invoer opschonen — trim + max lengte + strip null bytes
 function sanitize(val, maxLen = 1000) {
   if (val === null || val === undefined) return '';
@@ -109,11 +116,23 @@ function getAdminFromRequest(req) {
   return admin;
 }
 
-// Volledig geauthenticeerd — voor gewone API-aanroepen alleen wachtwoord nodig.
-// 2FA wordt alleen gecontroleerd bij het inloggen (login-check endpoint).
-// Dit is standaard sessie-gedrag: je bewijst 2FA eenmalig bij inloggen.
+// Volledig geauthenticeerd. Voor beheerders zonder 2FA is het wachtwoord
+// voldoende (ongewijzigd gedrag). Staat 2FA aan, dan is het wachtwoord
+// alléén niet meer genoeg: er moet ook een geldig sessietoken (verkregen
+// via /api/admin/login, na een geverifieerde TOTP-code) of een verse,
+// geldige TOTP-code worden meegestuurd.
 function getAuthenticatedAdmin(req) {
-  return getAdminFromRequest(req); // wachtwoord is voldoende na inloggen
+  const admin = getAdminFromRequest(req);
+  if (!admin) return null;
+  if (!admin.twoFactorEnabled || !admin.twoFactorSecret) return admin;
+
+  const sessionToken = sanitize(req.headers['x-admin-session'], 200);
+  if (sessionToken && repo.adminSessions.validate(sessionToken) === admin.id) return admin;
+
+  const totp = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
+  if (totp && speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token: totp, window: 1 })) return admin;
+
+  return null;
 }
 
 function adminAuth(req)             { return !!getAdminFromRequest(req); }
@@ -415,6 +434,7 @@ app.post('/api/registrations', (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Ongeldig e-mailadres' });
   const reg = { id: generateId(), voornaam, achternaam, email, telefoon, kindNaam, leeftijd, vak, bericht, status: 'nieuw', submittedAt: new Date().toISOString() };
   repo.registrations.insert(reg);
+  logActivity('inschrijving', `Nieuwe inschrijving: ${kindNaam} (ouder: ${voornaam} ${achternaam})`, 'website');
   sendRegistrationEmails(reg);
   res.status(201).json(reg);
 });
@@ -556,7 +576,8 @@ app.get('/api/admin/accounts', (req, res) => {
   res.json(safe);
 });
 app.post('/api/admin/accounts', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
   const email    = sanitize(req.body.email, 200);
   const password = sanitize(req.body.password, 200);
   const kindNaam = sanitize(req.body.kindNaam, 100);
@@ -575,6 +596,7 @@ app.post('/api/admin/accounts', (req, res) => {
     createdAt: new Date().toISOString(),
   };
   repo.accounts.insert(account);
+  logActivity('account', `Portaalaccount aangemaakt voor ${kindNaam} (${email})`, admin.username);
 
   if (!password) {
     const token   = crypto.randomBytes(32).toString('hex');
@@ -588,8 +610,11 @@ app.post('/api/admin/accounts', (req, res) => {
   res.status(201).json({ ...safe, emailSent: !password });
 });
 app.delete('/api/admin/accounts/:id', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const account = repo.accounts.find(req.params.id);
   repo.accounts.remove(req.params.id);
+  if (account) logActivity('account', `Portaalaccount verwijderd: ${account.kindNaam} (${account.email})`, admin.username);
   res.json({ success: true });
 });
 
@@ -866,7 +891,8 @@ app.get('/api/admin/teachers', (req, res) => {
 });
 
 app.post('/api/admin/teachers', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
   const name        = sanitize(req.body.name, 100);
   const username    = sanitize(req.body.username, 100);
   const password    = sanitize(req.body.password, 200);
@@ -878,6 +904,7 @@ app.post('/api/admin/teachers', (req, res) => {
     return res.status(409).json({ error: 'Gebruikersnaam al in gebruik' });
   const teacher = { id: generateId(), name, username, password: hashPassword(password), permissions, active: true, createdAt: new Date().toISOString() };
   repo.teachers.insert(teacher);
+  logActivity('docent', `Docent aangemaakt: ${name} (${username})`, admin.username);
   const { password: _, ...safe } = teacher;
   res.status(201).json(safe);
 });
@@ -905,8 +932,11 @@ app.put('/api/admin/teachers/:id', (req, res) => {
 });
 
 app.delete('/api/admin/teachers/:id', (req, res) => {
-  if (!requireAdmin(req, res)) return;
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const teacher = repo.teachers.find(req.params.id);
   repo.teachers.remove(req.params.id);
+  if (teacher) logActivity('docent', `Docent verwijderd: ${teacher.name} (${teacher.username})`, admin.username);
   res.json({ success: true });
 });
 
@@ -975,6 +1005,41 @@ app.post('/api/admin/login-check', (req, res) => {
   res.json({ ok: true, requires2fa: !!(admin.twoFactorEnabled && admin.twoFactorSecret) });
 });
 
+// Stap 2 van login — controleert (indien nodig) de TOTP-code écht, en geeft
+// bij succes een sessietoken terug. Bij trustDevice:true is die 30 dagen
+// geldig, anders 12 uur (lang genoeg voor één werksessie).
+app.post('/api/admin/login', (req, res) => {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`adminlogin:${ip}`, 15, 60000)) return res.status(429).json({ error: 'Te veel pogingen.' });
+  const admin = getAdminFromRequest(req);
+  if (!admin) {
+    crypto.pbkdf2Sync('dummy', 'dummy', 1000, 32, 'sha256');
+    return res.status(401).json({ error: 'Ongeldige gebruikersnaam of wachtwoord' });
+  }
+  if (admin.twoFactorEnabled && admin.twoFactorSecret) {
+    const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
+    if (!token) return res.status(400).json({ error: 'Voer je authenticator-code in' });
+    const ok = speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token, window: 1 });
+    if (!ok) return res.status(401).json({ error: 'Ongeldige authenticator-code' });
+  }
+  const trustDevice = !!req.body?.trustDevice;
+  const ttlMs = trustDevice ? 30 * 24 * 3600 * 1000 : 12 * 3600 * 1000;
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  repo.adminSessions.insert({
+    token: sessionToken, adminId: admin.id,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + ttlMs).toISOString(),
+  });
+  logActivity('login', `Beheerder ingelogd: ${admin.username}${trustDevice ? ' (apparaat 30 dagen vertrouwd)' : ''}`, admin.username);
+  res.json({ ok: true, sessionToken, isSuperAdmin: !!admin.isSuperAdmin });
+});
+
+app.post('/api/admin/logout', (req, res) => {
+  const token = sanitize(req.body?.sessionToken || req.headers['x-admin-session'], 200);
+  if (token) repo.adminSessions.revoke(token);
+  res.json({ ok: true });
+});
+
 // ─── BEHEERDERS BEHEER ────────────────────────────────────
 
 // Lijst alle beheerders (elke beheerder mag dit zien)
@@ -983,6 +1048,14 @@ app.get('/api/admin/admins', (req, res) => {
   if (!admin) return;
   const safe = repo.admins.all().map(({ password: _, twoFactorSecret: __, ...a }) => a);
   res.json(safe);
+});
+
+// Activiteitenlog — alleen zichtbaar voor de hoofdbeheerder
+app.get('/api/admin/activity-log', (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  if (!admin.isSuperAdmin) return res.status(403).json({ error: 'Alleen de hoofdbeheerder kan het activiteitenlog inzien' });
+  res.json(repo.activityLog.all(200));
 });
 
 // Nieuwe beheerder aanmaken (alleen hoofdbeheerder)
