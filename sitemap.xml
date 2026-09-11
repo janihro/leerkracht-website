@@ -32,4 +32,8 @@
     <loc>https://www.nosorguyonosfuturo.nl/contact.html</loc>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://www.nosorguyonosfuturo.nl/privacybeleid.html</loc>
+    <priority>0.3</priority>
+  </url>
 </urlset>

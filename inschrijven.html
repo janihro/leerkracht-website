@@ -14,9 +14,6 @@
   <meta name="twitter:title" content="Schrijf je kind in voor de Papiamentu lessen van NONF. Vul het formulier in en wij nemen snel contact op." />
   <meta name="twitter:description" content="Schrijf je kind in voor de Papiamentu lessen van NONF. Vul het formulier in en wij nemen snel contact op." />
   <title>Inschrijven — Nos Orguyo, Nos Futuro</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="styles.css" />
   <style>
@@ -280,6 +277,13 @@
           <textarea id="f-bericht" placeholder="Heb je vragen of bijzonderheden? Laat het ons weten..."></textarea>
         </div>
 
+        <div class="form-group" style="display:flex;align-items:flex-start;gap:10px;margin-top:8px;">
+          <input type="checkbox" id="f-akkoord" required style="width:18px;height:18px;margin-top:2px;flex-shrink:0;" />
+          <label for="f-akkoord" style="font-weight:400;font-size:.88rem;">
+            Ik ga akkoord met het <a href="privacybeleid.html" target="_blank" style="color:var(--primary);font-weight:700;">privacybeleid</a> en geef toestemming voor het verwerken van deze gegevens (inclusief die van mijn kind) om de aanmelding te verwerken. *
+          </label>
+        </div>
+
         <div class="form-msg" id="form-msg"></div>
 
         <button type="submit" class="submit-btn" id="submit-btn">
@@ -345,7 +349,7 @@
   <div class="footer-bottom container">
     <p>© 2026 Nos Orguyo, Nos Futuro — Alle rechten voorbehouden</p>
     <div style="display:flex;gap:20px;">
-      <a href="#">Privacybeleid</a>
+      <a href="privacybeleid.html">Privacybeleid</a>
       <a href="docent.html" style="opacity:.5;font-size:.75rem;"><i class="fas fa-lock"></i> Portaal</a>
     </div>
   </div>

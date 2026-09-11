@@ -1,4 +1,24 @@
 /* ===========================
+   ZELF GEHOSTE LETTERTYPEN
+   (i.p.v. rechtstreeks bij Google ophalen — dat stuurt anders het
+   IP-adres van elke bezoeker door naar Google zonder toestemming)
+=========================== */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('fonts/nunito.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/playfair-display-700.woff2') format('woff2');
+}
+
+/* ===========================
    ROOT & RESET
 =========================== */
 :root {
