@@ -34,13 +34,18 @@ jobs:
           npm test 2>&1 | tee test-output.txt
         continue-on-error: true
 
-      - name: Bewaar testuitslag voor in de mail
+      - name: Maak een overzichtelijke samenvatting voor in de mail
         if: always()
         run: |
+          CHECKLIST=$(grep -E '^(✔|✖) ' test-output.txt | sed -E 's/ \([0-9.]+ms\)$//' | grep -v '\.js$')
+          AANTAL=$(echo "$CHECKLIST" | grep -c '.')
+          GESLAAGD=$(echo "$CHECKLIST" | grep -c '^✔ ')
           {
-            echo 'TEST_OUTPUT<<EINDE_TESTUITSLAG'
-            cat test-output.txt
-            echo 'EINDE_TESTUITSLAG'
+            echo 'CHECKLIST<<EINDE_CHECKLIST'
+            echo "$CHECKLIST"
+            echo "EINDE_CHECKLIST"
+            echo "AANTAL_GESLAAGD=$GESLAAGD"
+            echo "AANTAL_TOTAAL=$AANTAL"
           } >> "$GITHUB_ENV"
 
       - name: Check of de live site bereikbaar is
@@ -72,16 +77,17 @@ jobs:
           to: janihrodavelaar@gmail.com
           from: NONF Sitecheck <${{ secrets.SMTP_USERNAME }}>
           body: |
-            Automatische controle van nosorguyonosfuturo.nl (elke 6 uur)
+            Automatische controle van nosorguyonosfuturo.nl
 
             Resultaat: ${{ steps.status.outputs.emoji }} ${{ steps.status.outputs.tekst }}
-            Live site bereikbaar: ${{ steps.live.outcome == 'success' && 'ja' || 'nee' }}
+            Site bereikbaar: ${{ steps.live.outcome == 'success' && 'ja' || 'nee' }}
 
-            ── Wat er precies is getest ──────────────
-            ${{ env.TEST_OUTPUT }}
-            ──────────────────────────────────────────
+            Wat is er gecontroleerd:
+            ${{ env.CHECKLIST }}
 
-            Details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ${{ env.AANTAL_GESLAAGD }} van de ${{ env.AANTAL_TOTAAL }} controles geslaagd.
+
+            Meer details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Laat de job falen bij een probleem (voor het GitHub Actions-overzicht)
         if: steps.tests.outcome != 'success' || steps.live.outcome != 'success'
