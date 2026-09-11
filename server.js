@@ -11,6 +11,13 @@ const { sendRegistrationEmails, sendPasswordSetupEmail, sendPasswordResetEmail }
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// Railway zit als reverse proxy vóór de app en zet https om naar gewoon http
+// voordat het verzoek de server bereikt (met een X-Forwarded-Proto header als
+// bewijs). Zonder "trust proxy" denkt Express dat elk verzoek http is, wat de
+// origin-check van passkeys (WebAuthn) laat mislukken — die vergelijkt de
+// exácte https-origin en accepteert geen mismatch.
+app.set('trust proxy', 1);
+
 const TEACHER_PASS = process.env.TEACHER_PASSWORD || 'leerkracht2026';
 
 // Persistent storage
