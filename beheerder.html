@@ -303,6 +303,12 @@
         <button type="submit" class="btn-login" id="login-btn-pass">
           <i class="fas fa-arrow-right"></i> Volgende
         </button>
+        <div style="display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--text-muted);font-size:.78rem;">
+          <div style="flex:1;height:1px;background:var(--border,#e2e2e2);"></div>of<div style="flex:1;height:1px;background:var(--border,#e2e2e2);"></div>
+        </div>
+        <button type="button" class="btn-login" id="login-btn-passkey" onclick="loginWithPasskey()" style="background:#fff;color:var(--primary);border:2px solid var(--primary);">
+          <i class="fas fa-fingerprint"></i> Inloggen met passkey
+        </button>
       </div>
       <!-- Stap 2: 2FA code (getoond als 2FA actief is) -->
       <div id="login-step-totp" style="display:none;">
@@ -990,6 +996,15 @@
           </div>
         </div>
 
+        <div class="card" style="max-width:560px;margin-top:24px;">
+          <h3 style="margin-bottom:6px;"><i class="fas fa-fingerprint" style="color:var(--primary);margin-right:6px;"></i>Passkeys</h3>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:18px;">Log wachtwoordloos in met Face ID, Touch ID, Windows Hello of de vingerafdruksensor van je telefoon — net als bij een Google-account.</p>
+          <div class="alert alert-success" id="pk-success" style="display:none;"><i class="fas fa-check-circle"></i> <span id="pk-success-msg">Gelukt!</span></div>
+          <div class="alert alert-error"   id="pk-error"   style="display:none;"><i class="fas fa-times-circle"></i> <span id="pk-error-msg">Er is iets misgegaan.</span></div>
+          <div id="pk-list" style="margin-bottom:16px;"></div>
+          <button class="btn btn-primary" onclick="registerPasskey()"><i class="fas fa-plus"></i> Passkey toevoegen</button>
+        </div>
+
       </div><!-- /panel-2fa -->
 
       <!-- ── BEHEERDERS ────────────────────────────────── -->
@@ -1358,6 +1373,7 @@ async function load2faStatus() {
       btnArea.innerHTML     = '<button class="btn btn-primary" onclick="startTfaSetup()"><i class="fas fa-shield-alt"></i> 2FA inschakelen</button>';
     }
   } catch(e) { console.warn('2FA status fout', e); }
+  loadPasskeys();
 }
 
 async function startTfaSetup() {
@@ -1429,6 +1445,157 @@ async function disableTfa() {
 }
 
 function cancelTfaDisable() { document.getElementById('tfa-disable-card').style.display = 'none'; }
+
+// ══════════════════ PASSKEYS (WebAuthn) ═══════════════════
+// Geen externe library — hand-geschreven base64url-helpers voor de
+// ArrayBuffers die navigator.credentials gebruikt.
+function pkBufToB64url(buf) {
+  const bytes = new Uint8Array(buf);
+  let str = '';
+  for (let i = 0; i < bytes.byteLength; i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function pkB64urlToBuf(b64url) {
+  const pad = '='.repeat((4 - b64url.length % 4) % 4);
+  const base64 = (b64url + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const buf = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i);
+  return buf.buffer;
+}
+function showPkError(msg)   { document.getElementById('pk-error-msg').textContent = msg; document.getElementById('pk-error').style.display = 'flex'; document.getElementById('pk-success').style.display = 'none'; }
+function showPkSuccess(msg) { document.getElementById('pk-success-msg').textContent = msg; document.getElementById('pk-success').style.display = 'flex'; document.getElementById('pk-error').style.display = 'none'; setTimeout(() => document.getElementById('pk-success').style.display = 'none', 3500); }
+
+async function loadPasskeys() {
+  const list = document.getElementById('pk-list');
+  if (!list) return;
+  try {
+    const r = await fetch('/api/admin/passkey/list', { headers: adminHeaders() });
+    if (!r.ok) { list.innerHTML = ''; return; }
+    const passkeys = await r.json();
+    if (!passkeys.length) { list.innerHTML = '<p style="font-size:.85rem;color:var(--text-muted);">Nog geen passkeys toegevoegd.</p>'; return; }
+    list.innerHTML = passkeys.map(p => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg);border-radius:10px;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:700;font-size:.9rem;"><i class="fas fa-fingerprint" style="color:var(--primary);margin-right:6px;"></i>${esc(p.deviceName)}</div>
+          <div style="font-size:.76rem;color:var(--text-muted);">Toegevoegd op ${new Date(p.createdAt).toLocaleDateString('nl-NL')}${p.lastUsedAt ? ' · laatst gebruikt ' + new Date(p.lastUsedAt).toLocaleDateString('nl-NL') : ''}</div>
+        </div>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:.8rem;" onclick="removePasskey('${p.id}')"><i class="fas fa-trash"></i></button>
+      </div>`).join('');
+  } catch (e) { console.warn('Passkeys laden mislukt', e); }
+}
+
+async function registerPasskey() {
+  if (!window.PublicKeyCredential) { showPkError('Deze browser ondersteunt geen passkeys.'); return; }
+  try {
+    const optRes = await fetch('/api/admin/passkey/register-options', { method: 'POST', headers: adminHeaders() });
+    const optData = await optRes.json();
+    if (!optRes.ok) { showPkError(optData.error || 'Kon niet starten.'); return; }
+    const { options, challengeId } = optData;
+    const publicKey = {
+      ...options,
+      challenge: pkB64urlToBuf(options.challenge),
+      user: { ...options.user, id: pkB64urlToBuf(options.user.id) },
+      excludeCredentials: (options.excludeCredentials || []).map(c => ({ ...c, id: pkB64urlToBuf(c.id) })),
+    };
+    const cred = await navigator.credentials.create({ publicKey });
+    const deviceName = (prompt('Naam voor deze passkey (bijv. "iPhone van Jani")', 'Mijn apparaat') || 'Passkey').slice(0, 100);
+    const attestationResponse = {
+      id: cred.id,
+      rawId: pkBufToB64url(cred.rawId),
+      type: cred.type,
+      clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {},
+      response: {
+        clientDataJSON: pkBufToB64url(cred.response.clientDataJSON),
+        attestationObject: pkBufToB64url(cred.response.attestationObject),
+        transports: cred.response.getTransports ? cred.response.getTransports() : [],
+      },
+    };
+    const verifyRes = await fetch('/api/admin/passkey/register-verify', {
+      method: 'POST',
+      headers: adminHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ challengeId, response: attestationResponse, deviceName }),
+    });
+    const verifyData = await verifyRes.json();
+    if (verifyRes.ok) { showPkSuccess('Passkey toegevoegd!'); loadPasskeys(); }
+    else showPkError(verifyData.error || 'Registratie mislukt.');
+  } catch (e) {
+    if (e.name === 'NotAllowedError') return; // gebruiker annuleerde
+    showPkError('Passkey registreren mislukt: ' + e.message);
+  }
+}
+
+async function removePasskey(id) {
+  if (!confirm('Deze passkey verwijderen?')) return;
+  try {
+    const r = await fetch('/api/admin/passkey/' + id, { method: 'DELETE', headers: adminHeaders() });
+    if (r.ok) { showPkSuccess('Passkey verwijderd.'); loadPasskeys(); }
+    else showPkError('Verwijderen mislukt.');
+  } catch { showPkError('Verbindingsfout.'); }
+}
+
+// Inloggen met passkey — vanaf het loginscherm, als alternatief voor wachtwoord+2FA.
+async function loginWithPasskey() {
+  const errEl  = document.getElementById('login-error');
+  const errMsg = document.getElementById('login-error-msg');
+  errEl.style.display = 'none';
+  if (!window.PublicKeyCredential) { errMsg.textContent = 'Deze browser ondersteunt geen passkeys.'; errEl.style.display = 'flex'; return; }
+  const btn = document.getElementById('login-btn-passkey');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Wachten op passkey...';
+  try {
+    const optRes = await fetch('/api/admin/passkey/login-options', { method: 'POST' });
+    const optData = await optRes.json();
+    if (!optRes.ok) { errMsg.textContent = optData.error || 'Kon passkey-login niet starten.'; errEl.style.display = 'flex'; return; }
+    const { options, challengeId } = optData;
+    const publicKey = {
+      ...options,
+      challenge: pkB64urlToBuf(options.challenge),
+      allowCredentials: (options.allowCredentials || []).map(c => ({ ...c, id: pkB64urlToBuf(c.id) })),
+    };
+    const assertion = await navigator.credentials.get({ publicKey });
+    const authResponse = {
+      id: assertion.id,
+      rawId: pkBufToB64url(assertion.rawId),
+      type: assertion.type,
+      clientExtensionResults: assertion.getClientExtensionResults ? assertion.getClientExtensionResults() : {},
+      response: {
+        clientDataJSON: pkBufToB64url(assertion.response.clientDataJSON),
+        authenticatorData: pkBufToB64url(assertion.response.authenticatorData),
+        signature: pkBufToB64url(assertion.response.signature),
+        userHandle: assertion.response.userHandle ? pkBufToB64url(assertion.response.userHandle) : undefined,
+      },
+    };
+    const verifyRes = await fetch('/api/admin/passkey/login-verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeId, response: authResponse }),
+    });
+    const data = await verifyRes.json();
+    if (verifyRes.ok) {
+      adminUsername = data.adminUsername;
+      adminPass = '';
+      adminTotp = '';
+      adminSessionToken = data.sessionToken || '';
+      _isSuperAdmin = !!data.isSuperAdmin;
+      const sessionData = { u: adminUsername, p: '', s: adminSessionToken };
+      sessionStorage.setItem('admin_session', JSON.stringify(sessionData));
+      document.getElementById('topbar-username').textContent = adminUsername;
+      document.getElementById('topbar-avatar').textContent   = adminUsername.charAt(0).toUpperCase();
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-shell').style.display  = 'block';
+      initAdmin();
+      load2faStatus();
+      loadAdmins();
+    } else {
+      errMsg.textContent = data.error || 'Passkey-login mislukt.'; errEl.style.display = 'flex';
+    }
+  } catch (e) {
+    if (e.name !== 'NotAllowedError') { errMsg.textContent = 'Passkey-login mislukt: ' + e.message; errEl.style.display = 'flex'; }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-fingerprint"></i> Inloggen met passkey';
+  }
+}
 
 function showTfaSuccess(msg) {
   document.getElementById('tfa-success-msg').textContent = msg;

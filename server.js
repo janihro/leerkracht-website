@@ -5,6 +5,7 @@ const multer    = require('multer');
 const crypto    = require('crypto'); // ingebouwd in Node.js
 const speakeasy = require('speakeasy');
 const QRCode    = require('qrcode');
+const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse } = require('@simplewebauthn/server');
 const { sendRegistrationEmails, sendPasswordSetupEmail, sendPasswordResetEmail } = require('./mailer');
 
 const app  = express();
@@ -96,9 +97,19 @@ function sanitize(val, maxLen = 1000) {
 }
 
 // ─── MULTI-ADMIN AUTH ─────────────────────────────────────
-// Zoek admin op basis van username + wachtwoord uit request headers/body.
+// Zoek admin op basis van username + wachtwoord uit request headers/body,
+// OF op basis van een geldig sessietoken alléén (nodig voor passkey-logins,
+// waarbij de browser nooit een wachtwoord kent om mee te sturen).
 // Geeft admin-object terug of null.
 function getAdminFromRequest(req) {
+  const sessionToken = sanitize(req.headers['x-admin-session'], 200);
+  if (sessionToken) {
+    const adminId = repo.adminSessions.validate(sessionToken);
+    if (adminId) {
+      const bySession = repo.admins.find(adminId);
+      if (bySession) return bySession;
+    }
+  }
   const username = sanitize(req.body?.adminUsername || req.headers['x-admin-username'], 100);
   const provided = sanitize(req.body?.adminPassword || req.headers['x-admin-password'] || req.query?.adminPassword, 200);
   if (!provided) return null;
@@ -1052,6 +1063,150 @@ app.post('/api/admin/logout', (req, res) => {
   const token = sanitize(req.body?.sessionToken || req.headers['x-admin-session'], 200);
   if (token) repo.adminSessions.revoke(token);
   res.json({ ok: true });
+});
+
+// ─── PASSKEYS (WebAuthn) ──────────────────────────────────
+// rpID moet exact het domein zijn (zonder protocol/poort) waarop wordt
+// ingelogd — een passkey geregistreerd op het ene domein werkt niet op een
+// ander domein. expectedOrigin is de volledige origin, voor de check dat het
+// antwoord echt van deze site komt (voorkomt phishing-replay).
+const PASSKEY_RP_NAME = 'NONF Beheer';
+function getRpID(req)  { return req.hostname; }
+function getOrigin(req) { return `${req.protocol}://${req.get('host')}`; }
+
+// Registratie starten — vereist een volledig ingelogde beheerder (eigen account).
+app.post('/api/admin/passkey/register-options', async (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  try {
+    const existing = repo.adminPasskeys.allForAdmin(admin.id);
+    const options = await generateRegistrationOptions({
+      rpName: PASSKEY_RP_NAME,
+      rpID: getRpID(req),
+      userName: admin.username,
+      userDisplayName: admin.displayName || admin.username,
+      attestationType: 'none',
+      excludeCredentials: existing.map(p => ({ id: p.credentialId })),
+      authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
+    });
+    const challengeId = generateId();
+    repo.adminPasskeyChallenges.insert({ id: challengeId, adminId: admin.id, challenge: options.challenge, type: 'register', createdAt: new Date().toISOString() });
+    res.json({ options, challengeId });
+  } catch (e) {
+    console.error('Passkey-registratie-opties fout:', e);
+    res.status(500).json({ error: 'Kon registratie niet voorbereiden' });
+  }
+});
+
+// Registratie afronden
+app.post('/api/admin/passkey/register-verify', async (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const challengeId = sanitize(req.body?.challengeId, 100);
+  const challenge = challengeId ? repo.adminPasskeyChallenges.consume(challengeId) : null;
+  if (!challenge || challenge.type !== 'register' || challenge.adminId !== admin.id) {
+    return res.status(400).json({ error: 'Registratiesessie verlopen. Probeer opnieuw.' });
+  }
+  try {
+    const verification = await verifyRegistrationResponse({
+      response: req.body?.response,
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: getOrigin(req),
+      expectedRPID: getRpID(req),
+    });
+    if (!verification.verified || !verification.registrationInfo) {
+      return res.status(400).json({ error: 'Passkey kon niet worden geverifieerd' });
+    }
+    const { credential } = verification.registrationInfo;
+    const passkey = {
+      id: generateId(), adminId: admin.id,
+      credentialId: credential.id,
+      publicKey: Buffer.from(credential.publicKey).toString('base64url'),
+      counter: credential.counter,
+      deviceName: sanitize(req.body?.deviceName, 100) || 'Passkey',
+      createdAt: new Date().toISOString(), lastUsedAt: null,
+    };
+    repo.adminPasskeys.insert(passkey);
+    logActivity('login', `Passkey toegevoegd: "${passkey.deviceName}"`, admin.username);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Passkey-registratie fout:', e);
+    res.status(400).json({ error: 'Passkey kon niet worden geregistreerd' });
+  }
+});
+
+// Eigen passkeys tonen/verwijderen
+app.get('/api/admin/passkey/list', (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  const list = repo.adminPasskeys.allForAdmin(admin.id).map(({ publicKey, credentialId, ...safe }) => safe);
+  res.json(list);
+});
+app.delete('/api/admin/passkey/:id', (req, res) => {
+  const admin = requireAdmin(req, res);
+  if (!admin) return;
+  repo.adminPasskeys.remove(req.params.id, admin.id);
+  logActivity('login', 'Passkey verwijderd', admin.username);
+  res.json({ ok: true });
+});
+
+// Inloggen met passkey — stap 1: challenge ophalen (nog geen bekende gebruiker,
+// de browser/authenticator laat de gebruiker zelf een passkey kiezen).
+app.post('/api/admin/passkey/login-options', async (req, res) => {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`passkeylogin:${ip}`, 15, 60000)) return res.status(429).json({ error: 'Te veel pogingen.' });
+  try {
+    const options = await generateAuthenticationOptions({ rpID: getRpID(req), userVerification: 'preferred' });
+    const challengeId = generateId();
+    repo.adminPasskeyChallenges.insert({ id: challengeId, adminId: null, challenge: options.challenge, type: 'login', createdAt: new Date().toISOString() });
+    res.json({ options, challengeId });
+  } catch (e) {
+    console.error('Passkey-login-opties fout:', e);
+    res.status(500).json({ error: 'Kon inlogverzoek niet voorbereiden' });
+  }
+});
+
+// Inloggen met passkey — stap 2: geeft bij succes een sessietoken terug,
+// net als bij wachtwoord+2FA (de passkey zelf is de sterke authenticatie).
+app.post('/api/admin/passkey/login-verify', async (req, res) => {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`passkeylogin:${ip}`, 15, 60000)) return res.status(429).json({ error: 'Te veel pogingen.' });
+  const challengeId = sanitize(req.body?.challengeId, 100);
+  const challenge = challengeId ? repo.adminPasskeyChallenges.consume(challengeId) : null;
+  if (!challenge || challenge.type !== 'login') return res.status(400).json({ error: 'Inlogsessie verlopen. Probeer opnieuw.' });
+
+  const response = req.body?.response;
+  const credentialId = response?.id;
+  const passkey = credentialId ? repo.adminPasskeys.findByCredentialId(credentialId) : null;
+  if (!passkey) return res.status(401).json({ error: 'Onbekende passkey' });
+  const admin = repo.admins.find(passkey.adminId);
+  if (!admin) return res.status(401).json({ error: 'Beheerder niet gevonden' });
+
+  try {
+    const verification = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: getOrigin(req),
+      expectedRPID: getRpID(req),
+      credential: {
+        id: passkey.credentialId,
+        publicKey: new Uint8Array(Buffer.from(passkey.publicKey, 'base64url')),
+        counter: passkey.counter,
+      },
+    });
+    if (!verification.verified) return res.status(401).json({ error: 'Passkey kon niet worden geverifieerd' });
+    repo.adminPasskeys.updateCounter(passkey.id, verification.authenticationInfo.newCounter);
+
+    const trustDevice = !!req.body?.trustDevice;
+    const ttlMs = trustDevice ? 30 * 24 * 3600 * 1000 : 12 * 3600 * 1000;
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    repo.adminSessions.insert({ token: sessionToken, adminId: admin.id, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + ttlMs).toISOString() });
+    logActivity('login', `Beheerder ingelogd met passkey: ${admin.username}`, admin.username);
+    res.json({ ok: true, sessionToken, isSuperAdmin: !!admin.isSuperAdmin, adminUsername: admin.username });
+  } catch (e) {
+    console.error('Passkey-login fout:', e);
+    res.status(401).json({ error: 'Passkey kon niet worden geverifieerd' });
+  }
 });
 
 // ─── BEHEERDERS BEHEER ────────────────────────────────────

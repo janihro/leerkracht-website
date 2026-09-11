@@ -60,6 +60,13 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS activity_log (
     id TEXT PRIMARY KEY, timestamp TEXT, type TEXT, message TEXT, actor TEXT
   );
+  CREATE TABLE IF NOT EXISTS admin_passkeys (
+    id TEXT PRIMARY KEY, adminId TEXT, credentialId TEXT UNIQUE, publicKey TEXT,
+    counter INTEGER, deviceName TEXT, createdAt TEXT, lastUsedAt TEXT
+  );
+  CREATE TABLE IF NOT EXISTS admin_passkey_challenges (
+    id TEXT PRIMARY KEY, adminId TEXT, challenge TEXT, type TEXT, createdAt TEXT
+  );
 `;
 
 function generateId() { return crypto.randomBytes(8).toString('hex'); }
@@ -370,7 +377,40 @@ function buildRepo(db) {
     },
   };
 
-  return { questions, files, registrations, reviews, accounts, gallery, products, agenda, teachers, admins, settings, notities, adminSessions, activityLog };
+  const adminPasskeys = {
+    allForAdmin(adminId) { return db.prepare('SELECT * FROM admin_passkeys WHERE adminId = ? ORDER BY createdAt DESC').all(adminId); },
+    findByCredentialId(credentialId) { return db.prepare('SELECT * FROM admin_passkeys WHERE credentialId = ?').get(credentialId); },
+    find(id) { return db.prepare('SELECT * FROM admin_passkeys WHERE id = ?').get(id); },
+    insert(p) {
+      db.prepare(`INSERT INTO admin_passkeys (id,adminId,credentialId,publicKey,counter,deviceName,createdAt,lastUsedAt)
+        VALUES (?,?,?,?,?,?,?,?)`)
+        .run(p.id, p.adminId, p.credentialId, p.publicKey, p.counter, p.deviceName, p.createdAt, p.lastUsedAt);
+      return p;
+    },
+    updateCounter(id, counter) {
+      db.prepare('UPDATE admin_passkeys SET counter = ?, lastUsedAt = ? WHERE id = ?').run(counter, new Date().toISOString(), id);
+    },
+    remove(id, adminId) { db.prepare('DELETE FROM admin_passkeys WHERE id = ? AND adminId = ?').run(id, adminId); },
+  };
+
+  const adminPasskeyChallenges = {
+    insert(c) {
+      db.prepare('INSERT INTO admin_passkey_challenges (id,adminId,challenge,type,createdAt) VALUES (?,?,?,?,?)')
+        .run(c.id, c.adminId, c.challenge, c.type, c.createdAt);
+      return c;
+    },
+    // Haalt de challenge op en verwijdert hem meteen — mag maar één keer gebruikt worden.
+    consume(id) {
+      const row = db.prepare('SELECT * FROM admin_passkey_challenges WHERE id = ?').get(id);
+      if (!row) return null;
+      db.prepare('DELETE FROM admin_passkey_challenges WHERE id = ?').run(id);
+      // Challenges zijn maar kort geldig (2 minuten) tegen replay met een oude, gelekte challenge.
+      if (new Date() - new Date(row.createdAt) > 2 * 60 * 1000) return null;
+      return row;
+    },
+  };
+
+  return { questions, files, registrations, reviews, accounts, gallery, products, agenda, teachers, admins, settings, notities, adminSessions, activityLog, adminPasskeys, adminPasskeyChallenges };
 }
 
 // Seed standaard NONF-producten — alleen aanroepen als de tabel na een
