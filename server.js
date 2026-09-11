@@ -75,7 +75,8 @@ function checkRateLimit(key, maxAttempts, windowMs) {
   return r.n <= maxAttempts; // true = toegestaan, false = geblokkeerd
 }
 // Ruim verlopen entries op elke 10 minuten
-setInterval(() => { const now = Date.now(); rlMap.forEach((v,k) => { if (now > v.reset + 60000) rlMap.delete(k); }); }, 600000);
+// .unref() zodat deze achtergrondtaak het proces niet blokkeert bij afsluiten (o.a. in tests)
+setInterval(() => { const now = Date.now(); rlMap.forEach((v,k) => { if (now > v.reset + 60000) rlMap.delete(k); }); }, 600000).unref();
 
 // ─── HELPERS ──────────────────────────────────────────────
 function generateId()         { return crypto.randomBytes(8).toString('hex'); }
@@ -1058,4 +1059,5 @@ function migrateToMultiAdmin() {
 // ─── START ────────────────────────────────────────────────
 migratePasswords();
 migrateToMultiAdmin();
-app.listen(PORT, () => console.log(`LeerKracht draait op poort ${PORT}`));
+const server = app.listen(PORT, () => console.log(`LeerKracht draait op poort ${PORT}`));
+module.exports = server;

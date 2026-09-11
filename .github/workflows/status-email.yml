@@ -1,0 +1,75 @@
+name: Statusmail elke 6 uur
+
+# Draait elke 6 uur: voert de geautomatiseerde tests uit en checkt of de live
+# site bereikbaar is, en stuurt daarna altijd een e-mail met het resultaat
+# naar janihrodavelaar@gmail.com — ook als alles gewoon goed werkt.
+#
+# Vereist twee repository-secrets (Settings -> Secrets and variables ->
+# Actions -> New repository secret), zelf toe te voegen:
+#   SMTP_USERNAME  bv. noreply@nosorguyonosfuturo.nl
+#   SMTP_PASSWORD  het wachtwoord van die mailbox
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  status-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Installeer dependencies
+        run: npm install
+
+      - name: Draai geautomatiseerde tests
+        id: tests
+        run: npm test
+        continue-on-error: true
+
+      - name: Check of de live site bereikbaar is
+        id: live
+        run: |
+          curl --fail --silent --show-error --max-time 15 --retry 2 --retry-delay 5 \
+            https://www.nosorguyonosfuturo.nl/api/settings > /dev/null
+        continue-on-error: true
+
+      - name: Bepaal totaalresultaat
+        id: status
+        run: |
+          if [ "${{ steps.tests.outcome }}" = "success" ] && [ "${{ steps.live.outcome }}" = "success" ]; then
+            echo "emoji=✅" >> "$GITHUB_OUTPUT"
+            echo "tekst=Alles werkt goed" >> "$GITHUB_OUTPUT"
+          else
+            echo "emoji=❌" >> "$GITHUB_OUTPUT"
+            echo "tekst=Er is een probleem gevonden" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stuur statusmail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: mail.mijndomein.nl
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "${{ steps.status.outputs.emoji }} NONF site-check: ${{ steps.status.outputs.tekst }}"
+          to: janihrodavelaar@gmail.com
+          from: NONF Sitecheck <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            Automatische controle van nosorguyonosfuturo.nl (elke 6 uur)
+
+            Resultaat: ${{ steps.status.outputs.emoji }} ${{ steps.status.outputs.tekst }}
+
+            - Geautomatiseerde tests: ${{ steps.tests.outcome }}
+            - Live site bereikbaar: ${{ steps.live.outcome }}
+
+            Details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Laat de job falen bij een probleem (voor het GitHub Actions-overzicht)
+        if: steps.tests.outcome != 'success' || steps.live.outcome != 'success'
+        run: exit 1

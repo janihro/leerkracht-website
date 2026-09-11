@@ -18,4 +18,4 @@ jobs:
       - name: Check /api/settings op productie
         run: |
           curl --fail --silent --show-error --max-time 15 --retry 2 --retry-delay 5 \
-            https://leerkracht-website-production.up.railway.app/api/settings > /dev/null
+            https://www.nosorguyonosfuturo.nl/api/settings > /dev/null
