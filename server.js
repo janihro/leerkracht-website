@@ -311,6 +311,7 @@ app.post('/api/verify-password', (req, res) => {
   }
   const teacher = getTeacher(req);
   if (teacher) {
+    logActivity('login', `Docent ingelogd: ${teacher.name} (${teacher.username})`, teacher.username);
     res.json({ ok: true, id: teacher.id, name: teacher.name, username: teacher.username, permissions: teacher.permissions });
   } else {
     res.status(401).json({ ok: false });
@@ -468,6 +469,7 @@ app.post('/api/verify-parent', (req, res) => {
   if (!email || !password) return res.status(400).json({ ok: false });
   const account = repo.accounts.findByEmail(email);
   if (account && verifyPassword(password, account.password)) {
+    logActivity('login', `Ouder ingelogd: ${account.name || account.email} (${account.kindNaam})`, account.email);
     res.json({ ok: true, kindNaam: account.kindNaam, name: account.name, mustChangePassword: !!account.mustChangePassword });
   } else {
     // Zelfde vertraging ook bij verkeerd account — timing-aanval voorkomen
@@ -993,7 +995,9 @@ app.post('/api/admin/2fa/disable', (req, res) => {
   res.json({ ok: true });
 });
 
-// Login check — geeft terug of 2FA vereist is (stap 1 van login)
+// Login check — geeft terug of 2FA vereist is (stap 1 van login).
+// Is er een geldig "dit apparaat vertrouwen"-token van dezelfde beheerder
+// meegestuurd, dan wordt 2FA voor deze keer overgeslagen.
 app.post('/api/admin/login-check', (req, res) => {
   const ip = getClientIp(req);
   if (!checkRateLimit(`logincheck:${ip}`, 15, 60000)) return res.status(429).json({ ok: false, error: 'Te veel pogingen.' });
@@ -1002,7 +1006,12 @@ app.post('/api/admin/login-check', (req, res) => {
     crypto.pbkdf2Sync('dummy', 'dummy', 1000, 32, 'sha256'); // timing-safe
     return res.status(401).json({ ok: false });
   }
-  res.json({ ok: true, requires2fa: !!(admin.twoFactorEnabled && admin.twoFactorSecret) });
+  let requires2fa = !!(admin.twoFactorEnabled && admin.twoFactorSecret);
+  if (requires2fa) {
+    const trustToken = sanitize(req.headers['x-admin-session'], 200);
+    if (trustToken && repo.adminSessions.validate(trustToken) === admin.id) requires2fa = false;
+  }
+  res.json({ ok: true, requires2fa });
 });
 
 // Stap 2 van login — controleert (indien nodig) de TOTP-code écht, en geeft
@@ -1017,10 +1026,15 @@ app.post('/api/admin/login', (req, res) => {
     return res.status(401).json({ error: 'Ongeldige gebruikersnaam of wachtwoord' });
   }
   if (admin.twoFactorEnabled && admin.twoFactorSecret) {
-    const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
-    if (!token) return res.status(400).json({ error: 'Voer je authenticator-code in' });
-    const ok = speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token, window: 1 });
-    if (!ok) return res.status(401).json({ error: 'Ongeldige authenticator-code' });
+    // Een geldig "dit apparaat vertrouwen"-token van deze beheerder vervangt een verse code.
+    const trustToken = sanitize(req.headers['x-admin-session'], 200);
+    const trustedFor = trustToken ? repo.adminSessions.validate(trustToken) : null;
+    if (trustedFor !== admin.id) {
+      const token = sanitize(req.body?.adminTotp || req.headers['x-admin-totp'], 10);
+      if (!token) return res.status(400).json({ error: 'Voer je authenticator-code in' });
+      const ok = speakeasy.totp.verify({ secret: admin.twoFactorSecret, encoding: 'base32', token, window: 1 });
+      if (!ok) return res.status(401).json({ error: 'Ongeldige authenticator-code' });
+    }
   }
   const trustDevice = !!req.body?.trustDevice;
   const ttlMs = trustDevice ? 30 * 24 * 3600 * 1000 : 12 * 3600 * 1000;

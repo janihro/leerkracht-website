@@ -1096,6 +1096,18 @@ const panels = {
 let _loginPass = '';
 let _loginUser = '';
 
+// Geeft het opgeslagen "dit apparaat vertrouwen"-token terug voor deze
+// gebruikersnaam, mits nog niet verlopen. Anders null.
+function getTrustedDeviceToken(username) {
+  const raw = localStorage.getItem('admin_trusted_device');
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw);
+    if (t.u === username && t.s && t.expires && t.expires > Date.now()) return t.s;
+  } catch {}
+  return null;
+}
+
 function resetLoginSteps() {
   document.getElementById('login-step-pass').style.display = '';
   document.getElementById('login-step-totp').style.display = 'none';
@@ -1123,9 +1135,12 @@ document.getElementById('admin-login-form').addEventListener('submit', async e =
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Controleren...';
     try {
+      const trustToken = getTrustedDeviceToken(user);
+      const checkHeaders = { 'Content-Type': 'application/json' };
+      if (trustToken) checkHeaders['x-admin-session'] = trustToken;
       const r = await fetch('/api/admin/login-check', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: checkHeaders,
         body: JSON.stringify({ adminUsername: user, adminPassword: pass })
       });
       const data = await r.json();
@@ -1177,6 +1192,8 @@ async function doLogin(user, pass, totp) {
   const trustDevice = document.getElementById('admin-trust-device')?.checked || false;
   const headers = { 'Content-Type': 'application/json', 'x-admin-username': user, 'x-admin-password': pass };
   if (totp) headers['x-admin-totp'] = totp;
+  const existingTrustToken = getTrustedDeviceToken(user);
+  if (existingTrustToken) headers['x-admin-session'] = existingTrustToken;
   const res = await fetch('/api/admin/login', {
     method: 'POST', headers, body: JSON.stringify({ trustDevice }),
   });
@@ -1209,14 +1226,23 @@ async function doLogin(user, pass, totp) {
 }
 
 function logout() {
-  fetch('/api/admin/logout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionToken: adminSessionToken }),
-  }).catch(() => {});
+  // Is de huidige sessie hetzelfde token als het vertrouwde apparaat? Dan NIET
+  // intrekken en NIET verwijderen — "dit apparaat vertrouwen" moet een gewone
+  // uitlog overleven, en pas na 30 dagen (of bij handmatig intrekken) vervallen.
+  const trustedRaw = localStorage.getItem('admin_trusted_device');
+  let trustedToken = null;
+  if (trustedRaw) { try { trustedToken = JSON.parse(trustedRaw).s; } catch {} }
+  const isTrustedSession = !!adminSessionToken && adminSessionToken === trustedToken;
+
+  if (!isTrustedSession && adminSessionToken) {
+    fetch('/api/admin/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken: adminSessionToken }),
+    }).catch(() => {});
+  }
   adminPass = ''; adminUsername = ''; adminTotp = ''; adminSessionToken = ''; _isSuperAdmin = false;
   sessionStorage.removeItem('admin_session');
-  localStorage.removeItem('admin_trusted_device');
   document.getElementById('admin-shell').style.display  = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   resetLoginSteps();

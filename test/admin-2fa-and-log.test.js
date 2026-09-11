@@ -72,6 +72,39 @@ test('Met 2FA aangezet: wachtwoord alléén is niet meer genoeg', async () => {
   assert.equal(badSession.status, 401);
 });
 
+test('"Dit apparaat vertrouwen" overleeft een uitlog: geen nieuwe code nodig binnen 30 dagen', async () => {
+  // 2FA staat al aan (vorige test). We loggen opnieuw in met trustDevice:true,
+  // en bewijzen dat 2FA al eerder is gedaan via het sessietoken van de vorige test
+  // (net als de client zou doen: het bestaande, nog geldige token meesturen i.p.v. een nieuwe code).
+  const trustedLogin = await fetch(baseUrl + '/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-username': 'beheerder', 'x-admin-password': ADMIN_PASS, 'x-admin-session': sessionToken },
+    body: JSON.stringify({ trustDevice: true }),
+  });
+  assert.equal(trustedLogin.status, 200);
+  const trustedData = await trustedLogin.json();
+  const trustedToken = trustedData.sessionToken;
+  assert.ok(trustedToken);
+
+  // "Uitloggen" zonder dit token in te trekken (zoals de client doet voor een vertrouwde sessie)
+  // — daarna moet login-check zonder code aangeven dat er geen 2FA meer nodig is:
+  const checkAfterLogout = await fetch(baseUrl + '/api/admin/login-check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-session': trustedToken },
+    body: JSON.stringify({ adminUsername: 'beheerder', adminPassword: ADMIN_PASS }),
+  });
+  const checkData = await checkAfterLogout.json();
+  assert.equal(checkData.requires2fa, false, 'een vertrouwd apparaat mag geen nieuwe code hoeven invoeren');
+
+  // En echt inloggen zonder totp-code moet ook lukken, dankzij het vertrouwde token
+  const loginAgain = await fetch(baseUrl + '/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-username': 'beheerder', 'x-admin-password': ADMIN_PASS, 'x-admin-session': trustedToken },
+    body: JSON.stringify({ trustDevice: false }),
+  });
+  assert.equal(loginAgain.status, 200, 'inloggen zonder code moet lukken met een geldig vertrouwd-apparaat-token');
+});
+
 test('Activiteitenlog: alleen de hoofdbeheerder mag het inzien, en toont echte gebeurtenissen', async () => {
   // Genereer wat activiteit
   await fetch(baseUrl + '/api/registrations', {
