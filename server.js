@@ -1094,7 +1094,10 @@ app.post('/api/admin/passkey/register-options', async (req, res) => {
       userDisplayName: admin.displayName || admin.username,
       attestationType: 'none',
       excludeCredentials: existing.map(p => ({ id: p.credentialId })),
-      authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
+      // 'required' i.p.v. 'preferred' — anders slaat sommige authenticators (o.a.
+      // via de iPhone-QR/hybrid-flow) de Face ID/Touch ID/PIN-check soms over,
+      // terwijl verifyRegistrationResponse die verificatie standaard wél afdwingt.
+      authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
     });
     const challengeId = generateId();
     repo.adminPasskeyChallenges.insert({ id: challengeId, adminId: admin.id, challenge: options.challenge, type: 'register', createdAt: new Date().toISOString() });
@@ -1163,7 +1166,7 @@ app.post('/api/admin/passkey/login-options', async (req, res) => {
   const ip = getClientIp(req);
   if (!checkRateLimit(`passkeylogin:${ip}`, 15, 60000)) return res.status(429).json({ error: 'Te veel pogingen.' });
   try {
-    const options = await generateAuthenticationOptions({ rpID: getRpID(req), userVerification: 'preferred' });
+    const options = await generateAuthenticationOptions({ rpID: getRpID(req), userVerification: 'required' });
     const challengeId = generateId();
     repo.adminPasskeyChallenges.insert({ id: challengeId, adminId: null, challenge: options.challenge, type: 'login', createdAt: new Date().toISOString() });
     res.json({ options, challengeId });
