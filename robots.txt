@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /beheer
+Disallow: /docent.html
+Disallow: /portaal.html
+Disallow: /portaal-dashboard.html
+Disallow: /uploads/
+
+Sitemap: https://www.nosorguyonosfuturo.nl/sitemap.xml
