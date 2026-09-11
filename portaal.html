@@ -129,9 +129,36 @@
           </button>
         </form>
         <div class="portaal-footer">
+          <a href="#" id="forgot-link" onclick="toonWachtwoordVergeten(event)" style="color:var(--primary);font-weight:700;">Wachtwoord vergeten?</a><br /><br />
           Nog geen account? <a href="inschrijven.html" style="color:var(--primary);font-weight:700;">Schrijf je in</a><br /><br />
           <i class="fas fa-lock" style="color:var(--primary);margin-right:6px;font-size:.8rem;"></i>
           Beveiligd met SSL — jouw gegevens zijn veilig.
+        </div>
+      </div>
+
+      <!-- Stap: Wachtwoord vergeten -->
+      <div id="stap-vergeten" style="display:none;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ffaa5c);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;margin:0 auto 14px;">
+            <i class="fas fa-key"></i>
+          </div>
+          <h3 style="margin-bottom:6px;">Wachtwoord vergeten</h3>
+          <p style="font-size:.85rem;color:var(--text-muted);">Vul je e-mailadres in. Staat het bij ons bekend, dan ontvang je een link om een nieuw wachtwoord in te stellen.</p>
+        </div>
+        <form class="portaal-form" id="forgot-form" novalidate>
+          <div class="form-group">
+            <label for="forgot-email">E-mailadres</label>
+            <input type="email" id="forgot-email" placeholder="jouw@email.nl" required autocomplete="email" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="forgot-btn">
+            <i class="fas fa-paper-plane"></i> Verstuur link
+          </button>
+        </form>
+        <div id="forgot-success" style="display:none;background:rgba(27,182,173,.1);color:#0e7a73;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-top:14px;text-align:center;">
+          <i class="fas fa-check-circle"></i> Als dit e-mailadres bekend is, ontvang je zo een e-mail met een link.
+        </div>
+        <div class="portaal-footer">
+          <a href="#" onclick="verbergWachtwoordVergeten(event)" style="color:var(--primary);font-weight:700;">&larr; Terug naar inloggen</a>
         </div>
       </div>
 
@@ -261,6 +288,37 @@
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Inloggen';
     }
+  });
+
+  // ── Wachtwoord vergeten ────────────────────────────────
+  function toonWachtwoordVergeten(e) {
+    e.preventDefault();
+    document.getElementById('stap-login').style.display    = 'none';
+    document.getElementById('stap-vergeten').style.display = 'block';
+  }
+  function verbergWachtwoordVergeten(e) {
+    e.preventDefault();
+    document.getElementById('stap-vergeten').style.display = 'none';
+    document.getElementById('stap-login').style.display    = 'block';
+    document.getElementById('forgot-success').style.display = 'none';
+    document.getElementById('forgot-form').style.display = '';
+  }
+  document.getElementById('forgot-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) return;
+    const btn = document.getElementById('forgot-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Versturen...';
+    try {
+      await fetch('/api/parent/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+    } catch {}
+    document.getElementById('forgot-form').style.display = 'none';
+    document.getElementById('forgot-success').style.display = 'block';
   });
 
   // ── Stap 2: Wachtwoord instellen ──────────────────────

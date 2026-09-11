@@ -563,8 +563,8 @@
                 <input type="email" id="a-email" placeholder="ouder@email.nl" required />
               </div>
               <div class="form-group">
-                <label>Wachtwoord *</label>
-                <input type="password" id="a-password" placeholder="Min. 6 tekens" required minlength="6" />
+                <label>Wachtwoord (optioneel)</label>
+                <input type="password" id="a-password" placeholder="Leeg = automatische e-mail" minlength="4" />
               </div>
               <div class="form-group">
                 <label>Naam kind *</label>
@@ -575,6 +575,9 @@
                 <input type="text" id="a-name" placeholder="bijv. Lisa Jansen" />
               </div>
             </div>
+            <p style="font-size:.82rem;color:var(--text-muted);margin-top:10px;">
+              <i class="fas fa-info-circle"></i> Laat het wachtwoord leeg om de ouder automatisch een e-mail te sturen waarmee die zelf een wachtwoord instelt. Vul je zelf een wachtwoord in, dan wordt er geen e-mail verstuurd en geef je het wachtwoord zelf door.
+            </p>
             <div style="margin-top:18px;">
               <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Account aanmaken</button>
             </div>
@@ -1540,7 +1543,9 @@ async function createAccount(e) {
     const res = await fetch('/api/admin/accounts', { method:'POST', headers:adminHeaders({'Content-Type':'application/json'}), body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) {
-      msgEl.textContent = `Account voor ${data.kindNaam} aangemaakt!`;
+      msgEl.textContent = data.emailSent
+        ? `Account voor ${data.kindNaam} aangemaakt! Er is een e-mail verstuurd naar ${data.email} om een wachtwoord in te stellen.`
+        : `Account voor ${data.kindNaam} aangemaakt!`;
       succEl.classList.add('show');
       setTimeout(()=>succEl.classList.remove('show'),3500);
       e.target.reset();

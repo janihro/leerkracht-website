@@ -5,7 +5,7 @@ const multer    = require('multer');
 const crypto    = require('crypto'); // ingebouwd in Node.js
 const speakeasy = require('speakeasy');
 const QRCode    = require('qrcode');
-const { sendRegistrationEmails } = require('./mailer');
+const { sendRegistrationEmails, sendPasswordSetupEmail, sendPasswordResetEmail } = require('./mailer');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -469,6 +469,42 @@ app.post('/api/parent/change-password', (req, res) => {
   res.json({ ok: true });
 });
 
+// Wachtwoord vergeten: stuurt (indien het account bestaat) een e-mail met een
+// tijdelijke link. Antwoordt altijd hetzelfde, ongeacht of het e-mailadres
+// bestaat — anders kun je via deze route uitvinden welke adressen geregistreerd zijn.
+app.post('/api/parent/forgot-password', (req, res) => {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`forgot:${ip}`, 5, 900000)) return res.status(429).json({ error: 'Te veel pogingen. Wacht 15 minuten.' });
+  const email = sanitize(req.body.email, 200);
+  if (email) {
+    const account = repo.accounts.findByEmail(email);
+    if (account) {
+      const token   = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 3600000).toISOString(); // 1 uur geldig
+      repo.accounts.setResetToken(account.id, token, expires);
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      sendPasswordResetEmail({ to: email, naam: account.name, link: `${baseUrl}/wachtwoord-instellen.html?token=${token}` });
+    }
+  }
+  res.json({ ok: true });
+});
+
+// Wachtwoord instellen via de token uit de e-mail (nieuw account of "vergeten").
+app.post('/api/parent/set-password', (req, res) => {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`setpass:${ip}`, 10, 900000)) return res.status(429).json({ error: 'Te veel pogingen. Wacht even.' });
+  const token       = sanitize(req.body.token, 200);
+  const newPassword = sanitize(req.body.newPassword, 200);
+  if (!token || !newPassword) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
+  if (newPassword.length < 6) return res.status(400).json({ error: 'Wachtwoord moet minimaal 6 tekens zijn' });
+  const account = repo.accounts.findByResetToken(token);
+  if (!account || !account.resetTokenExpires || new Date(account.resetTokenExpires) < new Date()) {
+    return res.status(400).json({ error: 'Deze link is ongeldig of verlopen. Vraag een nieuwe aan.' });
+  }
+  repo.accounts.setPasswordAndClearToken(account.id, hashPassword(newPassword));
+  res.json({ ok: true, email: account.email });
+});
+
 // ─── PUBLIC SETTINGS ──────────────────────────────────────
 app.get('/api/settings', (req, res) => res.json(repo.settings.get()));
 
@@ -524,14 +560,31 @@ app.post('/api/admin/accounts', (req, res) => {
   const password = sanitize(req.body.password, 200);
   const kindNaam = sanitize(req.body.kindNaam, 100);
   const name     = sanitize(req.body.name, 100);
-  if (!email || !password || !kindNaam) return res.status(400).json({ error: 'E-mail, wachtwoord en naam kind zijn verplicht' });
+  if (!email || !kindNaam) return res.status(400).json({ error: 'E-mail en naam kind zijn verplicht' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Ongeldig e-mailadres' });
-  if (password.length < 4) return res.status(400).json({ error: 'Wachtwoord te kort (min. 4 tekens)' });
+  if (password && password.length < 4) return res.status(400).json({ error: 'Wachtwoord te kort (min. 4 tekens)' });
   if (repo.accounts.findByEmail(email)) return res.status(409).json({ error: 'E-mailadres al in gebruik' });
-  const account = { id: generateId(), email, password: hashPassword(password), kindNaam, name, mustChangePassword: true, createdAt: new Date().toISOString() };
+
+  // Geen wachtwoord opgegeven? Genereer een onraadbaar placeholder-wachtwoord en
+  // stuur de ouder automatisch een link om zelf een wachtwoord in te stellen.
+  const account = {
+    id: generateId(), email, kindNaam, name,
+    password: hashPassword(password || crypto.randomBytes(24).toString('hex')),
+    mustChangePassword: true,
+    createdAt: new Date().toISOString(),
+  };
   repo.accounts.insert(account);
+
+  if (!password) {
+    const token   = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+    repo.accounts.setResetToken(account.id, token, expires);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    sendPasswordSetupEmail({ to: email, naam: name, link: `${baseUrl}/wachtwoord-instellen.html?token=${token}` });
+  }
+
   const { password: _, ...safe } = account;
-  res.status(201).json(safe);
+  res.status(201).json({ ...safe, emailSent: !password });
 });
 app.delete('/api/admin/accounts/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;

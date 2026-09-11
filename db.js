@@ -65,6 +65,11 @@ function openDb(dbPath) {
   db.exec('PRAGMA journal_mode = WAL;');
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec(SCHEMA);
+  // Kolommen voor wachtwoord-reset-tokens, toegevoegd na de eerste release van
+  // de accounts-tabel — ALTER TABLE ... ADD COLUMN is idempotent gemaakt omdat
+  // node:sqlite geen "ADD COLUMN IF NOT EXISTS" kent.
+  try { db.exec('ALTER TABLE accounts ADD COLUMN resetToken TEXT'); } catch {}
+  try { db.exec('ALTER TABLE accounts ADD COLUMN resetTokenExpires TEXT'); } catch {}
   // node:sqlite weigert `undefined` als bind-parameter (in tegenstelling tot
   // ontbrekende/hernoemde velden in oude JSON-records, die dat wél opleveren).
   // Zet elke .run()-aanroep hier eenmalig om zodat undefined altijd null wordt.
@@ -159,6 +164,13 @@ function buildRepo(db) {
       db.prepare('UPDATE accounts SET password = ?, mustChangePassword = 0 WHERE email = ?').run(hashed, email);
     },
     setPasswordRaw(id, hashed) { db.prepare('UPDATE accounts SET password = ? WHERE id = ?').run(hashed, id); },
+    findByResetToken(token) { return mapAccount(db.prepare('SELECT * FROM accounts WHERE resetToken = ?').get(token)); },
+    setResetToken(id, token, expiresIso) {
+      db.prepare('UPDATE accounts SET resetToken = ?, resetTokenExpires = ? WHERE id = ?').run(token, expiresIso, id);
+    },
+    setPasswordAndClearToken(id, hashed) {
+      db.prepare('UPDATE accounts SET password = ?, mustChangePassword = 0, resetToken = NULL, resetTokenExpires = NULL WHERE id = ?').run(hashed, id);
+    },
     remove(id) { db.prepare('DELETE FROM accounts WHERE id = ?').run(id); },
   };
 

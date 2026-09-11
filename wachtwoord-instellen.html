@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpeg" />
+  <link rel="canonical" href="https://www.nosorguyonosfuturo.nl/wachtwoord-instellen.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="description" content="Stel je wachtwoord in voor het NONF-portaal." />
+  <title>Wachtwoord instellen — Nos Orguyo, Nos Futuro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    #navbar, #navbar.scrolled { background: #1A4E8A !important; box-shadow: 0 2px 16px rgba(0,0,0,.18) !important; }
+    #navbar .logo span { color: #fff !important; font-weight: 800; }
+    #navbar .logo .logo-img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; }
+    #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+    #navbar .nav-links a:hover { color: #F4A928 !important; }
+    #navbar .nav-cta { background: #E8763A !important; color: #fff !important; border-color: #E8763A !important; }
+    #navbar .hamburger span { background: #fff !important; }
+    @media (max-width: 900px) {
+      #navbar .nav-links { background: #1A4E8A !important; border-top-color: rgba(255,255,255,.15) !important; }
+      #navbar .nav-links li { border-bottom-color: rgba(255,255,255,.1) !important; }
+      #navbar .nav-links a { color: rgba(255,255,255,.9) !important; }
+      #navbar .nav-links a:hover { background: rgba(255,255,255,.1) !important; color: #F4A928 !important; }
+      #navbar .nav-cta { background: #E8763A !important; color: #fff !important; margin-top: 6px; }
+    }
+    footer { background: #0d2a52 !important; }
+    .footer-logo-wrap, footer h5 { color: #fff !important; }
+    footer p, footer a { color: rgba(255,255,255,.65) !important; }
+    footer a:hover { color: #F4A928 !important; }
+    .footer-bottom { border-top-color: rgba(255,255,255,.1) !important; }
+    .footer-bottom p { color: rgba(255,255,255,.5) !important; }
+  </style>
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <img src="logo.jpeg" alt="NONF" class="logo-img" />
+      <span>Nos Orguyo, Nos Futuro</span>
+    </a>
+    <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="aanbod.html">Lesaanbod</a></li>
+      <li><a href="over-mij.html">Over NONF</a></li>
+      <li><a href="webshop.html">Webshop</a></li>
+      <li><a href="gallerij.html">Galerij</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="inschrijven.html" class="nav-cta">Inschrijven</a></li>
+      <li><a href="portaal.html">Portaal</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="portaal-page">
+  <div class="portaal-card" data-animate>
+    <div class="portaal-logo">
+      <div class="portaal-logo-icon"><i class="fas fa-key"></i></div>
+    </div>
+
+    <div id="stap-formulier">
+      <h2>Wachtwoord instellen</h2>
+      <p>Kies een persoonlijk wachtwoord voor het NONF-portaal.</p>
+      <form class="portaal-form" id="setpass-form" novalidate>
+        <div class="form-group">
+          <label for="nieuw-pass">Nieuw wachtwoord</label>
+          <input type="password" id="nieuw-pass" placeholder="Min. 6 tekens" required minlength="6" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label for="nieuw-pass-confirm">Bevestig wachtwoord</label>
+          <input type="password" id="nieuw-pass-confirm" placeholder="Herhaal wachtwoord" required autocomplete="new-password" />
+        </div>
+        <div id="setpass-error" style="display:none;background:rgba(192,57,43,.1);color:#c0392b;padding:10px 14px;border-radius:8px;font-size:.84rem;margin-bottom:14px;text-align:center;">
+          <i class="fas fa-exclamation-circle"></i> <span id="setpass-error-msg">Wachtwoorden komen niet overeen.</span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="setpass-btn">
+          <i class="fas fa-lock"></i> Wachtwoord instellen
+        </button>
+      </form>
+    </div>
+
+    <div id="stap-succes" style="display:none;text-align:center;">
+      <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1BB6AD,#2fd4ca);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;margin:0 auto 14px;">
+        <i class="fas fa-check"></i>
+      </div>
+      <h2>Gelukt!</h2>
+      <p>Je wachtwoord is ingesteld. Je kunt nu inloggen in het portaal.</p>
+      <a href="portaal.html" class="btn btn-primary btn-full"><i class="fas fa-sign-in-alt"></i> Naar het portaal</a>
+    </div>
+
+    <div id="stap-fout" style="display:none;text-align:center;">
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(192,57,43,.12);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#c0392b;margin:0 auto 14px;">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <h2>Deze link werkt niet (meer)</h2>
+      <p>Deze link is ongeldig of verlopen. Vraag bij het inloggen opnieuw een link aan via "Wachtwoord vergeten".</p>
+      <a href="portaal.html" class="btn btn-primary btn-full"><i class="fas fa-sign-in-alt"></i> Naar het portaal</a>
+    </div>
+
+  </div>
+</div>
+
+<script src="main.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+
+  if (!token) {
+    document.getElementById('stap-formulier').style.display = 'none';
+    document.getElementById('stap-fout').style.display = 'block';
+  }
+
+  document.getElementById('setpass-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const nieuw    = document.getElementById('nieuw-pass').value;
+    const bevestig = document.getElementById('nieuw-pass-confirm').value;
+    const errEl    = document.getElementById('setpass-error');
+    const errMsg   = document.getElementById('setpass-error-msg');
+    const btn      = document.getElementById('setpass-btn');
+    errEl.style.display = 'none';
+
+    if (nieuw !== bevestig) {
+      errMsg.textContent = 'Wachtwoorden komen niet overeen.';
+      errEl.style.display = 'block'; return;
+    }
+    if (nieuw.length < 6) {
+      errMsg.textContent = 'Wachtwoord moet minimaal 6 tekens zijn.';
+      errEl.style.display = 'block'; return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opslaan...';
+
+    try {
+      const res  = await fetch('/api/parent/set-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword: nieuw })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById('stap-formulier').style.display = 'none';
+        document.getElementById('stap-succes').style.display = 'block';
+      } else {
+        errMsg.textContent = data.error || 'Opslaan mislukt.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-lock"></i> Wachtwoord instellen';
+      }
+    } catch {
+      errMsg.textContent = 'Netwerkfout. Probeer opnieuw.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-lock"></i> Wachtwoord instellen';
+    }
+  });
+</script>
+
+<!-- WhatsApp vaste knop -->
+<a href="https://wa.me/31681529964" target="_blank" rel="noopener" class="wa-float" aria-label="WhatsApp ons">
+  <i class="fab fa-whatsapp"></i>
+</a>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom">
+      <p>&copy; 2026 Nos Orguyo, Nos Futuro. Alle rechten voorbehouden.</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

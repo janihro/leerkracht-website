@@ -86,4 +86,32 @@ function sendRegistrationEmails(reg) {
   });
 }
 
-module.exports = { sendRegistrationEmails };
+function sendPasswordSetupEmail({ to, naam, link }) {
+  sendMail({
+    to,
+    subject: 'Stel je wachtwoord in — Nos Orguyo, Nos Futuro',
+    html: `
+      <p>Beste${naam ? ' ' + escapeHtml(naam) : ''},</p>
+      <p>Er is een portaalaccount voor je aangemaakt bij Nos Orguyo, Nos Futuro. Klik op onderstaande link om zelf een wachtwoord in te stellen:</p>
+      <p><a href="${link}">${link}</a></p>
+      <p>Deze link is 48 uur geldig.</p>
+      <p>Met vriendelijke groet,<br>Nos Orguyo, Nos Futuro</p>
+    `,
+  });
+}
+
+function sendPasswordResetEmail({ to, naam, link }) {
+  sendMail({
+    to,
+    subject: 'Wachtwoord opnieuw instellen — Nos Orguyo, Nos Futuro',
+    html: `
+      <p>Beste${naam ? ' ' + escapeHtml(naam) : ''},</p>
+      <p>Je hebt aangegeven je wachtwoord voor het portaal te zijn vergeten. Klik op onderstaande link om een nieuw wachtwoord in te stellen:</p>
+      <p><a href="${link}">${link}</a></p>
+      <p>Deze link is 1 uur geldig. Heb je dit niet zelf aangevraagd? Dan kun je deze e-mail gewoon negeren.</p>
+      <p>Met vriendelijke groet,<br>Nos Orguyo, Nos Futuro</p>
+    `,
+  });
+}
+
+module.exports = { sendRegistrationEmails, sendPasswordSetupEmail, sendPasswordResetEmail };
