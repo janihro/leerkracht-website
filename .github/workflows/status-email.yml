@@ -1,8 +1,10 @@
 name: Statusmail elke 6 uur
 
 # Draait elke 6 uur: voert de geautomatiseerde tests uit en checkt of de live
-# site bereikbaar is, en stuurt daarna altijd een e-mail met het resultaat
-# naar janihrodavelaar@gmail.com — ook als alles gewoon goed werkt.
+# site bereikbaar is (zowel met als zonder www — het kale domein loopt via
+# een handmatig A-record naar Railway's IP, dat in theorie ooit kan wijzigen).
+# Stuurt alléén een e-mail naar janihrodavelaar@gmail.com als er iets misgaat
+# — bij een geslaagde check blijft het stil.
 #
 # Vereist twee repository-secrets (Settings -> Secrets and variables ->
 # Actions -> New repository secret), zelf toe te voegen:
@@ -48,25 +50,35 @@ jobs:
             echo "AANTAL_TOTAAL=$AANTAL"
           } >> "$GITHUB_ENV"
 
-      - name: Check of de live site bereikbaar is
+      - name: Check of de live site bereikbaar is (www)
         id: live
         run: |
           curl --fail --silent --show-error --max-time 15 --retry 2 --retry-delay 5 \
             https://www.nosorguyonosfuturo.nl/api/settings > /dev/null
         continue-on-error: true
 
+      - name: Check of het kale domein (zonder www) bereikbaar is
+        id: live_apex
+        run: |
+          curl --fail --silent --show-error --max-time 15 --retry 2 --retry-delay 5 \
+            https://nosorguyonosfuturo.nl/api/settings > /dev/null
+        continue-on-error: true
+
       - name: Bepaal totaalresultaat
         id: status
         run: |
-          if [ "${{ steps.tests.outcome }}" = "success" ] && [ "${{ steps.live.outcome }}" = "success" ]; then
+          if [ "${{ steps.tests.outcome }}" = "success" ] && [ "${{ steps.live.outcome }}" = "success" ] && [ "${{ steps.live_apex.outcome }}" = "success" ]; then
             echo "emoji=✅" >> "$GITHUB_OUTPUT"
             echo "tekst=Alles werkt goed" >> "$GITHUB_OUTPUT"
+            echo "alles_goed=true" >> "$GITHUB_OUTPUT"
           else
             echo "emoji=❌" >> "$GITHUB_OUTPUT"
             echo "tekst=Er is een probleem gevonden" >> "$GITHUB_OUTPUT"
+            echo "alles_goed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Stuur statusmail
+      - name: Stuur statusmail (alleen bij een probleem)
+        if: steps.status.outputs.alles_goed == 'false'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: mail.mijndomein.nl
@@ -80,7 +92,8 @@ jobs:
             Automatische controle van nosorguyonosfuturo.nl
 
             Resultaat: ${{ steps.status.outputs.emoji }} ${{ steps.status.outputs.tekst }}
-            Site bereikbaar: ${{ steps.live.outcome == 'success' && 'ja' || 'nee' }}
+            Site bereikbaar (www.nosorguyonosfuturo.nl): ${{ steps.live.outcome == 'success' && 'ja' || 'NEE' }}
+            Site bereikbaar (nosorguyonosfuturo.nl, zonder www): ${{ steps.live_apex.outcome == 'success' && 'ja' || 'NEE' }}
 
             Wat is er gecontroleerd:
             ${{ env.CHECKLIST }}
@@ -90,5 +103,5 @@ jobs:
             Meer details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Laat de job falen bij een probleem (voor het GitHub Actions-overzicht)
-        if: steps.tests.outcome != 'success' || steps.live.outcome != 'success'
+        if: steps.status.outputs.alles_goed == 'false'
         run: exit 1
