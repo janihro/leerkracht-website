@@ -20,11 +20,15 @@ jobs:
   status-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
+          # Deze repo heeft bewust geen package-lock.json (Railway moet `npm install`
+          # draaien, geen `npm ci`). Vanaf v5 zet setup-node caching soms automatisch
+          # aan, en dat faalt zonder lockfile — dus hier expliciet uit.
+          package-manager-cache: false
 
       - name: Installeer dependencies
         run: npm install
