@@ -1,8 +1,8 @@
 name: Statusmail elke 6 uur
 
 # Draait elke 6 uur: voert de geautomatiseerde tests uit en checkt of de live
-# site bereikbaar is (zowel met als zonder www — het kale domein loopt via
-# een handmatig A-record naar Railway's IP, dat in theorie ooit kan wijzigen).
+# site bereikbaar is, zowel met als zonder www (het kale domein loopt via
+# CNAME-flattening bij Cloudflare naar Railway).
 # Stuurt alléén een e-mail naar janihrodavelaar@gmail.com als er iets misgaat
 # — bij een geslaagde check blijft het stil.
 #
@@ -83,7 +83,7 @@ jobs:
 
       - name: Stuur statusmail (alleen bij een probleem)
         if: steps.status.outputs.alles_goed == 'false'
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@v21
         with:
           server_address: mail.mijndomein.nl
           server_port: 587
