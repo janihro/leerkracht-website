@@ -887,7 +887,7 @@
       const res = await fetch(`/api/questions/${id}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answer, teacherPassword: teacherPass })
+        body: JSON.stringify({ answer, teacherUsername: teacherUser, teacherPassword: teacherPass })
       });
       if (res.status === 401) { handle401(); return; }
       if (res.ok) await loadQuestions();
@@ -989,7 +989,7 @@
       progressBar.style.width = '60%';
       const res = await fetch('/api/files', {
         method: 'POST',
-        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser, 'x-teacher-username': teacherUser},
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser },
         body: formData
       });
       progressBar.style.width = '100%';
@@ -1064,7 +1064,7 @@
       const res = await fetch(`/api/files/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacherPassword: teacherPass })
+        body: JSON.stringify({ teacherUsername: teacherUser, teacherPassword: teacherPass })
       });
       if (res.status === 401) { handle401(); return; }
       if (res.ok) loadFiles();
@@ -1080,7 +1080,7 @@
       const res = await fetch(`/api/questions/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacherPassword: teacherPass })
+        body: JSON.stringify({ teacherUsername: teacherUser, teacherPassword: teacherPass })
       });
       if (res.status === 401) { handle401(); return; }
       if (res.ok) loadQuestions();
@@ -1173,7 +1173,7 @@
       const res = await fetch(`/api/registrations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacherPassword: teacherPass, status })
+        body: JSON.stringify({ teacherUsername: teacherUser, teacherPassword: teacherPass, status })
       });
       if (res.status === 401) { handle401(); return; }
       if (res.ok) {
@@ -1189,7 +1189,7 @@
       const res = await fetch(`/api/registrations/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teacherPassword: teacherPass })
+        body: JSON.stringify({ teacherUsername: teacherUser, teacherPassword: teacherPass })
       });
       if (res.status === 401) { handle401(); return; }
       if (res.ok) loadRegistrations();
@@ -1232,7 +1232,7 @@
     list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Laden...</div>';
     try {
       const res = await fetch('/api/agenda', {
-        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser, 'x-teacher-username': teacherUser}
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser }
       });
       if (res.status === 401) { handle401(); return; }
       allAgendaItems = await res.json();
@@ -1278,7 +1278,7 @@
   async function loadAccountsForPicker() {
     try {
       const res = await fetch('/api/agenda/accounts', {
-        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser, 'x-teacher-username': teacherUser}
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser }
       });
       if (res.ok) allAccounts = await res.json();
     } catch {}
