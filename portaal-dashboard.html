@@ -184,6 +184,18 @@
   const kindNaam   = localStorage.getItem('ouder_kindNaam') || '';
   const userName   = localStorage.getItem('ouder_name') || (userEmail ? userEmail.split('@')[0] : 'ouder');
 
+  // Het sessietoken gaat bij elke aanvraag mee; de server leidt daaruit af wie
+  // je bent. Zonder token krijg je geen gegevens meer — voorheen werd simpelweg
+  // het e-mailadres in de URL geloofd.
+  const ouderSession = localStorage.getItem('ouder_session') || '';
+  function portaalHeaders(extra) {
+    return Object.assign({ 'x-parent-session': ouderSession }, extra || {});
+  }
+  function sessieVerlopen() {
+    localStorage.removeItem('ouder_session');
+    window.location.href = 'portaal.html';
+  }
+
   // Namen invullen
   document.querySelectorAll('#dashboard-name, #dashboard-name-2, .dash-user-name').forEach(el => el.textContent = userName);
   document.querySelectorAll('.dash-kind-naam').forEach(el => el.textContent = kindNaam || 'je kind');
@@ -191,10 +203,9 @@
   // Uitloggen (sidebar)
   document.getElementById('logout-btn-side')?.addEventListener('click', e => {
     e.preventDefault();
-    localStorage.removeItem('ouder_email');
-    localStorage.removeItem('ouder_kindNaam');
-    localStorage.removeItem('ouder_name');
-    window.location.href = 'portaal.html';
+    // Het intrekken van het sessietoken gebeurt centraal in portaalLogout()
+    // in main.js, zodat beide uitlogknoppen hetzelfde doen.
+    portaalLogout();
   });
 
   // Format date
@@ -254,7 +265,8 @@
   // Load all questions
   async function loadQuestions() {
     try {
-      const res = await fetch(`/api/questions?email=${encodeURIComponent(userEmail)}`);
+      const res = await fetch('/api/questions', { headers: portaalHeaders() });
+      if (res.status === 401) return sessieVerlopen();
       const questions = await res.json();
       ['papiaments-les'].forEach(id => renderThread(id, questions));
     } catch {
@@ -284,15 +296,11 @@
     try {
       const res = await fetch('/api/questions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lessonId,
-          lessonTitle,
-          question,
-          askedBy: userEmail,
-          childName: kindNaam || 'Onbekend'
-        })
+        headers: portaalHeaders({ 'Content-Type': 'application/json' }),
+        // Afzender en kindnaam haalt de server uit de sessie, niet uit de body.
+        body: JSON.stringify({ lessonId, lessonTitle, question })
       });
+      if (res.status === 401) return sessieVerlopen();
       if (res.ok) {
         textarea.value = '';
         await loadQuestions();
@@ -368,8 +376,8 @@
     const container = document.getElementById('agenda-container');
     if (!container) return;
     try {
-      const userEmail = localStorage.getItem('ouder_email') || '';
-      const res = await fetch('/api/agenda?email=' + encodeURIComponent(userEmail));
+      const res = await fetch('/api/agenda', { headers: portaalHeaders() });
+      if (res.status === 401) return sessieVerlopen();
       if (!res.ok) throw new Error();
       const items = await res.json();
       // Splits: komend vs verleden
@@ -418,7 +426,8 @@
     const container = document.getElementById('notities-container');
     if (!container) return;
     try {
-      const res = await fetch('/api/notities?email=' + encodeURIComponent(userEmail));
+      const res = await fetch('/api/notities', { headers: portaalHeaders() });
+      if (res.status === 401) return sessieVerlopen();
       if (!res.ok) throw new Error();
       const notities = await res.json();
       if (!notities.length) {

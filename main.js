@@ -219,7 +219,22 @@ if (contactForm) {
 // PORTAAL UITLOGGEN
 // ===========================
 function portaalLogout() {
+  // Trek het sessietoken ook serverzijdig in, zodat het op een gedeeld
+  // apparaat niet bruikbaar blijft. keepalive zorgt dat het verzoek de
+  // navigatie hieronder overleeft.
+  const sessie = localStorage.getItem('ouder_session');
+  if (sessie) {
+    try {
+      fetch('/api/parent/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken: sessie }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+  }
   localStorage.removeItem('ouder_email');
+  localStorage.removeItem('ouder_session');
   localStorage.removeItem('ouder_kindNaam');
   localStorage.removeItem('ouder_name');
   localStorage.removeItem('ouder_pass');
@@ -234,7 +249,10 @@ document.querySelectorAll('#logout-btn, #logout-btn-side').forEach(btn => {
 // ===========================
 if (document.body.classList.contains('dashboard-page')) {
   const email = localStorage.getItem('ouder_email');
-  if (!email) {
+  // Ook een sessietoken is vereist: zonder dat token geeft de server toch geen
+  // gegevens meer, dus stuur meteen naar het inlogscherm in plaats van een
+  // leeg dashboard te tonen.
+  if (!email || !localStorage.getItem('ouder_session')) {
     window.location.href = 'portaal.html';
   } else {
     const kindNaam = localStorage.getItem('ouder_kindNaam') || '';

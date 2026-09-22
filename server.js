@@ -153,6 +153,30 @@ function getAuthenticatedAdmin(req) {
   return null;
 }
 
+// ─── OUDER-AUTH (portaal) ─────────────────────────────────
+// Een ouder bewijst wie hij is met een sessietoken uit /api/verify-parent.
+// Let op: het e-mailadres uit de URL is géén bewijs — wie dat van een ander
+// kent zou anders diens vragen, agenda en notities kunnen opvragen.
+function getAccountFromRequest(req) {
+  const token = sanitize(req.headers['x-parent-session'] || req.body?.parentSession, 200);
+  if (!token) return null;
+  const accountId = repo.accountSessions.validate(token);
+  if (!accountId) return null;
+  return repo.accounts.find(accountId) || null;
+}
+
+// Maakt een nieuwe portaalsessie aan (30 dagen geldig, zodat ouders in de
+// praktijk niet steeds opnieuw hoeven in te loggen).
+function createAccountSession(account) {
+  const token = crypto.randomBytes(32).toString('hex');
+  repo.accountSessions.insert({
+    token, accountId: account.id,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+  });
+  return token;
+}
+
 function adminAuth(req)             { return !!getAdminFromRequest(req); }
 function adminAuthPasswordOnly(req) { return !!getAdminFromRequest(req); }
 
@@ -338,19 +362,30 @@ app.post('/api/verify-password', (req, res) => {
 
 // ─── Q&A ──────────────────────────────────────────────────
 app.get('/api/questions', (req, res) => {
-  const email = sanitize(req.query.email, 200);
-  res.json(email ? repo.questions.byEmail(email) : repo.questions.all());
+  // Ouder: alleen de eigen vragen, bepaald aan de hand van het sessietoken.
+  const account = getAccountFromRequest(req);
+  if (account) return res.json(repo.questions.byEmail(account.email));
+  // Docent met het recht 'vragen', of een beheerder: alles.
+  const teacher = getTeacher(req);
+  if ((teacher && hasPermission(teacher, 'vragen')) || adminAuth(req)) {
+    return res.json(repo.questions.all());
+  }
+  res.status(401).json({ error: 'Geen toegang' });
 });
 
 app.post('/api/questions', (req, res) => {
   const ip = getClientIp(req);
   if (!checkRateLimit(`questions:${ip}`, 20, 60000)) return res.status(429).json({ error: 'Te snel. Even wachten.' });
+  // Alleen een ingelogde ouder kan een vraag stellen. Naam en e-mailadres komen
+  // uit de sessie en niet uit de body, zodat niemand namens een ander post.
+  const account = getAccountFromRequest(req);
+  if (!account) return res.status(401).json({ error: 'Geen toegang' });
   const lessonId    = sanitize(req.body.lessonId, 100);
   const lessonTitle = sanitize(req.body.lessonTitle, 200);
   const question    = sanitize(req.body.question, 2000);
-  const askedBy     = sanitize(req.body.askedBy, 200);
-  const childName   = sanitize(req.body.childName, 100);
-  if (!lessonId || !question || !askedBy) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
+  const askedBy     = account.email;
+  const childName   = account.kindNaam;
+  if (!lessonId || !question) return res.status(400).json({ error: 'Vereiste velden ontbreken' });
   const q = { id: generateId(), lessonId, lessonTitle: lessonTitle||lessonId, question, askedBy, childName: childName||'Onbekend', timestamp: new Date().toISOString(), answer: null, answeredAt: null };
   repo.questions.insert(q);
   res.status(201).json(q);
@@ -488,7 +523,11 @@ app.post('/api/verify-parent', (req, res) => {
   const account = repo.accounts.findByEmail(email);
   if (account && verifyPassword(password, account.password)) {
     logActivity('login', `Ouder ingelogd: ${account.name || account.email} (${account.kindNaam})`, account.email);
-    res.json({ ok: true, kindNaam: account.kindNaam, name: account.name, mustChangePassword: !!account.mustChangePassword });
+    res.json({
+      ok: true, kindNaam: account.kindNaam, name: account.name,
+      mustChangePassword: !!account.mustChangePassword,
+      sessionToken: createAccountSession(account),
+    });
   } else {
     // Zelfde vertraging ook bij verkeerd account — timing-aanval voorkomen
     crypto.pbkdf2Sync('dummy', 'dummy', 1000, 32, 'sha256');
@@ -507,6 +546,16 @@ app.post('/api/parent/change-password', (req, res) => {
   const account = repo.accounts.findByEmail(email);
   if (!account || !verifyPassword(currentPassword, account.password)) return res.status(401).json({ error: 'Huidig wachtwoord klopt niet' });
   repo.accounts.updatePassword(email, hashPassword(newPassword));
+  // Het huidige wachtwoord is hierboven geverifieerd, dus deze ouder mag
+  // meteen door naar het portaal met een geldige sessie.
+  res.json({ ok: true, sessionToken: createAccountSession(account) });
+});
+
+// Uitloggen uit het portaal — trekt het sessietoken serverzijdig in, zodat het
+// op een gedeeld apparaat niet bruikbaar blijft.
+app.post('/api/parent/logout', (req, res) => {
+  const token = sanitize(req.body?.sessionToken || req.headers['x-parent-session'], 200);
+  if (token) repo.accountSessions.revoke(token);
   res.json({ ok: true });
 });
 
@@ -792,16 +841,17 @@ app.get('/api/agenda', (req, res) => {
     const db = new Date(`${b.datum}T${b.tijd||'00:00'}`);
     return da - db;
   });
-  const email    = sanitize(req.query.email, 200);
   const isTeacher = !!getTeacher(req);
   const isAdmin   = adminAuth(req);
   // Docent/admin: alles zien
   if (isTeacher || isAdmin) return res.json(items);
-  // Ouder: alleen "iedereen" items OF items waarbij email in gebruikers staat
-  if (email) {
+  // Ouder: "iedereen"-items plus items die specifiek voor hem bedoeld zijn.
+  // Wie dat is volgt uit het sessietoken, niet uit een e-mailadres in de URL.
+  const account = getAccountFromRequest(req);
+  if (account) {
     items = items.filter(item =>
       item.zichtbaar === 'iedereen' ||
-      (item.zichtbaar === 'specifiek' && Array.isArray(item.gebruikers) && item.gebruikers.includes(email))
+      (item.zichtbaar === 'specifiek' && Array.isArray(item.gebruikers) && item.gebruikers.includes(account.email))
     );
     return res.json(items);
   }
@@ -863,11 +913,9 @@ app.delete('/api/agenda/:id', (req, res) => {
 // GET — met ?email=... zien ouders alleen de notities van hun eigen
 // account; docent/admin (zonder email) ziet alle notities.
 app.get('/api/notities', (req, res) => {
-  const email = sanitize(req.query.email, 200);
-  if (email) {
-    const account = repo.accounts.findByEmail(email);
-    return res.json(account ? repo.notities.allForAccount(account.id) : []);
-  }
+  // Ouder: uitsluitend de notities over het eigen kind, bepaald via de sessie.
+  const account = getAccountFromRequest(req);
+  if (account) return res.json(repo.notities.allForAccount(account.id));
   const teacher = getTeacher(req);
   if ((!teacher || !hasPermission(teacher, 'notities')) && !adminAuth(req))
     return res.status(401).json({ error: 'Geen toegang' });

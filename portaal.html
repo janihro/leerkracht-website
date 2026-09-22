@@ -269,8 +269,10 @@
           document.getElementById('stap-login').style.display     = 'none';
           document.getElementById('stap-wachtwoord').style.display = 'block';
         } else {
-          // Normaal inloggen
+          // Normaal inloggen — het sessietoken bewijst bij elke aanvraag wie je
+          // bent; zonder dat token geeft de server geen gegevens meer terug.
           localStorage.setItem('ouder_email',   email);
+          localStorage.setItem('ouder_session', data.sessionToken || '');
           localStorage.setItem('ouder_kindNaam', data.kindNaam || '');
           localStorage.setItem('ouder_name',     data.name     || '');
           window.location.href = 'portaal-dashboard.html';
@@ -349,6 +351,7 @@
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('ouder_email', pendingEmail);
+        localStorage.setItem('ouder_session', data.sessionToken || '');
         window.location.href = 'portaal-dashboard.html';
       } else {
         errMsg.textContent = data.error || 'Opslaan mislukt.';

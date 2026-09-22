@@ -799,7 +799,10 @@
     const list = document.getElementById('questions-list');
     list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Vragen laden...</div>';
     try {
-      const res = await fetch('/api/questions');
+      const res = await fetch('/api/questions', {
+        headers: { 'x-teacher-password': teacherPass, 'x-teacher-username': teacherUser }
+      });
+      if (res.status === 401) { handle401(); return; }
       allQuestions = await res.json();
       renderQuestions();
       updateStats();

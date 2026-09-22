@@ -65,10 +65,25 @@ test('Docent kan een inschrijving verwijderen met gegevens in de body', async ()
 });
 
 test('Docent kan een vraag beantwoorden met gegevens in de body', async () => {
+  // Vragen stellen kan alleen als ingelogde ouder, dus eerst een portaalaccount
+  // aanmaken en daarmee inloggen.
+  const accountRes = await fetch(baseUrl + '/api/admin/accounts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-username': 'beheerder', 'x-admin-password': ADMIN_PASS },
+    body: JSON.stringify({ email: 'vraagouder@example.com', password: 'ouderpass1', kindNaam: 'Vraagkind' }),
+  });
+  assert.equal(accountRes.status, 201);
+  const loginRes = await fetch(baseUrl + '/api/verify-parent', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'vraagouder@example.com', password: 'ouderpass1' }),
+  });
+  assert.equal(loginRes.status, 200);
+  const ouderSessie = (await loginRes.json()).sessionToken;
+
   const vraagRes = await fetch(baseUrl + '/api/questions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lessonId: 'les1', question: 'Hoe werkt dit?', askedBy: 'ouder@example.com' }),
+    headers: { 'Content-Type': 'application/json', 'x-parent-session': ouderSessie },
+    body: JSON.stringify({ lessonId: 'les1', question: 'Hoe werkt dit?' }),
   });
   assert.equal(vraagRes.status, 201);
   const vraagId = (await vraagRes.json()).id;
